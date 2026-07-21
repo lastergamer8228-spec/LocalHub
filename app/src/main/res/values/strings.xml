@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LocalHub</string>
+    <string name="app_tagline">Your phone, your local server.</string>
+
+    <string name="notification_channel_id">localhub_server_channel</string>
+    <string name="notification_channel_name">LocalHub Server</string>
+    <string name="notification_channel_description">Persistent status of the LocalHub local HTTP &amp; WebSocket server.</string>
+    <string name="notification_title">LocalHub server is running</string>
+    <string name="notification_content">Serving dashboard on %1$s:%2$d</string>
+    <string name="notification_tap_hint">Tap to open the dashboard</string>
+</resources>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalHub Dashboard</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">&#9672;</span>
+      <div>
+        <h1>LocalHub</h1>
+        <p id="server-url">local server</p>
+      </div>
+    </div>
+    <div class="status" id="ws-status"><span class="dot off"></span> connecting&hellip;</div>
+  </header>
+
+  <main>
+    <section class="grid" id="metrics">
+      <div class="card metric" id="cpu">
+        <div class="metric-label">CPU</div>
+        <div class="metric-value" id="cpu-v">&mdash;</div>
+        <div class="metric-sub" id="cpu-s"></div>
+        <div class="bar"><div class="bar-fill" id="cpu-b"></div></div>
+      </div>
+      <div class="card metric" id="mem">
+        <div class="metric-label">Memory</div>
+        <div class="metric-value" id="mem-v">&mdash;</div>
+        <div class="metric-sub" id="mem-s"></div>
+        <div class="bar"><div class="bar-fill" id="mem-b"></div></div>
+      </div>
+      <div class="card metric" id="sto">
+        <div class="metric-label">Storage</div>
+        <div class="metric-value" id="sto-v">&mdash;</div>
+        <div class="metric-sub" id="sto-s"></div>
+        <div class="bar"><div class="bar-fill" id="sto-b"></div></div>
+      </div>
+      <div class="card metric" id="bat">
+        <div class="metric-label">Battery</div>
+        <div class="metric-value" id="bat-v">&mdash;</div>
+        <div class="metric-sub" id="bat-s"></div>
+        <div class="bar"><div class="bar-fill" id="bat-b"></div></div>
+      </div>
+      <div class="card metric" id="net">
+        <div class="metric-label">Network</div>
+        <div class="metric-value" id="net-v">&mdash;</div>
+        <div class="metric-sub" id="net-s"></div>
+        <div class="bar"><div class="bar-fill" id="net-b"></div></div>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="card">
+        <h2>Connected Clients</h2>
+        <div id="clients" class="list">No clients connected.</div>
+      </div>
+      <div class="card">
+        <h2>Modules</h2>
+        <div id="modules" class="list">Loading&hellip;</div>
+      </div>
+    </section>
+
+    <section class="card" id="device-card">
+      <h2>Device</h2>
+      <div id="device">Loading&hellip;</div>
+    </section>
+
+    <section class="card">
+      <h2>Live Logs</h2>
+      <div id="logs" class="logs"></div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
