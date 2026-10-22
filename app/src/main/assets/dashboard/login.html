@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalHub Login</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/animations.css" />
+  <style>
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .login-card { width: 100%; max-width: 380px; }
+    .login-logo { text-align: center; margin-bottom: 18px; }
+    .login-logo .logo { font-size: 42px; }
+    .login-logo h1 { margin: 8px 0 2px; font-size: 22px; }
+    .login-logo p { margin: 0; color: var(--muted); font-size: 13px; }
+    .login-form { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+    .login-form label { font-size: 12px; color: var(--muted); }
+    .login-form input {
+      width: 100%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+      border-radius: 10px; padding: 11px 13px; font-size: 14px; margin-top: 5px;
+    }
+    .login-form input:focus { outline: none; border-color: var(--accent); }
+    .remember-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+    .remember-row input { width: auto; margin: 0; }
+    .login-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #062a21; border: none;
+      border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px;
+    }
+    .login-btn:hover { filter: brightness(1.1); }
+    .login-btn:disabled { opacity: 0.6; }
+    .login-error { color: var(--danger); font-size: 13px; min-height: 18px; text-align: center; }
+    .login-info { text-align: center; margin-top: 16px; font-size: 12px; color: var(--muted); }
+    .login-info b { color: var(--text); }
+  </style>
+</head>
+<body class="lh-page">
+  <div class="login-wrap">
+    <div class="card login-card lh-pop">
+      <div class="login-logo">
+        <span class="logo">&#9672;</span>
+        <h1>LocalHub</h1>
+        <p id="server-info">local server</p>
+      </div>
+      <form class="login-form" id="login-form">
+        <div>
+          <label>Username</label>
+          <input type="text" id="username" autocomplete="username" autofocus />
+        </div>
+        <div>
+          <label>Password</label>
+          <input type="password" id="password" autocomplete="current-password" />
+        </div>
+        <label class="remember-row"><input type="checkbox" id="remember" /> Remember login</label>
+        <div class="login-error" id="login-error"></div>
+        <button type="submit" class="login-btn lh-btn lh-ripple" id="login-btn">Login</button>
+      </form>
+      <div class="login-info">Administrator and Standard User access available.<br/>All data stays on your device.</div>
+    </div>
+  </div>
+  <script src="/animations.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var apiBase = location.protocol + "//" + location.host;
+
+      // Prefill server info.
+      fetch(apiBase + "/api/status").then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (st) {
+          var el = document.getElementById("server-info");
+          if (el) el.textContent = (st.name || "LocalHub") + " · " + (st.url || "");
+        });
+
+      // First-boot setup: if the default admin password is still active, prompt
+      // the user to set a new administrator password before continuing.
+      function checkSetup() {
+        fetch(apiBase + "/api/auth/setup").then(function (r) { return r.json().catch(function () { return {}; }); })
+          .then(function (res) {
+            if (res && res.needsSetup) {
+              var u = prompt("This is LocalHub's first run. Create a new Administrator username:", "admin");
+              var p = prompt("Set a new Administrator password (min 4 characters):");
+              if (u && p && p.length >= 4) {
+                fetch(apiBase + "/api/auth/login", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ username: "admin", password: "admin", remember: false })
+                }).then(function (r) { return r.json(); }).then(function (login) {
+                  if (login && login.ok) {
+                    fetch(apiBase + "/api/auth/change-credentials", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + login.token },
+                      body: JSON.stringify({ currentPassword: "admin", target: "admin", username: u, password: p })
+                    }).then(function (r) { return r.json(); }).then(function (chg) {
+                      alert(chg && chg.ok ? "Administrator credentials set. Please log in." : ((chg && chg.error) || "Setup failed."));
+                      try { fetch(apiBase + "/api/auth/logout", { method: "POST" }); } catch (e) {}
+                      sessionStorage.removeItem("lhtoken"); localStorage.removeItem("lhtoken");
+                    });
+                  }
+                });
+              } else {
+                alert("Administrator setup skipped. Default credentials still active (admin/admin).");
+              }
+            }
+          });
+      }
+      checkSetup();
+
+      // Role-aware landing: Admin → dashboard, Web User → files.
+      function landing(role, token) {
+        if (role === "admin") return "/?token=" + encodeURIComponent(token);
+        return "/files?token=" + encodeURIComponent(token);
+      }
+
+      document.getElementById("login-form").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var username = document.getElementById("username").value.trim();
+        var password = document.getElementById("password").value;
+        var remember = document.getElementById("remember").checked;
+        var btn = document.getElementById("login-btn");
+        btn.disabled = true;
+        btn.textContent = "Signing in…";
+        fetch(apiBase + "/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: username, password: password, remember: remember })
+        }).then(function (r) { return r.json(); }).then(function (res) {
+          if (res && res.ok) {
+            if (window.LH_ANIM && window.LH_ANIM.success) window.LH_ANIM.success(btn);
+            try { sessionStorage.setItem("lhtoken", res.token); } catch (e) {}
+            try {
+              if (remember) localStorage.setItem("lhtoken", res.token);
+              else localStorage.removeItem("lhtoken");
+            } catch (e) {}
+            setTimeout(function () { window.location.href = landing(res.role, res.token); }, 180);
+          } else {
+            var err = document.getElementById("login-error");
+            err.textContent = (res && res.error) || "Login failed.";
+            if (res && res.attemptsLeft != null) err.textContent += " (" + res.attemptsLeft + " attempts left)";
+            btn.disabled = false;
+            btn.textContent = "Login";
+            if (window.LH_ANIM && window.LH_ANIM.error) window.LH_ANIM.error(btn);
+          }
+        }).catch(function () {
+          var err = document.getElementById("login-error");
+          err.textContent = "Cannot reach server.";
+          btn.disabled = false;
+          btn.textContent = "Login";
+          if (window.LH_ANIM && window.LH_ANIM.error) window.LH_ANIM.error(btn);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

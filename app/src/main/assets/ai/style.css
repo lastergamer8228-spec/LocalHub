@@ -1,0 +1,446 @@
+:root {
+  --bg: #0b1220;
+  --bg2: #111a2e;
+  --surface: rgba(27, 39, 64, 0.55);
+  --surface-2: rgba(27, 39, 64, 0.35);
+  --border: rgba(120, 140, 180, 0.18);
+  --text: #e5eaf2;
+  --muted: #8ea0bd;
+  --accent: #22d3a6;
+  --accent2: #38bdf8;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --success: #34d399;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: radial-gradient(1200px 600px at 70% -10%, #16223b 0%, var(--bg) 60%);
+  color: var(--text);
+}
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+  background: rgba(11, 18, 32, 0.7); position: sticky; top: 0; z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo { font-size: 26px; }
+.topbar h1 { margin: 0; font-size: 18px; }
+.topbar p { margin: 0; font-size: 12px; color: var(--muted); }
+.actions { display: flex; align-items: center; gap: 8px; }
+.iconbtn {
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 16px;
+}
+.iconbtn:hover { border-color: var(--accent); }
+.back {
+  color: var(--muted); font-size: 13px; text-decoration: none; border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px;
+}
+.back:hover { color: var(--accent); border-color: var(--accent); }
+
+.layout { display: flex; height: calc(100vh - 62px); }
+.tabs {
+  width: 150px; flex: none; padding: 12px 8px; border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.ai-tab {
+  text-align: left; background: none; border: none; color: var(--muted); cursor: pointer;
+  padding: 9px 12px; border-radius: 8px; font-size: 13px;
+}
+.ai-tab:hover { color: var(--text); background: var(--surface-2); }
+.ai-tab.active { color: var(--accent); background: var(--surface); }
+
+.content { flex: 1; overflow-y: auto; padding: 18px; }
+.ai-panel { display: none; max-width: 760px; }
+.ai-panel h2 { color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; font-size: 13px; margin: 0 0 10px; }
+
+/* chat */
+.chat-log { display: flex; flex-direction: column; gap: 8px; min-height: 40vh; }
+.msg { display: flex; flex-direction: column; max-width: 90%; }
+.msg.user { align-self: flex-end; }
+.msg.assistant { align-self: flex-start; }
+.msg.action .bubble { background: rgba(56, 189, 248, 0.15); }
+.msg.error .bubble { background: rgba(248, 113, 113, 0.15); }
+.bubble {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 9px 12px; font-size: 13px; white-space: pre-wrap; word-break: break-word;
+}
+.msg.user .bubble { background: var(--accent); color: #062a21; }
+.meta { font-size: 10px; color: var(--muted); margin: 2px 4px; }
+.chat-input-row { display: flex; gap: 8px; margin-top: 10px; }
+.chat-input-row input {
+  flex: 1; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 10px 12px; font-size: 14px;
+}
+.chat-input-row input:focus { outline: none; border-color: var(--accent); }
+
+.primary {
+  background: var(--accent); color: #062a21; border: none; border-radius: 8px;
+  padding: 10px 16px; font-weight: 700; cursor: pointer;
+}
+.primary:hover { filter: brightness(1.1); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+/* Command suggestions / autocomplete */
+.suggest-box { display: none; margin-top: 6px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; max-height: 180px; overflow-y: auto; }
+.suggest { padding: 8px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px dashed var(--border); }
+.suggest:last-child { border-bottom: none; }
+.suggest:hover, .suggest.active { background: var(--surface-2); color: var(--accent); }
+
+/* Rule builder */
+.rule-cond, .rule-action, #rule-value {
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 8px 10px; font-size: 13px;
+}
+.inline-form select:focus, .inline-form input:focus { outline: none; border-color: var(--accent); }
+.chip {
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 999px; padding: 5px 11px; font-size: 12px; cursor: pointer;
+}
+.chip:hover { border-color: var(--accent2); }
+.chip.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+.waveform { width: 100%; height: 60px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); }
+
+/* lists & rows */
+.list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.empty { color: var(--muted); text-align: center; padding: 18px; }
+.row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px;
+}
+.row-main { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.row-main .sub { color: var(--muted); font-size: 11px; }
+.row-actions { display: flex; gap: 6px; flex: none; }
+.kv { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
+.kv span { color: var(--muted); }
+.kv b { font-weight: 600; }
+
+.inline-form { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.inline-form input, .inline-form textarea {
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 8px 10px; font-size: 13px;
+}
+.inline-form input:focus { outline: none; border-color: var(--accent); }
+textarea {
+  width: 100%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 8px 10px; margin-top: 8px; font-size: 12px; font-family: monospace;
+}
+
+.console {
+  background: #060b16; border: 1px solid var(--border); border-radius: 8px; padding: 10px;
+  font-family: monospace; font-size: 12px; height: 50vh; overflow-y: auto; color: var(--success);
+}
+.row .row-main span:first-child { word-break: break-word; }
+
+/* Diagnostics grid */
+.props { display: grid; grid-template-columns: 180px 1fr; gap: 8px 16px; font-size: 13px; }
+.props .k { color: var(--muted); }
+.props .v { word-break: break-word; }
+
+@media (max-width: 640px) {
+  .layout { flex-direction: column; height: auto; }
+  .tabs { width: 100%; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .content { padding: 12px; }
+}
+
+/* ===== ASSISTANT BRAIN HOLOGRAM UI ===== */
+.aholo-ident { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 10px; padding:10px 14px; background:var(--surface); border:1px solid var(--border); border-radius:12px; }
+.ident-brand { display:flex; align-items:center; gap:10px; }
+.ident-brand .logo { font-size:22px; }
+.ident-brand b { font-size:14px; letter-spacing:.4px; }
+.ident-mode { display:inline-block; margin-left:8px; color:var(--accent); font:600 10px monospace; border:1px solid rgba(34,211,166,.4); border-radius:20px; padding:2px 9px; }
+.ident-chips { display:flex; gap:8px; flex-wrap:wrap; }
+.ichip { display:inline-flex; align-items:center; gap:5px; font:10px monospace; color:var(--muted); background:var(--surface-2); border:1px solid var(--border); border-radius:20px; padding:3px 9px; }
+.ichip b { color:var(--text); }
+.ichip i { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.ichip i.on { background:var(--success); box-shadow:0 0 6px var(--success); }
+.ichip i.off { background:var(--danger); }
+.ichip i.busy { background:var(--warning); }
+
+.aholo-trace { line-height:1.7; }
+.aholo-trace .t-step { display:flex; align-items:center; gap:6px; }
+.aholo-trace .t-step.done { color:var(--success); }
+.aholo-trace .t-step.cur { color:var(--warning); font-weight:700; }
+.aholo-trace .t-step.future { color:var(--muted); }
+
+.aholo-history { margin-top:14px; }
+.h-head { font:600 11px monospace; color:var(--accent); letter-spacing:.4px; text-transform:uppercase; margin-bottom:6px; }
+.h-list { display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto; }
+.h-item { background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font:11px monospace; cursor:pointer; }
+.h-item:hover { border-color:var(--accent); }
+.h-item .cmd { color:var(--text); }
+.h-item .route { color:var(--muted); font-size:10px; }
+.h-item .res-ok { color:var(--success); }
+.h-item .res-err { color:var(--danger); }
+.h-item .ts { color:var(--muted); float:right; }
+
+/* hologram<->chat integration tag */
+.holo-tag {
+  margin: 2px 4px; color: #38bdf8; font: 9px monospace; letter-spacing:.2px;
+  background: rgba(56,189,248,.08); border:1px solid rgba(56,189,248,.18);
+  border-radius: 6px; padding: 2px 7px; width: fit-content; max-width: 100%;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.msg.user .holo-tag { display:none; } /* only show on assistant replies */
+
+/* command console input (brain-integrated feel) */
+.chat-input-row input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #0a1019; border:1px solid #22374c;
+}
+.chat-input-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(34,211,166,.2), 0 0 14px rgba(34,211,166,.12); }
+.chat-input-row { position: relative; }
+.chat-input-row::before {
+  content: "▸"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--accent); font: 700 13px monospace; pointer-events:none;
+}
+.chat-input-row input { padding-left: 26px; }
+
+/* ===== Holographic chat page (hologram = full-page background) ===== */
+.holo-page { position: relative; min-height: 90vh; }
+.holo-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.holo-bg canvas { width: 100%; height: 100%; display: block; }
+.holo-bg-fade {
+  position: absolute; inset: 0; z-index: 1;
+  background: radial-gradient(ellipse at 50% 40%, rgba(2,4,10,0.10) 0%, rgba(2,4,10,0.42) 65%, rgba(2,4,10,0.68) 100%);
+  pointer-events: none;
+}
+.holo-page > *:not(.holo-bg) { position: relative; z-index: 2; }
+
+/* glass panels over the hologram */
+.glass {
+  background: rgba(10,16,25,0.42) !important;
+  border: 1px solid rgba(34,211,166,0.16) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 0 24px rgba(0,0,0,0.35);
+}
+
+/* floating HUD */
+.holo-hud {
+  position: relative; z-index: 3;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; margin-bottom: 8px;
+  background: rgba(6,12,22,0.55); border: 1px solid rgba(34,211,166,0.18);
+  border-radius: 12px; backdrop-filter: blur(6px);
+}
+.hbtn {
+  background: rgba(18,32,47,0.7); border: 1px solid rgba(56,130,200,0.35); color: #9fd4ff;
+  border-radius: 6px; padding: 3px 9px; font: 10px monospace; cursor: pointer;
+}
+.hbtn:hover { border-color: var(--accent); color: #fff; }
+
+.holo-process {
+  display: flex; flex-wrap: wrap; gap: 10px 16px;
+  padding: 8px 12px; margin-bottom: 8px; font: 11px monospace; border-radius: 10px;
+}
+.holo-process b { color: #7dd3fc; }
+
+.aholo-trace { padding: 8px 12px; margin-bottom: 8px; font: 11px monospace; border-radius: 10px; }
+
+/* transparent chat bubbles over hologram */
+.holo-chat .msg.assistant .bubble { background: rgba(27,39,64,0.5); backdrop-filter: blur(6px); }
+.holo-chat .msg.user .bubble { background: rgba(34,211,166,0.65); color:#062a21; }
+.holo-chat .msg.action .bubble { background: rgba(56,189,248,0.35); }
+.holo-chat .msg.error .bubble { background: rgba(248,113,113,0.35); }
+
+/* input console over hologram */
+.chat-input-row { border-radius: 10px; padding: 6px; }
+.chat-input-row input { background: rgba(10,16,25,0.5); }
+
+/* history / inspector */
+.aholo-history { padding: 8px 12px; border-radius: 10px; }
+#aholo-inspector { padding: 10px 14px; margin-top: 8px; font: 12px monospace; border-radius: 10px; }
+
+/* in-page hologram (explicit size) */
+.aholo-wrap {
+  border: 1px solid #22374c; border-radius: 14px; overflow: hidden;
+  margin: 0 0 10px; background: #02040a;
+  box-shadow: 0 0 40px rgba(34,211,166,.10), inset 0 0 60px rgba(34,211,166,.04);
+}
+.aholo-wrap canvas { width: 100%; height: 100%; display: block; }
+
+/* ===== FUTURISTIC HOLOGRAPHIC CHAT ===== */
+.chat-log { gap: 10px; min-height: 40vh; }
+
+.msg { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; max-width: 100%; }
+.msg.user { flex-direction: row-reverse; align-self: flex-end; }
+.msg.assistant { align-self: flex-start; }
+
+/* holo avatar */
+.avatar {
+  flex: none; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  background: rgba(34,211,166,0.12);
+  border: 1px solid rgba(34,211,166,0.4);
+  box-shadow: 0 0 10px rgba(34,211,166,0.25);
+}
+.msg.user .avatar {
+  background: rgba(56,189,248,0.12); border-color: rgba(56,189,248,0.4);
+  box-shadow: 0 0 10px rgba(56,189,248,0.25);
+}
+
+.msg-body { display: flex; flex-direction: column; gap: 2px; max-width: 82%; }
+
+/* holographic glass bubble */
+.bubble {
+  position: relative;
+  background: linear-gradient(135deg, rgba(27,39,64,0.55), rgba(20,30,50,0.35)) !important;
+  border: 1px solid rgba(56,189,248,0.22);
+  border-radius: 4px 14px 14px 14px;
+  padding: 10px 13px; font-size: 13px;
+  white-space: pre-wrap; word-break: break-word;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 0 18px rgba(34,211,166,0.08), inset 0 0 20px rgba(34,211,166,0.03);
+}
+.msg.user .bubble {
+  background: linear-gradient(135deg, rgba(34,211,166,0.5), rgba(34,211,166,0.28)) !important;
+  color: #eafff5;
+  border-radius: 14px 4px 14px 14px;
+  border-color: rgba(34,211,166,0.45);
+  box-shadow: 0 0 18px rgba(34,211,166,0.18);
+}
+.msg.action .bubble { border-color: rgba(56,189,248,0.4); background: linear-gradient(135deg, rgba(56,189,248,0.25), rgba(56,189,248,0.1)) !important; }
+.msg.error .bubble { border-color: rgba(248,113,113,0.5); background: linear-gradient(135deg, rgba(248,113,113,0.28), rgba(248,113,113,0.1)) !important; }
+
+/* sci-fi corner accent on assistant bubbles */
+.msg.assistant .bubble::before {
+  content: ""; position: absolute; top: -1px; left: -1px; width: 12px; height: 12px;
+  border-top: 2px solid var(--accent); border-left: 2px solid var(--accent);
+  border-radius: 4px 0 0 0; opacity: .6;
+}
+.msg.user .bubble::after {
+  content: ""; position: absolute; top: -1px; right: -1px; width: 12px; height: 12px;
+  border-top: 2px solid #38bdf8; border-right: 2px solid #38bdf8;
+  border-radius: 0 4px 0 0; opacity: .6;
+}
+
+/* meta = sci-fi terminal timestamp */
+.meta {
+  font-size: 9px; color: #6e8bb0; font-family: monospace;
+  letter-spacing: .5px; margin: 2px 4px;
+  text-transform: uppercase;
+}
+.msg.user .meta { text-align: right; }
+
+/* holo-tag (processing route) */
+.holo-tag {
+  font-family: monospace; font-size: 9px; color: #38bdf8; letter-spacing: .2px;
+  background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 6px; padding: 2px 7px; width: fit-content; max-width: 100%;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+
+/* holographic command console */
+.chat-input-row {
+  position: relative; display: flex; gap: 8px; margin-top: 12px;
+  padding: 6px; border-radius: 12px;
+  background: linear-gradient(180deg, rgba(12,20,34,0.6), rgba(8,14,24,0.5));
+  border: 1px solid rgba(56,189,248,0.2);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 22px rgba(34,211,166,0.1), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.chat-input-row input {
+  flex: 1; background: rgba(6,12,22,0.6); border: 1px solid rgba(56,189,248,0.15);
+  color: var(--text); border-radius: 9px; padding: 11px 12px 11px 28px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+  transition: box-shadow .2s, border-color .2s;
+}
+.chat-input-row input::placeholder { color: #4a607f; }
+.chat-input-row input:focus { outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(34,211,166,.25), 0 0 16px rgba(34,211,166,.18); }
+.chat-input-row::before {
+  content: "▸"; position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  color: var(--accent); font: 700 13px monospace; pointer-events: none; z-index: 2;
+  text-shadow: 0 0 8px var(--accent);
+}
+.chat-input-row .primary {
+  border-radius: 9px; padding: 10px 18px; font-weight: 700; letter-spacing: .4px;
+  background: linear-gradient(135deg, var(--accent), #14b88c);
+  box-shadow: 0 0 16px rgba(34,211,166,0.35);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.chat-input-row .primary:hover { filter: brightness(1.15); }
+
+/* suggest-box holographic */
+.suggest-box { background: rgba(10,18,30,0.7); border: 1px solid rgba(56,189,248,0.2); backdrop-filter: blur(10px); border-radius: 12px; }
+.suggest { border-bottom: 1px dashed rgba(56,189,248,0.15); }
+.suggest:hover, .suggest.active { background: rgba(34,211,166,0.08); color: var(--accent); }
+
+/* ===== HOLOGRAPHIC CONVERSATION FRAME ===== */
+.holo-chatframe {
+  position: relative;
+  border: 1px solid rgba(56,189,248,0.18);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(6,12,22,0.35);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(34,211,166,0.06), inset 0 0 40px rgba(34,211,166,0.03);
+}
+/* animated scanline sweep */
+.holo-chatframe-scan {
+  position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(34,211,166,0.4), transparent);
+  animation: holoScan 5s linear infinite;
+  pointer-events: none;
+}
+@keyframes holoScan { 0% { transform: translateY(0); } 100% { transform: translateY(420px); } }
+
+/* glowing corner brackets */
+.holo-chatframe-corners i { position: absolute; width: 14px; height: 14px; border: 2px solid var(--accent); opacity:.7; }
+.holo-chatframe-corners i:nth-child(1){ top:-1px; left:-1px; border-right:none; border-bottom:none; border-top-left-radius:4px; }
+.holo-chatframe-corners i:nth-child(2){ top:-1px; right:-1px; border-left:none; border-bottom:none; border-top-right-radius:4px; }
+.holo-chatframe-corners i:nth-child(3){ bottom:-1px; left:-1px; border-right:none; border-top:none; border-bottom-left-radius:4px; }
+.holo-chatframe-corners i:nth-child(4){ bottom:-1px; right:-1px; border-left:none; border-top:none; border-bottom-right-radius:4px; }
+
+/* header */
+.holo-chatframe-hd {
+  display: flex; align-items: center; gap: 8px;
+  font: 600 10px monospace; letter-spacing: 1px; color: #38bdf8;
+  margin-bottom: 8px; padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(56,189,248,0.15);
+}
+.hd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 8px var(--accent); animation: hdPulse 1.6s infinite; }
+@keyframes hdPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.hd-txt { flex: 1; }
+.hd-status { color: var(--success); }
+
+/* keep chat-log scrolling nice inside frame */
+.holo-chatframe .chat-log { min-height: 30vh; max-height: 46vh; overflow-y: auto; }
+
+/* ===== INSPECT MODE (admin) ===== */
+.aholo-ui { transition: opacity .45s ease, transform .45s ease, filter .45s ease; }
+.aholo-ui.aholo-hide { opacity: 0; transform: scale(.985); filter: blur(2px); pointer-events: none; }
+
+/* hologram zoom-in when entering inspect mode (premium feel) */
+#chat-panel.aholo-inspect-live .holo-bg { animation: holoZoomIn .6s cubic-bezier(.2,.8,.2,1); }
+@keyframes holoZoomIn { 0% { transform: scale(.94); opacity:.6; } 100% { transform: scale(1); opacity:1; } }
+
+/* inspect overlay bar */
+#aholo-inspect-overlay { position: relative; z-index: 4; margin-bottom: 8px; }
+.aholo-inspect-bar {
+  display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+  border-radius: 12px; animation: inspectSlide .4s ease;
+  border-color: rgba(34,211,166,0.35) !important;
+  box-shadow: 0 0 30px rgba(34,211,166,0.12) !important;
+}
+@keyframes inspectSlide { 0% { transform: translateY(-10px); opacity:0; } 100% { transform: translateY(0); opacity:1; } }
+
+.aholo-inspect-detail {
+  margin-top: 8px; padding: 12px 14px; border-radius: 12px;
+  font: 12px monospace; line-height: 1.7;
+  border-color: rgba(34,211,166,0.25) !important;
+  animation: inspectSlide .4s ease;
+  box-shadow: 0 0 24px rgba(34,211,166,0.08);
+}

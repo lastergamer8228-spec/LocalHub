@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalHub · Offline Neural TTS</title>
+  <link rel="stylesheet" href="/dashboard/style.css" />
+  <link rel="stylesheet" href="/animations.css" />
+  <style>
+    body { padding: 20px; max-width: 720px; margin: 0 auto; }
+    .card { background: var(--surface, #15181d); border: 1px solid var(--border, #262b33); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .sub { color: var(--muted, #8b93a1); margin: 0 0 16px; }
+    textarea { width: 100%; box-sizing: border-box; min-height: 90px; border-radius: 10px; border: 1px solid var(--border, #2a3038); background: var(--bg2, #0f1115); color: inherit; padding: 12px; font: inherit; resize: vertical; }
+    input[type=text], input[type=range] { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid var(--border, #2a3038); background: var(--bg2, #0f1115); color: inherit; }
+    .row { display: flex; gap: 10px; align-items: center; margin: 12px 0; }
+    .row label { flex: 0 0 120px; color: var(--muted, #8b93a1); }
+    .btn { padding: 12px 18px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-primary { background: #22d3a6; color: #062019; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    audio { width: 100%; margin-top: 12px; }
+    .kv { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border, #2a3038); font-size: 13px; }
+    .kv span { color: var(--muted, #8b93a1); }
+    .code { font-family: monospace; background: var(--bg2, #0f1115); padding: 3px 6px; border-radius: 5px; font-size: 12px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .badge-ok { background: rgba(34,211,166,.15); color: #22d3a6; }
+    .badge-no { background: rgba(244,63,94,.15); color: #f43f5e; }
+    .msg { margin-top: 10px; font-size: 14px; }
+    .hint { font-size: 13px; color: var(--muted, #8b93a1); line-height: 1.5; }
+  </style>
+</head>
+<body class="lh-page">
+  <a class="back" href="/" style="margin-bottom:16px;display:inline-block">← Dashboard</a>
+  <h1>🔊 Offline Speech</h1>
+  <p class="sub">Android system TTS · instant, fully on-device, no cloud, no model download</p>
+
+  <!-- STATUS -->
+  <div class="card">
+    <h2 style="font-size:16px;margin-top:0">Engine status</h2>
+    <div class="kv"><span>Engine</span><b id="s-engine">—</b></div>
+    <div class="kv"><span>Status</span><b><span id="s-badge" class="badge">…</span></b></div>
+    <div class="kv"><span>Languages</span><b id="s-lang">—</b></div>
+    <div class="kv"><span>Active voice</span><b id="s-voice">—</b></div>
+    <div class="kv"><span>Needs model</span><b id="s-model">—</b></div>
+    <div class="msg" id="s-error"></div>
+    <div class="hint" style="margin-top:12px">
+      Uses the phone's built-in TTS engine (Google TTS). It's fast and works
+      offline. For other languages (e.g. Hindi), install the voice pack in
+      Android Settings → Language &amp; Input → Text-to-speech.
+    </div>
+  </div>
+
+  <!-- SYNTHESIZE -->
+  <div class="card">
+    <h2 style="font-size:16px;margin-top:0">Text → Speech</h2>
+    <label>Text</label>
+    <textarea id="text" placeholder="Type something to speak…">Hello from LocalHub! This is offline speech, running right on your phone.</textarea>
+    <div class="row">
+      <label for="lang">Language</label>
+      <select id="lang" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border,#2a3038);background:var(--bg2,#0f1115);color:inherit">
+        <option value="en-US">English</option>
+        <option value="hi-IN">Hindi</option>
+        <option value="es-ES">Spanish</option>
+        <option value="fr-FR">French</option>
+        <option value="de-DE">German</option>
+        <option value="it-IT">Italian</option>
+        <option value="pt-BR">Portuguese</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="speed">Speed</label>
+      <input type="range" id="speed" min="0.5" max="1.5" step="0.1" value="1.0" style="flex:1" />
+      <b id="speed-val">1.0×</b>
+    </div>
+    <button class="btn btn-primary" id="synth">Generate speech</button>
+    <audio id="player" controls style="display:none"></audio>
+    <div class="msg" id="synth-msg"></div>
+  </div>
+
+  <script>
+    (function () {
+      var base = location.origin;
+      function el(id) { return document.getElementById(id); }
+      function token() {
+        var q = new URLSearchParams(location.search);
+        return q.get("token") || sessionStorage.getItem("lhtoken") || localStorage.getItem("lhtoken") || "";
+      }
+      function hdr() { return token() ? { "Content-Type": "application/json", "Authorization": "Bearer " + token() } : { "Content-Type": "application/json" }; }
+
+      function loadStatus() {
+        fetch(base + "/api/tts/status" + (token() ? "?token=" + encodeURIComponent(token()) : ""))
+          .then(function (r) { return r.json(); })
+          .then(function (s) {
+            el("s-engine").textContent = s.engine || "—";
+            el("s-lang").textContent = s.languages || "—";
+            el("s-voice").textContent = s.voice || "engine default";
+            el("s-model").textContent = (s.needsModel ? "Yes (not bundled)" : "No — built-in");
+            var cfg = s.configured !== false;
+            var b = el("s-badge");
+            b.textContent = cfg ? "Ready ✓" : "Unavailable";
+            b.className = "badge " + (cfg ? "badge-ok" : "badge-no");
+            if (s.lastError) el("s-error").textContent = "⚠ " + s.lastError;
+          }).catch(function () { el("s-badge").textContent = "offline"; el("s-badge").className = "badge badge-no"; });
+      }
+
+      function play(url, msgEl) {
+        var a = el("player");
+        a.src = url;
+        a.style.display = "block";
+        a.play().catch(function(){});
+        if (msgEl) msgEl.textContent = "Generated. Playing…";
+      }
+
+      el("speed").addEventListener("input", function () { el("speed-val").textContent = this.value + "×"; });
+
+      el("synth").addEventListener("click", function () {
+        var btn = el("synth");
+        var text = el("text").value.trim();
+        var msg = el("synth-msg");
+        if (!text) { msg.textContent = "Enter some text."; return; }
+        btn.disabled = true; msg.textContent = "Synthesising… (can take a few seconds)";
+        fetch(base + "/api/tts/synthesize" + (token() ? "?token=" + encodeURIComponent(token()) : ""), {
+          method: "POST", headers: hdr(),
+          body: JSON.stringify({ text: text, speed: parseFloat(el("speed").value), lang: el("lang").value })
+        }).then(function (r) { return r.json(); })
+          .then(function (res) {
+            btn.disabled = false;
+            if (res.ok && res.url) { play(base + res.url, msg); }
+            else { msg.textContent = "⚠ " + (res.error || "failed"); loadStatus(); }
+          }).catch(function (e) { btn.disabled = false; msg.textContent = "⚠ " + e.message; });
+      });
+
+      loadStatus();
+    })();
+  </script>
+</body>
+</html>

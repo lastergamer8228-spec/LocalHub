@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalHub OS</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/animations.css" />
+  <link rel="stylesheet" href="/os/os.css" />
+</head>
+<body class="lh-page">
+  <header class="os-topbar">
+    <div class="os-brand"><span class="logo">🪐</span> LocalHub OS</div>
+    <div class="os-searchbar">
+      <span class="os-mag">🔍</span>
+      <input id="os-top-search" placeholder="Search everything…  ( / )" autocomplete="off" />
+    </div>
+    <div class="os-spacer"></div>
+    <span class="role-badge" id="os-role"></span>
+    <a class="os-link" href="/">Dashboard</a>
+  </header>
+
+  <div class="os-layout">
+    <nav class="os-nav" id="os-nav">
+      <button class="os-tab active" data-view="home">🏠 Home</button>
+      <button class="os-tab" data-view="spaces">🪐 Spaces</button>
+      <button class="os-tab" data-view="timeline">🕒 Activity Timeline</button>
+      <button class="os-tab" data-view="automation">🧩 Automation Builder</button>
+      <button class="os-tab" data-view="search">🔍 Universal Search</button>
+      <button class="os-tab" data-view="security">🔐 Security & Backup</button>
+    </nav>
+
+    <main class="os-content">
+      <!-- HOME -->
+      <section class="os-view" data-view="home" style="display:block">
+        <div class="os-widgets" id="os-home-widgets"></div>
+      </section>
+
+      <!-- SPACES -->
+      <section class="os-view" data-view="spaces" style="display:none">
+        <h2>LocalHub Spaces</h2>
+        <p class="hint">Each Space is a personalized environment with its own quick actions, favorites and assistant context.</p>
+        <div class="os-spaces" id="os-space-picker"></div>
+        <div class="os-space-actions">
+          <button class="os-btn ghost" id="os-space-add">+ New Space</button>
+          <button class="os-btn ghost" id="os-space-edit">Edit Active</button>
+          <button class="os-btn ghost" id="os-space-export">Export Spaces</button>
+        </div>
+      </section>
+
+      <!-- TIMELINE -->
+      <section class="os-view" data-view="timeline" style="display:none">
+        <h2>Activity Timeline</h2>
+        <div class="os-tl-toolbar">
+          <input id="os-tl-search" placeholder="Search timeline…" />
+          <select id="os-tl-filter"><option value="all">All events</option>
+            <option value="server">Server</option><option value="login">Auth</option>
+            <option value="upload">Uploads</option><option value="download">Downloads</option>
+            <option value="media">Media</option><option value="client">Clients</option>
+            <option value="automation">Automation</option><option value="space">Spaces</option>
+          </select>
+          <button class="os-btn ghost" id="os-tl-bookmarks">★ Bookmarks</button>
+          <button class="os-btn ghost" id="os-tl-export">Export</button>
+          <button class="os-btn ghost" id="os-tl-clear">Clear</button>
+        </div>
+        <div id="os-timeline"></div>
+      </section>
+
+      <!-- AUTOMATION -->
+      <section class="os-view" data-view="automation" style="display:none">
+        <h2>Visual Automation Builder</h2>
+        <p class="hint">Build IF/THEN workflows with blocks — no code required.</p>
+        <div class="os-ab-toolbar">
+          <input id="os-ab-name" placeholder="Automation name" value="My Automation" />
+          <select id="os-ab-templates"></select>
+          <button class="os-btn ghost" id="os-ab-undo">↶ Undo</button>
+          <button class="os-btn ghost" id="os-ab-redo">↷ Redo</button>
+          <button class="os-btn ghost" id="os-ab-export">Export</button>
+          <label class="os-btn ghost" style="display:inline-flex;align-items:center">Import<input type="file" id="os-ab-import" style="display:none" /></label>
+          <button class="os-btn" id="os-ab-save">Save & Run</button>
+        </div>
+        <div class="os-ab-toolbar">
+          <select id="os-ab-triggers"></select>
+          <select id="os-ab-actions"></select>
+        </div>
+        <div id="os-ab-errors" class="os-ab-errors"></div>
+        <div class="os-ab-canvas" id="os-ab-canvas"></div>
+      </section>
+
+      <!-- SEARCH -->
+      <section class="os-view" data-view="search" style="display:none">
+        <h2>Universal Search</h2>
+        <input id="os-search-input" style="width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px 14px;font-size:16px" placeholder="Search files, media, clients, commands, activity…" autocomplete="off" />
+        <div class="os-search-results" id="os-search-results" style="margin-top:14px"></div>
+      </section>
+
+      <!-- SECURITY & BACKUP -->
+      <section class="os-view" data-view="security" style="display:none">
+        <h2>🔐 Security</h2>
+
+        <div class="os-widget" style="max-width:640px">
+          <h3>Two-Factor Authentication (Admin)</h3>
+          <p class="hint">Add a time-based one-time code (Google Authenticator / Authy) to protect the admin account.</p>
+          <div class="os-space-actions">
+            <button class="os-btn ghost" id="os-totp-enroll">Enroll 2FA</button>
+            <span class="role-badge" id="os-totp-state"></span>
+          </div>
+          <div id="os-totp-qr" style="display:none;margin-top:12px">
+            <p class="hint">Scan this QR with your authenticator app, then enter the 6-digit code:</p>
+            <div id="os-totp-qr-img"></div>
+            <div class="os-ab-toolbar">
+              <input id="os-totp-code" placeholder="000000" style="width:140px" />
+              <button class="os-btn" id="os-totp-verify">Verify & Enable</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="os-widget" style="max-width:640px;margin-top:14px">
+          <h3>LAN Share Links</h3>
+          <p class="hint">Create a temporary, password-free link to a file/folder for anyone on your network.</p>
+          <div class="os-ab-toolbar">
+            <input id="os-share-path" placeholder="/storage/emulated/0/..." style="flex:1" />
+            <button class="os-btn" id="os-share-create">Create Share</button>
+          </div>
+          <div id="os-share-list" class="list" style="margin-top:8px"></div>
+        </div>
+
+        <h2 style="margin-top:24px">🧹 Storage Cleanup</h2>
+        <div class="os-widget" style="max-width:640px">
+          <h3>Free up space</h3>
+          <p class="hint">Scan for duplicate files and get a breakdown by category (video/audio/image/document/archive).</p>
+          <div class="os-ab-toolbar">
+            <input id="os-clean-path" value="/storage/emulated/0" style="flex:1" />
+            <button class="os-btn ghost" id="os-clean-scan">Scan</button>
+          </div>
+          <div id="os-clean-cats" class="list" style="margin-top:8px"></div>
+          <div id="os-clean-dups" class="list" style="margin-top:8px"></div>
+        </div>
+
+        <h2 style="margin-top:24px">💾 Backup</h2>
+        <div class="os-widget" style="max-width:640px">
+          <h3>LocalHub OS Backup</h3>
+          <p class="hint">Backs up your timeline, spaces, search history, pinned searches and usage. (Server config backup is separate.)</p>
+          <div class="os-space-actions">
+            <button class="os-btn ghost" id="os-backup-download">Download Backup</button>
+            <label class="os-btn ghost" style="display:inline-flex;align-items:center">Restore Backup<input type="file" id="os-backup-file" style="display:none" accept="application/json" /></label>
+          </div>
+          <div id="os-backup-status" class="hint"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Spaces editor modal -->
+  <div class="os-modal-back" id="os-space-editor">
+    <div class="os-modal">
+      <h3>Edit Space</h3>
+      <label>Name</label><input class="os-editor-name" />
+      <label>Icon</label><input class="os-editor-icon" value="🪐" />
+      <label>Theme</label>
+      <select class="os-editor-theme"><option value="dark">Dark</option><option value="light">Light</option></select>
+      <label>Quick actions (one per line)</label>
+      <textarea class="os-editor-quick"></textarea>
+      <div class="os-row"><button class="os-btn ghost" id="os-editor-cancel">Cancel</button><button class="os-btn os-editor-save">Save</button></div>
+    </div>
+  </div>
+
+  <!-- Universal search overlay -->
+  <div class="os-search-overlay" id="os-search-overlay">
+    <div class="os-search-box">
+      <input id="os-search-ov" placeholder="Search everything…" autofocus autocomplete="off" />
+      <div class="os-search-results" id="os-search-ov-results"></div>
+      <div class="os-search-foot"><span>↑↓ Navigate</span><span>Enter Open</span><span>Esc Close</span></div>
+    </div>
+  </div>
+
+  <script src="/animations.js"></script>
+  <script src="/os/store.js"></script>
+  <script src="/os/search.js"></script>
+  <script src="/os/timeline.js"></script>
+  <script src="/os/home.js"></script>
+  <script src="/os/spaces.js"></script>
+  <script src="/os/automationBuilder.js"></script>
+  <script src="/os/os.js"></script>
+</body>
+</html>

@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LocalHub Dashboard</title>
   <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/animations.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" type="image/png" href="/icon-192.png" />
 </head>
-<body>
+<body class="lh-page">
+  <div class="lh-aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
   <header class="topbar">
     <div class="brand">
       <span class="logo">&#9672;</span>
@@ -15,65 +20,159 @@
         <p id="server-url">local server</p>
       </div>
     </div>
-    <div class="status" id="ws-status"><span class="dot off"></span> connecting&hellip;</div>
+    <div class="topbar-right">
+      <div class="status" id="ws-status"><span class="dot off"></span> connecting&hellip;</div>
+      <a class="linkbtn" id="core-btn" href="/core" target="_blank" title="System Core hologram">🌀 Core</a>
+      <span class="role-badge" id="role-badge"></span>
+      <button class="linkbtn" id="logout-btn" title="Sign out">Sign out</button>
+    </div>
   </header>
 
   <main>
-    <section class="grid" id="metrics">
-      <div class="card metric" id="cpu">
-        <div class="metric-label">CPU</div>
-        <div class="metric-value" id="cpu-v">&mdash;</div>
-        <div class="metric-sub" id="cpu-s"></div>
-        <div class="bar"><div class="bar-fill" id="cpu-b"></div></div>
+    <!-- Server status banner -->
+    <section class="card status-banner" id="status-banner">
+      <div class="sb-item"><span class="dot off" id="online-dot"></span><b id="online-text">Offline</b></div>
+      <div class="sb-item"><span>Name</span><b id="sb-name">—</b></div>
+      <div class="sb-item"><span>IP</span><b id="sb-ip">—</b></div>
+      <div class="sb-item"><span>Port</span><b id="sb-port">—</b></div>
+      <div class="sb-item"><span>Version</span><b id="sb-version">—</b></div>
+      <div class="sb-item"><span>Uptime</span><b id="sb-uptime">—</b></div>
+      <div class="sb-item"><span>Restarts</span><b id="sb-restarts">—</b></div>
+    </section>
+
+    <!-- System Core (holographic live visualization — replaces traditional metrics) -->
+    <section class="card" id="core-card">
+      <h2 style="display:flex;align-items:center;gap:8px"><span class="dot on" id="core-dot" style="background:var(--accent);box-shadow:0 0 8px var(--accent)"></span> System Core <span style="margin-left:auto;font-size:11px;color:var(--muted);font-family:monospace" id="core-info">loading…</span></h2>
+      <div class="core-stage" style="position:relative;width:100%;height:min(60vh,420px);min-height:300px;border-radius:12px;overflow:hidden">
+        <canvas data-core id="core-embed" style="width:100%;height:100%;display:block"></canvas>
       </div>
-      <div class="card metric" id="mem">
-        <div class="metric-label">Memory</div>
-        <div class="metric-value" id="mem-v">&mdash;</div>
-        <div class="metric-sub" id="mem-s"></div>
-        <div class="bar"><div class="bar-fill" id="mem-b"></div></div>
-      </div>
-      <div class="card metric" id="sto">
-        <div class="metric-label">Storage</div>
-        <div class="metric-value" id="sto-v">&mdash;</div>
-        <div class="metric-sub" id="sto-s"></div>
-        <div class="bar"><div class="bar-fill" id="sto-b"></div></div>
-      </div>
-      <div class="card metric" id="bat">
-        <div class="metric-label">Battery</div>
-        <div class="metric-value" id="bat-v">&mdash;</div>
-        <div class="metric-sub" id="bat-s"></div>
-        <div class="bar"><div class="bar-fill" id="bat-b"></div></div>
-      </div>
-      <div class="card metric" id="net">
-        <div class="metric-label">Network</div>
-        <div class="metric-value" id="net-v">&mdash;</div>
-        <div class="metric-sub" id="net-s"></div>
-        <div class="bar"><div class="bar-fill" id="net-b"></div></div>
+      <div class="hint" style="margin-top:8px">◆ LIVE holographic core — connected clients orbit · CPU/RAM/Storage arcs · drag to rotate</div>
+    </section>
+
+    <!-- Connect -->
+    <section class="card" id="connect-card">
+      <h2>Connect</h2>
+      <div id="connect-body">
+        <div class="loading"><div class="spinner"></div>Loading&hellip;</div>
       </div>
     </section>
 
-    <section class="grid-2">
-      <div class="card">
-        <h2>Connected Clients</h2>
-        <div id="clients" class="list">No clients connected.</div>
+    <!-- ===== ADMIN-ONLY SECTIONS (strictly admin) ===== -->
+
+    <!-- Transfer monitor (admin only) -->
+    <section class="card admin-only">
+      <h2>Transfer Monitor</h2>
+      <div class="tm-grid">
+        <div class="tm-item"><span>Download</span><b id="tm-dl">0 B/s</b></div>
+        <div class="tm-item"><span>Upload</span><b id="tm-ul">0 B/s</b></div>
+        <div class="tm-item"><span>Total Down</span><b id="tm-totdl">0 B</b></div>
+        <div class="tm-item"><span>Total Up</span><b id="tm-totul">0 B</b></div>
+        <div class="tm-item"><span>Active</span><b id="tm-active">0</b></div>
+        <div class="tm-item"><span>Peak Concurrent</span><b id="tm-peak">0</b></div>
       </div>
+    </section>
+
+    <!-- Activity (admin only) -->
+    <section class="card admin-only">
+      <h2>Server Activity</h2>
+      <div class="act-grid" id="activity-body">Loading&hellip;</div>
+      <div id="lh-ticker" style="margin-top:12px"></div>
+    </section>
+
+    <!-- Server control (admin only) -->
+    <section class="card admin-only">
+      <h2>Server Control</h2>
+      <div class="ctrl-row">
+        <button class="chip ctl" data-cmd="restart" style="color:var(--accent2)">↻ Restart</button>
+        <button class="chip ctl" data-cmd="stop" style="color:var(--danger)">■ Stop</button>
+        <button class="chip ctl" data-cmd="clear-cache">🧹 Clear Cache</button>
+        <button class="chip ctl" data-cmd="clear-logs">🗑 Clear Logs</button>
+        <button class="chip ctl" data-cmd="backup">💾 Backup Config</button>
+        <button class="chip ctl" data-cmd="restore">↩ Restore Config</button>
+      </div>
+      <div id="ctrl-status" class="hint"></div>
+    </section>
+
+    <!-- Connected devices + device management (admin only) -->
+    <section class="card admin-only">
+      <h2>Connected Devices &amp; Management</h2>
+      <p class="hint">Block a device or restrict its file access. Enforced server-side.</p>
+      <div id="devices" class="list">No devices connected.</div>
+      <div id="device-policy" style="margin-top:12px"></div>
+    </section>
+
+    <!-- ===== USER-ONLY SECTIONS (standard web user) ===== -->
+
+    <!-- My Media / continue watching (user) -->
+    <section class="card user-only">
+      <h2>🎬 My Media</h2>
+      <div id="user-media" class="list"><div class="hint">Recently played media will appear here.</div></div>
+    </section>
+
+    <!-- My files / favorites (user) -->
+    <section class="card user-only">
+      <h2>📁 My Files</h2>
+      <div id="user-files" class="list"><div class="hint">Your frequently used folders will appear here.</div></div>
+    </section>
+
+    <!-- Quick actions (user) -->
+    <section class="card user-only">
+      <h2>⚡ Quick Actions</h2>
+      <div id="user-quick" class="chips"></div>
+    </section>
+
+    <!-- Shared for both: Modules + Device info -->
+    <section class="grid-2">
       <div class="card">
         <h2>Modules</h2>
         <div id="modules" class="list">Loading&hellip;</div>
       </div>
+      <div class="card" id="device-card">
+        <h2>Device</h2>
+        <div id="device">Loading&hellip;</div>
+      </div>
     </section>
 
-    <section class="card" id="device-card">
-      <h2>Device</h2>
-      <div id="device">Loading&hellip;</div>
+    <!-- API explorer (hidden until developer mode) -->
+    <section class="card dev-only" style="display:none">
+      <h2>API Explorer</h2>
+      <div class="logtoolbar">
+        <button class="chip" id="dev-refresh-endpoints">Refresh</button>
+        <span class="spacer"></span>
+        <button class="chip" id="dev-hide">Hide Dev Tools</button>
+      </div>
+      <div id="endpoints" class="list">Loading&hellip;</div>
     </section>
 
-    <section class="card">
-      <h2>Live Logs</h2>
+    <!-- Access / live logs (Administrator only — rendered by JS for admin role) -->
+    <section class="card" id="logs-card" style="display:none">
+      <h2>Access Logs</h2>
+      <div class="logtoolbar">
+        <button class="chip lf active" data-filter="all">All</button>
+        <button class="chip lf" data-filter="GET">GET</button>
+        <button class="chip lf" data-filter="POST">POST</button>
+        <button class="chip lf" data-filter="download">Download</button>
+        <button class="chip lf" data-filter="media">Media</button>
+        <button class="chip lf" data-filter="error">Errors</button>
+        <span class="spacer"></span>
+        <button class="chip" id="export-logs">Export</button>
+        <button class="chip" id="clear-logs">Clear</button>
+        <button class="chip" id="download-logs">Download Logs</button>
+      </div>
       <div id="logs" class="logs"></div>
     </section>
   </main>
 
+  <script src="/animations.js"></script>
+  <script src="/visuals.js"></script>
+  <script src="/core.js"></script>
   <script src="/app.js"></script>
+  <script src="/ai/float.js"></script>
+  <script>
+    // PWA: register the offline shell service worker (safe to fail silently).
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(function () {});
+    }
+  </script>
 </body>
 </html>

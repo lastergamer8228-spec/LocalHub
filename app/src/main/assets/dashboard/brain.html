@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LocalHub — Personal Brain Console</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    body { background:#0b0f14; color:#dfe7ef; font-family: system-ui, sans-serif; margin:0; padding:0; }
+    .wrap { max-width: 980px; margin:0 auto; padding:18px; }
+    h1 { font-size:20px; margin:0 0 4px; }
+    .sub { color:#8fa3b8; font-size:13px; margin-bottom:16px; }
+    .card { background:#141b24; border:1px solid #223040; border-radius:10px; padding:14px; margin:10px 0; }
+    .card h2 { font-size:14px; margin:0 0 8px; color:#8ecbff; text-transform:uppercase; letter-spacing:.05em; }
+    .kv { display:grid; grid-template-columns:180px 1fr; gap:4px 12px; font-size:13px; }
+    .kv b { color:#8fa3b8; font-weight:600; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media(max-width:700px){ .grid{ grid-template-columns:1fr; } }
+    button { background:#1d2b3a; color:#cfe3ff; border:1px solid #31455c; padding:5px 10px; border-radius:6px; cursor:pointer; margin:3px 4px 3px 0; font-size:12px; }
+    button:hover { background:#294055; }
+    button.danger { border-color:#6e2a2a; color:#ffb0b0; }
+    pre { background:#0a0f14; border:1px solid #1e2b3a; border-radius:6px; padding:10px; font-size:11px; overflow:auto; max-height:260px; }
+    .tl { font-size:12px; }
+    .tl .t { color:#8fa3b8; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; background:#17344f; color:#9fd4ff; }
+    .hide{display:none;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🧠 LocalHub Personal Brain Console</h1>
+    <div class="sub">Admin/Assistant diagnostic view — evidence summaries only, no hidden chain-of-thought. Self-Healing remains separate.</div>
+    <div id="gate" class="card hide"><b>🔒 Administrator access required.</b></div>
+    <div id="main" class="hide">
+      <div class="grid">
+        <div class="card"><h2>Brain State (self-model)</h2><div id="state"></div></div>
+        <div class="card"><h2>Context Timeline</h2><pre id="timeline"></pre></div>
+      </div>
+      <div class="card">
+        <h2>Memory Controls</h2>
+        <div>
+          <button onclick="BUI.searchMem()">Search Memories</button>
+          <button onclick="BUI.exportMem()">Export</button>
+          <button onclick="BUI.clearMem()">Clear</button>
+          <button onclick="BUI.toggleMem()">Toggle Memory</button>
+        </div>
+        <pre id="memout"></pre>
+      </div>
+      <div class="card">
+        <h2>Routine Controls</h2>
+        <div>
+          <button onclick="BUI.listRoutines()">Show Routines</button>
+          <button onclick="BUI.runRoutine()">Run Active Routine</button>
+        </div>
+        <pre id="routineout"></pre>
+      </div>
+      <div class="card"><h2>Proactive Suggestion</h2><pre id="suggest"></pre></div>
+    </div>
+  </div>
+
+  <script src="/ai/memory.js"></script>
+  <script src="/ai/filesystem.js"></script>
+  <script src="/ai/cognitive.js"></script>
+  <script src="/ai/features_personal.js"></script>
+  <script src="/ai/features_routines.js"></script>
+  <script src="/brain.js"></script>
+</body>
+</html>

@@ -15,7 +15,9 @@ class ModulesViewModel(app: Application) : LocalHubViewModel(app) {
     fun toggle(module: ModuleInfo) {
         viewModelScope.launch {
             container.moduleManager.setEnabled(module.id, !module.enabled)
-            container.moduleRepository.setEnabled(module.id, !module.enabled)
+            // Persist the new enabled state (and keep all metadata) back to Room.
+            val updated = module.copy(enabled = !module.enabled)
+            container.moduleRepository.upsert(updated)
         }
     }
 }

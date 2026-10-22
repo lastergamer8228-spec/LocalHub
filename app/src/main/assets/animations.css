@@ -1,0 +1,225 @@
+/* ============================================================================
+   LocalHub — Central Animation System
+   ----------------------------------------------------------------------------
+   Single source of truth for timing + easing across every page (dashboard,
+   files, player, login, assistant). Every animation must be subtle, fast,
+   smooth and premium — never flashy, never distracting.
+   Respects prefers-reduced-motion automatically.
+   ========================================================================== */
+
+:root {
+  /* --- shared timing constants --- */
+  --lh-fast: 120ms;
+  --lh-normal: 220ms;
+  --lh-slow: 380ms;
+  --lh-spring: 520ms;
+
+  /* --- shared easing curves (Material 3 / Nothing-style) --- */
+  --lh-ease: cubic-bezier(0.4, 0, 0.2, 1);           /* standard */
+  --lh-ease-out: cubic-bezier(0.2, 0, 0, 1);         /* emphasized decel */
+  --lh-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --lh-spring-ease: cubic-bezier(0.34, 1.56, 0.64, 1); /* gentle overshoot */
+}
+
+/* --- universal base so new elements animate consistently --- */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* ==========================================================================
+   PAGE ENTRANCE (no page should instantly appear)
+   ========================================================================== */
+body.lh-page {
+  animation: lh-page-in var(--lh-slow) var(--lh-ease-out) both;
+}
+@keyframes lh-page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ==========================================================================
+   ENTRANCE UTILITIES
+   ========================================================================== */
+.lh-fade-in { animation: lh-fade var(--lh-slow) var(--lh-ease) both; }
+@keyframes lh-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.lh-slide-up  { animation: lh-up var(--lh-slow) var(--lh-ease-out) both; }
+.lh-slide-down{ animation: lh-down var(--lh-slow) var(--lh-ease-out) both; }
+.lh-slide-left{ animation: lh-left var(--lh-slow) var(--lh-ease-out) both; }
+.lh-slide-right{animation: lh-right var(--lh-slow) var(--lh-ease-out) both; }
+@keyframes lh-up    { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes lh-down  { from { opacity: 0; transform: translateY(-14px);} to { opacity: 1; transform: none; } }
+@keyframes lh-left  { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@keyframes lh-right { from { opacity: 0; transform: translateX(-14px);} to { opacity: 1; transform: none; } }
+
+.lh-scale-in { animation: lh-scale var(--lh-normal) var(--lh-spring-ease) both; }
+@keyframes lh-scale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+
+.lh-pop { animation: lh-pop var(--lh-spring) var(--lh-spring-ease) both; }
+@keyframes lh-pop { 0% { opacity: 0; transform: scale(0.9); } 60% { transform: scale(1.02); } 100% { opacity: 1; transform: none; } }
+
+/* staggered children reveal (add .lh-rise to a container) */
+.lh-rise > * { opacity: 0; animation: lh-up var(--lh-slow) var(--lh-ease-out) forwards; }
+.lh-rise > *:nth-child(1) { animation-delay: 0ms; }
+.lh-rise > *:nth-child(2) { animation-delay: 40ms; }
+.lh-rise > *:nth-child(3) { animation-delay: 80ms; }
+.lh-rise > *:nth-child(4) { animation-delay: 120ms; }
+.lh-rise > *:nth-child(5) { animation-delay: 160ms; }
+.lh-rise > *:nth-child(6) { animation-delay: 200ms; }
+.lh-rise > *:nth-child(n+7) { animation-delay: 240ms; }
+
+/* reveal-on-scroll (use with JS intersection observer) */
+.lh-reveal { opacity: 0; transform: translateY(18px);
+  transition: opacity var(--lh-normal) var(--lh-ease-out), transform var(--lh-normal) var(--lh-ease-out); }
+.lh-reveal.in { opacity: 1; transform: none; }
+
+/* ==========================================================================
+   CARDS
+   ========================================================================== */
+.lh-card {
+  transition: transform var(--lh-normal) var(--lh-ease), box-shadow var(--lh-normal) var(--lh-ease),
+              border-color var(--lh-normal) var(--lh-ease), background-color var(--lh-normal) var(--lh-ease);
+  will-change: transform;
+}
+@media (hover: hover) {
+  .lh-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+    border-color: rgba(120, 140, 180, 0.35);
+  }
+}
+.lh-card:active { transform: translateY(0) scale(0.99); }
+
+/* card appears / loads */
+.lh-card-enter { animation: lh-card-in var(--lh-slow) var(--lh-spring-ease) both; }
+@keyframes lh-card-in { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* expanding / collapsing panel */
+.lh-collapse { overflow: hidden; transition: max-height var(--lh-slow) var(--lh-ease), opacity var(--lh-normal) var(--lh-ease); }
+
+/* ==========================================================================
+   BUTTONS — hover, ripple, pressed scale, elevation, focus
+   ========================================================================== */
+.lh-btn, button.lh-btn {
+  position: relative; overflow: hidden;
+  transition: transform var(--lh-fast) var(--lh-spring-ease),
+              box-shadow var(--lh-normal) var(--lh-ease),
+              background-color var(--lh-normal) var(--lh-ease),
+              border-color var(--lh-normal) var(--lh-ease),
+              color var(--lh-normal) var(--lh-ease),
+              filter var(--lh-normal) var(--lh-ease);
+  will-change: transform;
+}
+.lh-btn:hover { filter: brightness(1.08); }
+.lh-btn:active { transform: scale(0.96); transition-duration: var(--lh-fast); }
+.lh-btn:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+.lh-btn:disabled { opacity: 0.5; transform: none !important; filter: grayscale(0.4); cursor: default; }
+
+/* ripple ink created by animations.js */
+.lh-ripple { position: relative; overflow: hidden; }
+.lh-ink {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  background: currentColor; opacity: 0.18; transform: scale(0);
+  animation: lh-ripple var(--lh-slow) var(--lh-ease-out) forwards;
+}
+@keyframes lh-ripple {
+  to { transform: scale(2.5); opacity: 0; }
+}
+
+/* success feedback flash on a button/element */
+.lh-success-flash { animation: lh-flash var(--lh-normal) var(--lh-ease); }
+@keyframes lh-flash { 0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); } 100% { box-shadow: 0 0 0 12px rgba(52, 211, 153, 0); } }
+.lh-error-flash { animation: lh-flash-r var(--lh-normal) var(--lh-ease); }
+@keyframes lh-flash-r { 0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); } 100% { box-shadow: 0 0 0 12px rgba(248, 113, 113, 0); } }
+
+/* ==========================================================================
+   SKELETON / SHIMMER LOADING
+   ========================================================================== */
+.lh-skeleton {
+  position: relative; overflow: hidden; color: transparent !important;
+  background: rgba(255, 255, 255, 0.06); border-radius: 8px;
+}
+.lh-skeleton::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent);
+  animation: lh-shimmer 1.4s infinite;
+}
+@keyframes lh-shimmer { 100% { transform: translateX(100%); } }
+
+/* ==========================================================================
+   PROGRESS BARS — smooth, spring-like fill
+   ========================================================================== */
+.lh-bar-fill {
+  transition: width var(--lh-slow) var(--lh-spring-ease);
+}
+
+/* ==========================================================================
+   NUMBER COUNT-UP (driven by animations.js)
+   ========================================================================== */
+.lh-count { font-variant-numeric: tabular-nums; }
+
+/* ==========================================================================
+   LISTS — rows animate in
+   ========================================================================== */
+.lh-row-in { animation: lh-row var(--lh-normal) var(--lh-ease-out) both; }
+@keyframes lh-row { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* highlight a newly added row (logs, clients) */
+.lh-new { animation: lh-highlight var(--lh-slow) var(--lh-ease); }
+@keyframes lh-highlight { 0% { background-color: rgba(34, 211, 166, 0.22); } 100% { background-color: transparent; } }
+
+/* ==========================================================================
+   ASSISTANT — typing / thinking / message
+   ========================================================================== */
+.lh-msg-in { animation: lh-msg var(--lh-normal) var(--lh-spring-ease) both; }
+@keyframes lh-msg { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+.lh-typing { display: inline-flex; gap: 4px; align-items: center; }
+.lh-typing i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.4; animation: lh-dot 1.1s infinite; }
+.lh-typing i:nth-child(2) { animation-delay: 0.15s; }
+.lh-typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes lh-dot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+.lh-caret::after { content: "▍"; animation: lh-blink 1s step-end infinite; margin-left: 1px; }
+@keyframes lh-blink { 50% { opacity: 0; } }
+
+/* quick action / suggestion chip */
+.lh-chip-in { animation: lh-chip var(--lh-spring) var(--lh-spring-ease) both; }
+@keyframes lh-chip { from { opacity: 0; transform: scale(0.8) translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ==========================================================================
+   MEDIA PLAYER
+   ========================================================================== */
+.lh-fade-controls { transition: opacity var(--lh-normal) var(--lh-ease); }
+.lh-vol-pop { transition: transform var(--lh-spring) var(--lh-spring-ease); }
+.lh-buffer {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+  background: rgba(255, 255, 255, 0.25); pointer-events: none;
+  transition: width 0.3s ease;
+}
+
+/* ==========================================================================
+   TOAST / SNACKBAR
+   ========================================================================== */
+.lh-toast-in { animation: lh-toast var(--lh-normal) var(--lh-spring-ease) both; }
+@keyframes lh-toast { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ==========================================================================
+   DROPDOWNS / MENUS / DIALOGS
+   ========================================================================== */
+.lh-menu-in { transform-origin: top right; animation: lh-menu var(--lh-normal) var(--lh-spring-ease) both; }
+@keyframes lh-menu { from { opacity: 0; transform: scale(0.92) translateY(-6px); } to { opacity: 1; transform: none; } }
+.lh-dialog-in { animation: lh-dialog var(--lh-normal) var(--lh-spring-ease) both; }
+@keyframes lh-dialog { from { opacity: 0; transform: scale(0.94) translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ==========================================================================
+   ACCESSIBILITY — respect reduced motion everywhere
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lh-reveal { opacity: 1; transform: none; }
+  .lh-rise > * { opacity: 1; animation: none; }
+}

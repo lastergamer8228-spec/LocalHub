@@ -17,6 +17,7 @@ import com.localhub.localhub.R
 import com.localhub.localhub.core.Constants
 import com.localhub.localhub.model.StatisticsSnapshot
 import com.localhub.localhub.model.SystemInfo
+import com.localhub.localhub.net.NsdHelper
 import com.localhub.localhub.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,7 @@ class LocalHubService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var collectJob: Job? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var nsdHelper: NsdHelper? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -53,6 +55,7 @@ class LocalHubService : Service() {
         container.logger.info("Service", "Action = ${intent?.action}")
 
         if (intent?.action == Constants.ACTION_STOP) {
+            nsdHelper?.unregister()
             container.server.stopServer()
             container.isServerRunning.value = false
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -68,6 +71,9 @@ class LocalHubService : Service() {
             }
 
             container.restartServer(port)
+            // Re-advertise mDNS on the new port.
+            val name = runBlocking { container.preferencesManager.serverNameFlow.first() }
+            nsdHelper?.register(name, port)
             return START_STICKY
         }
 
@@ -79,6 +85,12 @@ class LocalHubService : Service() {
 
             runBlocking {
                 container.preferencesManager.setServerName(name)
+            }
+
+            // Re-advertise mDNS under the new friendly hostname.
+            val port = runBlocking { container.preferencesManager.portFlow.first() }
+            if (container.isServerRunning.value) {
+                nsdHelper?.register(name, port)
             }
 
             container.logger.info("Service", "Name saved")
@@ -112,6 +124,13 @@ class LocalHubService : Service() {
 
         container.server.startServer()
         container.isServerRunning.value = true
+
+        // Advertise a friendly hostname over mDNS (best-effort).
+        if (nsdHelper == null) {
+            nsdHelper = NsdHelper(this, container.logger)
+        }
+        val name = runBlocking { container.preferencesManager.serverNameFlow.first() }
+        nsdHelper?.register(name, port)
 
         val notification = buildNotification(port)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -197,6 +216,7 @@ class LocalHubService : Service() {
 
     override fun onDestroy() {
         collectJob?.cancel()
+        nsdHelper?.unregister()
         val container = (application as? LocalHubApplication)?.appContainer
         container?.let { c ->
             c.server.stopServer()

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalHub AI Assistant</title>
+  <link rel="stylesheet" href="/ai/style.css" />
+  <link rel="stylesheet" href="/animations.css" />
+</head>
+<body class="lh-page">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🧠</span>
+      <div>
+        <h1>LocalHub Assistant</h1>
+        <p>local AI · offline</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="iconbtn" id="voice-btn" title="Voice input">🎤</button>
+      <button class="iconbtn" id="tts-btn" title="Speak last reply (tap again to stop)">🔊</button>
+      <button class="iconbtn" id="voice-switch" title="Toggle speech output">🔊</button>
+      <button class="iconbtn" id="chat-clear" title="Clear chat">🗑</button>
+      <a class="back" href="/">Dashboard</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="tabs">
+      <button class="ai-tab active" data-target="chat-panel">💬 Chat</button>
+      <button class="ai-tab" data-target="memory-panel">🧠 Memory</button>
+      <button class="ai-tab" data-target="task-panel">✅ Tasks</button>
+      <button class="ai-tab" data-target="knowledge-panel">📚 Knowledge</button>
+      <button class="ai-tab" data-target="automation-panel">⚙ Automation</button>
+      <button class="ai-tab" data-target="plugin-panel">🧩 Plugins</button>
+      <button class="ai-tab" data-target="settings-panel">🛠 Settings</button>
+      <button class="ai-tab" data-target="console-panel">⌨ Console</button>
+      <button class="ai-tab" data-target="log-panel">📜 Logs</button>
+      <button class="ai-tab" data-target="dash-panel">📊 Dashboard</button>
+      <button class="ai-tab" data-target="diag-panel">🧬 Diagnostics</button>
+    </nav>
+
+    <main class="content">
+      <!-- CHAT (brain environment) -->
+      <section id="chat-panel" class="ai-panel" style="display:block;max-width:1000px">
+        <canvas id="waveform" width="400" height="60" class="waveform" style="display:none"></canvas>
+        <!-- Inline media player (transparent glass) -->
+        <div id="inline-player" class="inline-player glass" style="display:none;margin:8px 0;border-radius:12px;overflow:hidden">
+          <video id="inline-video" controls playsinline style="width:100%;max-height:260px;display:block"></video>
+          <div id="inline-player-bar" style="display:flex;align-items:center;gap:8px;padding:6px 10px;color:#9fe;font-size:12px">
+            <span id="inline-title" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Now playing</span>
+            <button id="inline-stop" class="hbtn" style="color:#ffb0b0">⏹ Close</button>
+          </div>
+        </div>
+
+        <!-- CONVERSATION -->
+        <div class="holo-chatframe">
+          <div class="holo-chatframe-corners"><i></i><i></i><i></i><i></i></div>
+          <div class="holo-chatframe-scan"></div>
+          <div class="holo-chatframe-hd">
+            <span class="hd-dot"></span>
+            <span class="hd-txt">CONVERSATION STREAM</span>
+            <span class="hd-status" id="hd-status">● LIVE</span>
+          </div>
+          <div id="chat-log" class="chat-log holo-chat"></div>
+        </div>
+        <div id="suggest-box" class="suggest-box glass"></div>
+        <div class="chat-input-row glass">
+          <input id="chat-input" type="text" placeholder="Type a command… (LocalHub OS)" autocomplete="off" />
+          <button id="chat-send" class="primary">Run</button>
+        </div>
+        <div class="chips" id="quick-chips"></div>
+      </section>
+
+
+
+      <!-- MEMORY -->
+      <section id="memory-panel" class="ai-panel">
+        <h2>Memory</h2>
+        <div class="inline-form">
+          <input id="memory-input" type="text" placeholder="What should I remember?" />
+          <button id="memory-add" class="primary">Remember</button>
+        </div>
+        <div id="memory-list" class="list"></div>
+      </section>
+
+      <!-- TASKS -->
+      <section id="task-panel" class="ai-panel">
+        <h2>Tasks</h2>
+        <div id="task-list" class="list"></div>
+      </section>
+
+      <!-- KNOWLEDGE -->
+      <section id="knowledge-panel" class="ai-panel">
+        <h2>Knowledge Base</h2>
+        <div class="inline-form">
+          <input id="knowledge-title" type="text" placeholder="Title" />
+          <input id="knowledge-content" type="text" placeholder="Content" />
+          <button id="knowledge-add" class="primary">Add</button>
+        </div>
+        <div class="inline-form">
+          <input id="knowledge-search" type="text" placeholder="Search knowledge…" />
+          <button id="knowledge-search-btn" class="primary">Search</button>
+        </div>
+        <div id="knowledge-list" class="list"></div>
+      </section>
+
+      <!-- AUTOMATION -->
+      <section id="automation-panel" class="ai-panel">
+        <h2>Automation Workflows</h2>
+        <div id="automation-catalog" class="chips"></div>
+        <div id="automation-list" class="list"></div>
+        <h2 style="margin-top:16px">IF / THEN Rules</h2>
+        <div class="inline-form">
+          <select id="rule-condition" class="rule-cond">
+            <option value="battery_below">Battery below %</option>
+            <option value="wifi_connected">WiFi connected</option>
+            <option value="wifi_disconnected">WiFi disconnected</option>
+            <option value="cpu_above">CPU above %</option>
+          </select>
+          <input id="rule-value" type="number" placeholder="value" style="width:80px" />
+          <select id="rule-action">
+            <option value="server/stop">Stop server</option>
+            <option value="server/start">Start server</option>
+            <option value="server/restart">Restart server</option>
+            <option value="server/clear-cache">Clear cache</option>
+            <option value="server/clear-logs">Clear logs</option>
+          </select>
+          <button id="rule-add" class="primary">Add Rule</button>
+        </div>
+        <div id="rule-list" class="list"></div>
+      </section>
+
+      <!-- PLUGINS -->
+      <section id="plugin-panel" class="ai-panel">
+        <h2>Plugins</h2>
+        <div class="inline-form">
+          <input id="plugin-name" type="text" placeholder="Plugin name" />
+          <button id="plugin-install" class="primary">Install</button>
+        </div>
+        <textarea id="plugin-code" rows="3" placeholder="Plugin code (JS function body: brain, args, FS, Memory)"></textarea>
+        <div id="plugin-list" class="list"></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="settings-panel" class="ai-panel">
+        <h2>Settings</h2>
+        <div class="row"><div class="row-main"><span>Voice input</span></div>
+          <input type="checkbox" id="setting-voice" /></div>
+        <div class="row"><div class="row-main"><span>Speech output</span></div>
+          <input type="checkbox" id="setting-tts" /></div>
+        <div class="row"><div class="row-main"><span>Assistant name</span></div>
+          <input type="text" id="setting-name" placeholder="Assistant" /></div>
+        <button id="settings-save" class="primary">Save settings</button>
+      </section>
+
+      <!-- CONSOLE -->
+      <section id="console-panel" class="ai-panel">
+        <h2>Console</h2>
+        <div id="console" class="console"></div>
+      </section>
+
+      <!-- LOGS -->
+      <section id="log-panel" class="ai-panel">
+        <h2>LocalHub Logs</h2>
+        <div id="log-list" class="list"></div>
+      </section>
+
+      <!-- DASHBOARD -->
+      <section id="dash-panel" class="ai-panel">
+        <h2>System Overview</h2>
+        <div id="dash-sys"></div>
+        <div class="kv"><span>Connected clients</span><b id="dash-clients">—</b></div>
+        <div class="kv"><span>Modules</span><b id="dash-modules">—</b></div>
+      </section>
+
+      <!-- DIAGNOSTICS (Developer Mode) -->
+      <section id="diag-panel" class="ai-panel">
+        <h2>Brain Diagnostics</h2>
+        <div class="inline-form">
+          <button id="diag-refresh" class="primary">Refresh</button>
+        </div>
+        <div id="diag-panel-body" class="props" style="display:none"></div>
+        <div id="diag-log" class="list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/animations.js"></script>
+  <script src="/ai/config.js"></script>
+  <script src="/ai/memory.js"></script>
+  <script src="/ai/knowledge.js"></script>
+  <script src="/ai/filesystem.js"></script>
+  <script src="/ai/reasoning.js"></script>
+  <script src="/ai/planner.js"></script>
+  <script src="/ai/tasks.js"></script>
+  <script src="/ai/automation.js"></script>
+  <script src="/ai/pluginBridge.js"></script>
+  <script src="/ai/voice.js"></script>
+  <script src="/ai/media.js"></script>
+  <script src="/ai/commands.js"></script>
+  <script src="/ai/commands_extra.js"></script>
+  <script src="/ai/features_extra.js"></script>
+  <script src="/ai/features_jarvis.js"></script>
+  <script src="/ai/features_critical.js"></script>
+  <script src="/ai/features_knowledge.js"></script>
+  <script src="/ai/features_selfdev.js"></script>
+  <script src="/ai/features_mind.js"></script>
+  <script src="/ai/features_refined.js"></script>
+  <script src="/ai/comm.js"></script>
+  <script src="/ai/features_comm.js"></script>
+  <script src="/ai/features_deep.js"></script>
+  <script src="/ai/features_deep2.js"></script>
+  <script src="/ai/features_deep3.js"></script>
+  <script src="/ai/features_guardian.js"></script>
+  <script src="/ai/context.js"></script>
+  <script src="/ai/capabilities.js"></script>
+  <script src="/ai/taskplanner.js"></script>
+  <script src="/ai/action_routing.js"></script>
+  <script src="/ai/intent.js"></script>
+  <script src="/ai/cognitive.js"></script>
+  <script src="/ai/selfheal.js"></script>
+  <script src="/ai/features_selfheal.js"></script>
+  <script src="/ai/features_personal.js"></script>
+  <script src="/ai/features_routines.js"></script>
+  <script src="/ai/chat.js"></script>
+  <script src="/ai/assistant.js"></script>
+  <script src="/ai/brain.js"></script>
+  <script>window.LH_AI.Brain.boot();</script>
+</body>
+</html>

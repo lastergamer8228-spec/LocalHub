@@ -86,11 +86,17 @@ dependencies {
     // JSON
     implementation 'com.google.code.gson:gson:2.10.1'
 
+    // QR code generation for the dashboard connect links
+    implementation 'com.google.zxing:core:3.5.3'
+
     // Local HTTP server + WebSocket
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     implementation 'org.nanohttpd:nanohttpd-websocket:2.3.1'
 
     // Coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+
+    // Offline speech uses Android's built-in system TTS engine (no external
+    // dependency needed). Keeps the APK small and runs instantly on any device.
 
 }

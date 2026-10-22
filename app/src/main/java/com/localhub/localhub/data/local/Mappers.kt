@@ -31,7 +31,11 @@ fun ModuleEntity.toDomain(): ModuleInfo = ModuleInfo(
     description = description,
     version = version,
     enabled = enabled,
-    registeredAt = registeredAt
+    registeredAt = registeredAt,
+    category = category,
+    capabilities = capabilities.split('|').filter { it.isNotEmpty() },
+    limitations = limitations.split('|').filter { it.isNotEmpty() },
+    accessibility = accessibility
 )
 
 fun ModuleInfo.toEntity(): ModuleEntity = ModuleEntity(
@@ -40,7 +44,11 @@ fun ModuleInfo.toEntity(): ModuleEntity = ModuleEntity(
     description = description,
     version = version,
     enabled = enabled,
-    registeredAt = registeredAt
+    registeredAt = registeredAt,
+    category = category,
+    capabilities = capabilities.joinToString("|"),
+    limitations = limitations.joinToString("|"),
+    accessibility = accessibility
 )
 
 fun StatisticsEntity.toDomain(): StatisticsSnapshot = StatisticsSnapshot(

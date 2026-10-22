@@ -10,5 +10,9 @@ data class ModuleEntity(
     val description: String,
     val version: String,
     val enabled: Boolean,
-    val registeredAt: Long
+    val registeredAt: Long,
+    val category: String = "system",
+    val capabilities: String = "",   // JSON/pipe-joined list
+    val limitations: String = "",    // JSON/pipe-joined list
+    val accessibility: String = "all"
 )

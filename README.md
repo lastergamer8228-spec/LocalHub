@@ -24,7 +24,11 @@ external dependencies or cloud calls.
 | **Connected Clients** | Tracks IP, user-agent, connect time, last activity and protocol (WebSocket / HTTP). |
 | **Logging** | Levels DEBUG/INFO/WARNING/ERROR, persisted in Room, streamed over WebSocket. |
 | **Foreground Service** | Keeps the server alive with a persistent notification. |
-| **Persistence** | Room (logs, settings, modules, statistics) + DataStore (port, theme, autostart, server name). |
+| **Media Player** | Professional in-browser player: Range streaming, multiple audio/subtitle tracks (SRT/ASS/SSA/VTT), subtitle & audio settings, video filters (brightness/contrast/saturation/hue/sharpness/zoom/rotate/mirror), playlist (shuffle/repeat/reorder), frame step, Picture-in-Picture, mini player, screenshot, auto-resume, media info panel, and full assistant control via a Media Bridge. |
+| **Animation System** | Centralized, premium micro-interaction language shared across web + Android: ripple, page transitions, card hover/lift, count-up metrics, skeleton/shimmer, typing/thinking indicators, smooth scrolling — all using one set of timing/easing tokens and respecting `prefers-reduced-motion`. |
+| **LocalHub OS** | A personal local-OS layer at `/os`: Universal Search (Spotlight-like), Activity Timeline, Dynamic Home dashboard, a no-code Visual Automation Builder (IF/THEN blocks), personalized Spaces with per-space context, and a **Security & Backup** view (2FA, LAN shares, storage cleanup, full backup/restore). Fully assistant-integrated. |
+| **Security & Tools** | Optional HTTPS (self-signed, opt-in), security audit events (failed logins / permission denials / admin actions), TOTP 2FA for admin, expiring LAN share links, storage cleanup (duplicate + category scanner), PWA offline shell, and full OS backup/restore. |
+| **Persistence** | Room (logs, settings, modules, statistics) + DataStore (port, theme, autostart, server name) + client-side localStorage for OS state (timeline, spaces, search history). |
 
 ---
 
@@ -140,6 +144,32 @@ val moduleManager = ModuleManager().apply {
     register(MyModule())
 }
 ```
+
+---
+
+## Offline Speech (System TTS)
+
+LocalHub's speech engine uses the **Android built-in system TTS** (Google TTS).
+It is **instant, fully offline, and needs no model download** — ideal for
+low-end devices (e.g. Hot 9). Web UI at `/tts`, API at `/api/tts/*`.
+
+- **No heavy neural model** — the phone's own voice engine does the work.
+- **Any language** supported by the phone's TTS engine works (add a Hindi voice
+  pack in Android Settings → Language & Input → Text-to-speech for Hindi).
+- This replaced the earlier **Pocket TTS (sherpa-onnx)** engine, which ran a
+  ~236MB neural model but was too slow on low-end hardware.
+
+### API
+
+```
+GET  /api/tts/status                        → engine status (always ready)
+POST /api/tts/synthesize  {text, speed?, lang?}   → {ok, url: /api/tts/file?name=...}
+GET  /api/tts/file?name=...                 → serves the generated WAV
+```
+
+> Note: this integration is **code-reviewed** in this repo's build pipeline — the
+> actual APK must be built in Android Studio (Android SDK + JDK 17) to compile and
+> verify on your device.
 
 ---
 

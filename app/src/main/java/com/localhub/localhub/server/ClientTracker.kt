@@ -11,12 +11,45 @@ import java.util.concurrent.ConcurrentHashMap
  * Maintains the live list of connected / recently-seen clients. WebSocket
  * clients persist until disconnect; HTTP clients are tracked by IP+UA and pruned
  * after [Constants.HTTP_CLIENT_TTL_MS].
+ *
+ * Also manages **device policy**: a set of blocked IPs and a map of per-IP file
+ * access restrictions. These are enforced server-side by [LocalHubServer] /
+ * [ApiRouter], NOT just hidden in the UI.
  */
 class ClientTracker {
 
     private val clientMap = ConcurrentHashMap<String, ConnectedClient>()
     private val _clients = MutableStateFlow<List<ConnectedClient>>(emptyList())
     val clients: StateFlow<List<ConnectedClient>> = _clients.asStateFlow()
+
+    /** IPs that are blocked entirely from the server. */
+    private val blockedIps = ConcurrentHashMap.newKeySet<String>()
+
+    /**
+     * Per-IP file access restrictions. Values:
+     *   ""      -> no restriction (read allowed)
+     *   "RO"    -> read-only (no mutations), for a specific device
+     *   "deny"  -> full file access denied (but dashboard/status allowed)
+     */
+    private val ipRestrictions = ConcurrentHashMap<String, String>()
+
+    fun isBlocked(ip: String): Boolean = blockedIps.contains(ip)
+
+    fun block(ip: String) { blockedIps.add(ip) }
+
+    fun unblock(ip: String) { blockedIps.remove(ip) }
+
+    fun blockedList(): List<String> = blockedIps.sorted()
+
+    fun setRestriction(ip: String, restriction: String) {
+        if (restriction.isBlank() || restriction == "none") ipRestrictions.remove(ip)
+        else ipRestrictions[ip] = restriction
+    }
+
+    /** "" = none, "RO" = read-only, "deny" = no file access. */
+    fun restriction(ip: String): String = ipRestrictions[ip] ?: ""
+
+    fun restrictions(): Map<String, String> = ipRestrictions.toMap()
 
     fun add(client: ConnectedClient) {
         clientMap[client.id] = client

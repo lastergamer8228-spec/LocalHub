@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalHub — System Core</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: #04070e; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #e5eaf2; }
+    canvas#core { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    .hud { position: fixed; top: 18px; left: 20px; z-index: 10; pointer-events: none; }
+    .hud .brand { font-size: 13px; letter-spacing: 3px; color: #38bdf8; text-transform: uppercase; }
+    .hud .brand b { color: #22d3a6; }
+    .hud .stat { font-size: 11px; color: #8ea0bd; margin-top: 6px; font-family: monospace; }
+    .corner { position: fixed; right: 20px; top: 18px; z-index: 10; display: flex; gap: 8px; align-items: center; }
+    .corner a, .corner button { background: rgba(15,23,42,.6); border: 1px solid rgba(56,189,248,.4); color: #e5eaf2; border-radius: 8px; padding: 6px 12px; font-size: 12px; text-decoration: none; cursor: pointer; }
+    .corner a:hover, .corner button:hover { border-color: #22d3a6; color: #22d3a6; }
+    .corner .live { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8ea0bd; }
+    .corner .dot { width: 8px; height: 8px; border-radius: 50%; background: #f87171; box-shadow: 0 0 8px #f87171; }
+    .corner .dot.on { background: #34d399; box-shadow: 0 0 8px #34d399; }
+    #hint { position: fixed; bottom: 16px; left: 0; right: 0; text-align: center; color: #5a6b85; font-size: 11px; letter-spacing: 1px; z-index: 10; pointer-events: none; }
+    #msg { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); background: rgba(15,23,42,.9); border: 1px solid rgba(56,189,248,.4); border-radius: 10px; padding: 8px 18px; font-size: 13px; display: none; z-index: 20; }
+    @media (max-width: 600px) { .corner a { display: none; } }
+  </style>
+</head>
+<body>
+  <canvas id="core"></canvas>
+  <div class="hud">
+    <div class="brand">LOCAL<b>HUB</b> · SYSTEM CORE</div>
+    <div class="stat" id="core-info">booting…</div>
+  </div>
+  <div class="corner">
+    <span class="live"><span class="dot" id="live-dot"></span><span id="live-txt">connecting</span></span>
+    <button id="fs-btn">⛶ Fullscreen</button>
+    <a href="/">↩ Dashboard</a>
+  </div>
+  <div id="msg"></div>
+  <div id="hint">◆ LIVE HOLOGRAPHIC CORE — drag to rotate · scroll to zoom · connected clients orbit in real time</div>
+  <script src="/core.js"></script>
+</body>
+</html>

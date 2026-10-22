@@ -9,4 +9,10 @@
     <string name="notification_title">LocalHub server is running</string>
     <string name="notification_content">Serving dashboard on %1$s:%2$d</string>
     <string name="notification_tap_hint">Tap to open the dashboard</string>
+
+    <string name="remote_access_desc">Lets the LocalHub web UI and Assistant click buttons and links inside apps on this device, so you can control them remotely without root.</string>
+    <string name="mirror_start">Start screen mirror</string>
+    <string name="mirror_stop">Stop screen mirror</string>
+    <string name="mirror_permission_title">Screen mirroring</string>
+    <string name="mirror_permission_message">LocalHub needs to capture your screen so it can be viewed from the web dashboard.</string>
 </resources>

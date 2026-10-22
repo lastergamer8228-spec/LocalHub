@@ -1,5 +1,7 @@
 package com.localhub.localhub.ui.theme
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -41,13 +43,23 @@ fun LocalHubTheme(
     darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    val localHubColors = if (darkTheme) DarkLocalHubColors else LightLocalHubColors
-    CompositionLocalProvider(LocalLocalHubColors provides localHubColors) {
-        MaterialTheme(
-            colorScheme = colorScheme,
-            typography = LocalHubTypography,
-            content = content
-        )
+    CompositionLocalProvider(LocalLocalHubColors provides if (darkTheme) DarkLocalHubColors else LightLocalHubColors) {
+        // Crossfade the whole UI on theme changes so switching light/dark animates
+        // smoothly instead of snapping. Colors are derived inside the content so
+        // the outgoing and incoming states crossfade between the two schemes.
+        Crossfade(
+            targetState = darkTheme,
+            animationSpec = tween(AnimTokens.SLOW_MS, easing = AnimTokens.StandardEasing)
+        ) { isDark ->
+            val scheme = if (isDark) DarkColorScheme else LightColorScheme
+            val colors = if (isDark) DarkLocalHubColors else LightLocalHubColors
+            CompositionLocalProvider(LocalLocalHubColors provides colors) {
+                MaterialTheme(
+                    colorScheme = scheme,
+                    typography = LocalHubTypography,
+                    content = content
+                )
+            }
+        }
     }
 }

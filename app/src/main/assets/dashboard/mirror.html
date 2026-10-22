@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalHub — Remote Screen</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    body { background:#04070e; color:#e5eaf2; font-family: -apple-system,Segoe UI,Roboto,sans-serif; margin:0; min-height:100vh; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 18px; color:#22d3a6; display:flex; align-items:center; gap:8px; }
+    .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+    button { background:#1b2740; border:1px solid #2a3550; color:#e5eaf2; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:13px; }
+    button:hover { border-color:#22d3a6; color:#22d3a6; }
+    button.primary { background:#22d3a6; color:#062a21; border:none; font-weight:700; }
+    .screen { width:100%; background:#000; border-radius:12px; overflow:hidden; border:1px solid #2a3550; min-height:300px; display:flex; align-items:center; justify-content:center; }
+    .screen img { width:100%; display:block; }
+    .controls { margin-top:14px; background:#0a1226; border:1px solid #2a3550; border-radius:12px; padding:14px; }
+    .controls h3 { margin:0 0 10px; font-size:13px; color:#38bdf8; }
+    .row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+    .row label { display:flex; align-items:center; gap:6px; font-size:13px; color:#8ea0bd; }
+    .row input { background:#1b2740; border:1px solid #2a3550; color:#fff; border-radius:6px; padding:6px 8px; font-size:13px; }
+    .status { font-size:12px; color:#8ea0bd; margin-top:10px; font-family:monospace; }
+    .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
+    .dot.on { background:#34d399; box-shadow:0 0 8px #34d399; }
+    .dot.off { background:#f87171; }
+    .hint { color:#5a6b85; font-size:12px; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>📺 Remote Screen <span id="dot" class="dot off"></span><span id="state" style="font-size:12px;color:#8ea0bd">not mirroring</span></h1>
+
+    <div class="toolbar">
+      <button class="primary" id="start">▶ Start Mirror</button>
+      <button id="stop">■ Stop</button>
+    </div>
+
+    <div class="screen" id="screenBox">
+      <div id="placeholder" style="color:#5a6b85;font-size:14px">Start the mirror to see the phone screen here.</div>
+      <img id="frame" style="display:none" alt="phone screen" />
+    </div>
+
+    <div class="controls">
+      <h3>🖱 Remote Control</h3>
+      <div class="row">
+        <button id="nav-back">← Back</button>
+        <button id="nav-home">⌂ Home</button>
+        <button id="nav-recent">□ Recents</button>
+        <button id="scroll-up">↑ Scroll up</button>
+        <button id="scroll-down">↓ Scroll down</button>
+      </div>
+      <div class="row">
+        <button id="swipe-left">← Swipe</button>
+        <button id="swipe-right">→ Swipe</button>
+        <button id="swipe-up">↑ Swipe</button>
+        <button id="swipe-down">↓ Swipe</button>
+      </div>
+      <div class="row">
+        <label>Click text: <input id="click-text" placeholder="e.g. Search, Play" style="flex:1" /></label>
+        <button id="click-btn" class="primary">Click</button>
+        <button id="longpress-btn">Long press</button>
+        <button id="focus-btn">Focus</button>
+      </div>
+      <div class="row">
+        <label>Click by id: <input id="click-id" placeholder="resource-id, e.g. search_btn" style="flex:1" /></label>
+        <button id="click-id-btn">Click</button>
+      </div>
+      <div class="row">
+        <label>Type text (focused field): <input id="type-text" placeholder="type something…" style="flex:1" /></label>
+        <button id="type-btn" class="primary">Type</button>
+      </div>
+      <div class="row">
+        <button id="dump-btn">📋 What's on screen</button>
+        <button id="refresh-status">↻ Status</button>
+      </div>
+      <pre id="dump" style="display:none;background:#0a1226;border:1px solid #2a3550;border-radius:8px;padding:10px;max-height:240px;overflow:auto;font-size:11px;color:#8ea0bd;margin-top:8px"></pre>
+      <div class="status" id="status">loading…</div>
+      <div class="hint">Requires "LocalHub Remote Access" enabled in Android Accessibility settings for control. Mirror requires screen-capture consent.</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var token = "";
+      try { token = new URLSearchParams(location.search).get("token") || sessionStorage.getItem("lhtoken") || localStorage.getItem("lhtoken"); } catch (e) {}
+      var base = location.protocol + "//" + location.host;
+      var img = document.getElementById("frame");
+      var box = document.getElementById("screenBox");
+      var placeholder = document.getElementById("placeholder");
+      var dot = document.getElementById("dot");
+      var state = document.getElementById("state");
+      var statusEl = document.getElementById("status");
+
+      function $id(x){ return document.getElementById(x); }
+      function api(method, path, body) {
+        var opts = { method: method, headers: {} };
+        if (token) opts.headers["Authorization"] = "Bearer " + token;
+        if (body) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+        return fetch(base + path, opts).then(function (r) { return r.json().catch(function(){ return {}; }); });
+      }
+
+      function refresh() {
+        api("GET", "/api/mirror/status").then(function (r) {
+          var running = r && r.running;
+          var acc = r && r.accessibility;
+          dot.className = "dot " + (running ? "on" : "off");
+          state.textContent = running ? "live" : "not mirroring";
+          statusEl.innerHTML =
+            "<span class='dot " + (running?"on":"off") + "'></span> Mirror: " + (running ? "ON" : "OFF") +
+            " &nbsp; <span class='dot " + (acc?"on":"off") + "'></span> Remote Access: " + (acc ? "ON" : "OFF") +
+            (r && r.error ? " &nbsp; <b style='color:#f87171'>Error: " + r.error + "</b>" : "");
+          if (running) startStream(); else stopStream();
+        });
+      }
+
+      var streamTimer = null;
+      function startStream() {
+        img.style.display = "block";
+        placeholder.style.display = "none";
+        // Poll the latest frame every 250ms for a live (low-latency) view.
+        if (streamTimer) clearInterval(streamTimer);
+        streamTimer = setInterval(function () {
+          img.src = base + "/api/mirror/frame?token=" + encodeURIComponent(token) + "&t=" + Date.now();
+        }, 250);
+      }
+      function stopStream() {
+        if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
+        img.style.display = "none";
+        placeholder.style.display = "block";
+        placeholder.textContent = "Start the mirror to see the phone screen here.";
+      }
+
+      $id("start").onclick = function () {
+        api("POST", "/api/mirror/start").then(function (r) {
+          statusEl.textContent = (r && r.message) || "Grant the prompt on the phone.";
+        });
+      };
+      $id("stop").onclick = function () {
+        api("POST", "/api/mirror/stop").then(function () { refresh(); });
+      };
+      $id("nav-back").onclick = function(){ api("POST","/api/mirror/nav",{action:"back"}); };
+      $id("nav-home").onclick = function(){ api("POST","/api/mirror/nav",{action:"home"}); };
+      $id("nav-recent").onclick = function(){ api("POST","/api/mirror/nav",{action:"recent"}); };
+      $id("scroll-up").onclick = function(){ api("POST","/api/mirror/click",{kind:"scroll",text:"up"}); };
+      $id("scroll-down").onclick = function(){ api("POST","/api/mirror/click",{kind:"scroll",text:"down"}); };
+      $id("swipe-left").onclick = function(){ api("POST","/api/mirror/swipe",{direction:"left"}); };
+      $id("swipe-right").onclick = function(){ api("POST","/api/mirror/swipe",{direction:"right"}); };
+      $id("swipe-up").onclick = function(){ api("POST","/api/mirror/swipe",{direction:"up"}); };
+      $id("swipe-down").onclick = function(){ api("POST","/api/mirror/swipe",{direction:"down"}); };
+      $id("click-btn").onclick = function(){
+        var t = $id("click-text").value.trim(); if (t) api("POST","/api/mirror/click",{kind:"click",text:t});
+      };
+      $id("longpress-btn").onclick = function(){
+        var t = $id("click-text").value.trim(); if (t) api("POST","/api/mirror/click",{kind:"longpress",text:t});
+      };
+      $id("focus-btn").onclick = function(){
+        var t = $id("click-text").value.trim(); if (t) api("POST","/api/mirror/click",{kind:"focus",text:t});
+      };
+      $id("click-id-btn").onclick = function(){
+        var t = $id("click-id").value.trim(); if (t) api("POST","/api/mirror/click",{kind:"clickid",text:t});
+      };
+      $id("type-btn").onclick = function(){
+        var t = $id("type-text").value; api("POST","/api/mirror/type",{text:t});
+      };
+      $id("dump-btn").onclick = function(){
+        api("POST","/api/mirror/dump").then(function(r){
+          var d = $id("dump");
+          d.style.display = "block";
+          d.textContent = (r && r.screen) || "no content";
+        });
+      };
+      $id("refresh-status").onclick = refresh;
+
+      refresh();
+      setInterval(refresh, 4000);
+    })();
+  </script>
+</body>
+</html>

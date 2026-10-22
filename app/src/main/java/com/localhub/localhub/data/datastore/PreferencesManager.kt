@@ -20,6 +20,15 @@ object PrefKeys {
     val THEME = stringPreferencesKey("theme") // "dark" | "light" | "system"
     val AUTOSTART = booleanPreferencesKey("autostart")
     val SERVER_NAME = stringPreferencesKey("server_name")
+    val ADMIN_USER = stringPreferencesKey("admin_user")
+    val ADMIN_PASS = stringPreferencesKey("admin_pass")
+    val WEB_USER = stringPreferencesKey("web_user")
+    val WEB_PASS = stringPreferencesKey("web_pass")
+    // ---- Security & features ----
+    val HTTPS_ENABLED = booleanPreferencesKey("https_enabled")
+    val TOTP_SECRET = stringPreferencesKey("totp_secret")       // base32 admin TOTP secret ("" = disabled)
+    val TOTP_ENABLED = booleanPreferencesKey("totp_enabled")
+    val AUDIT_ENABLED = booleanPreferencesKey("audit_enabled")  // security audit events
 }
 
 class PreferencesManager(context: Context) {
@@ -39,4 +48,33 @@ class PreferencesManager(context: Context) {
     suspend fun getPort(): Int = dataStore.data.map { it[PrefKeys.PORT] ?: 8080 }.first()
     suspend fun getTheme(): String = dataStore.data.map { it[PrefKeys.THEME] ?: "dark" }.first()
     suspend fun getAutostart(): Boolean = dataStore.data.map { it[PrefKeys.AUTOSTART] ?: false }.first()
+
+    // ---- Authentication credentials (defaults) ----
+    suspend fun getAdminUser(): String = dataStore.data.map { it[PrefKeys.ADMIN_USER] ?: "admin" }.first()
+    suspend fun getAdminPass(): String = dataStore.data.map { it[PrefKeys.ADMIN_PASS] ?: "admin" }.first()
+    suspend fun getWebUser(): String = dataStore.data.map { it[PrefKeys.WEB_USER] ?: "user" }.first()
+    suspend fun getWebPass(): String = dataStore.data.map { it[PrefKeys.WEB_PASS] ?: "user" }.first()
+
+    suspend fun setAdminUser(u: String) = dataStore.edit { it[PrefKeys.ADMIN_USER] = u }
+    suspend fun setAdminPass(p: String) = dataStore.edit { it[PrefKeys.ADMIN_PASS] = p }
+    suspend fun setWebUser(u: String) = dataStore.edit { it[PrefKeys.WEB_USER] = u }
+    suspend fun setWebPass(p: String) = dataStore.edit { it[PrefKeys.WEB_PASS] = p }
+
+    // ---- HTTPS ----
+    val httpsEnabledFlow: Flow<Boolean> = dataStore.data.map { it[PrefKeys.HTTPS_ENABLED] ?: false }
+    suspend fun getHttpsEnabled(): Boolean = dataStore.data.map { it[PrefKeys.HTTPS_ENABLED] ?: false }.first()
+    suspend fun setHttpsEnabled(enabled: Boolean) = dataStore.edit { it[PrefKeys.HTTPS_ENABLED] = enabled }
+
+    // ---- TOTP 2FA ----
+    val totpSecretFlow: Flow<String> = dataStore.data.map { it[PrefKeys.TOTP_SECRET] ?: "" }
+    val totpEnabledFlow: Flow<Boolean> = dataStore.data.map { it[PrefKeys.TOTP_ENABLED] ?: false }
+    suspend fun getTotpSecret(): String = dataStore.data.map { it[PrefKeys.TOTP_SECRET] ?: "" }.first()
+    suspend fun getTotpEnabled(): Boolean = dataStore.data.map { it[PrefKeys.TOTP_ENABLED] ?: false }.first()
+    suspend fun setTotpSecret(secret: String) = dataStore.edit { it[PrefKeys.TOTP_SECRET] = secret }
+    suspend fun setTotpEnabled(enabled: Boolean) = dataStore.edit { it[PrefKeys.TOTP_ENABLED] = enabled }
+
+    // ---- Audit ----
+    val auditEnabledFlow: Flow<Boolean> = dataStore.data.map { it[PrefKeys.AUDIT_ENABLED] ?: true }
+    suspend fun getAuditEnabled(): Boolean = dataStore.data.map { it[PrefKeys.AUDIT_ENABLED] ?: true }.first()
+    suspend fun setAuditEnabled(enabled: Boolean) = dataStore.edit { it[PrefKeys.AUDIT_ENABLED] = enabled }
 }
