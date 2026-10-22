@@ -24,8 +24,7 @@ class FileManager(private val rootPath: String = "/storage/emulated/0") {
         val isRoot = dir.absolutePath == rootPath
 
         val folders = entries
-            .filter { it.isDirectory }
-            .filter { if (isRoot) defaultFolders.contains(it.name) else true }
+            .filter { it.isDirectory && !it.name.startsWith(".") }
             .sortedBy { it.name.lowercase() }
             .map {
                 mapOf(

@@ -36,6 +36,7 @@ class RemoteAccessService : AccessibilityService() {
 
         fun request(kind: String, text: String = "", extra: String = "") {
             queue.add(Command(kind, text, extra))
+            instance?.drainQueue()
         }
 
         val isEnabled: Boolean get() = instance != null

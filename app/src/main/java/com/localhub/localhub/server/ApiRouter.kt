@@ -50,6 +50,10 @@ class ApiRouter(
     private val totp = Totp
 
     fun handle(session: IHTTPSession): Response {
+        if (session.method == NanoHTTPD.Method.OPTIONS) {
+            return NanoHTTPD.newFixedLengthResponse(Status.OK, NanoHTTPD.MIME_PLAINTEXT, "")
+                .apply { addCors() }
+        }
         val uri = session.uri ?: "/"
         val path = uri.removePrefix("/api/").trimEnd('/')
         return try {
@@ -563,7 +567,16 @@ class ApiRouter(
         val end = (endReq ?: (length - 1)).coerceAtMost(length - 1)
         val chunkLen = (end - start + 1).coerceAtLeast(0)
         val stream = java.io.BufferedInputStream(java.io.FileInputStream(file))
-        stream.skip(start)
+        var skipped = 0L
+        while (skipped < start) {
+            val s = stream.skip(start - skipped)
+            if (s <= 0L) {
+                if (stream.read() == -1) break
+                skipped++
+            } else {
+                skipped += s
+            }
+        }
         val limited = object : java.io.FilterInputStream(stream) {
             var remaining = chunkLen
             override fun read(): Int {

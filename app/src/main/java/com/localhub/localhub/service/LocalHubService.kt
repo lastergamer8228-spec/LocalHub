@@ -145,39 +145,42 @@ class LocalHubService : Service() {
 
         acquireWakeLock()
 
-        collectJob = scope.launch {
-            launch {
-                container.logger.logs.collect { entry ->
-                    container.server.broadcastLog(entry)
+        if (collectJob == null || collectJob?.isActive == false) {
+            collectJob = scope.launch {
+                launch {
+                    container.logger.logs.collect { entry ->
+                        container.server.broadcastLog(entry)
+                    }
                 }
-            }
-            while (true) {
-                delay(Constants.STATS_INTERVAL_MS)
-                val snap: SystemInfo = container.systemInfoProvider.collectSnapshot()
-                container.server.broadcastStats(snap)
-                container.server.pruneClients()
-                val stats = StatisticsSnapshot(
-                    timestamp = snap.timestamp,
-                    cpuUsage = snap.cpu.usagePercent,
-                    memoryUsed = snap.memory.usedBytes,
-                    memoryTotal = snap.memory.totalBytes,
-                    batteryLevel = snap.battery.level,
-                    batteryTempC = snap.battery.temperatureCelsius,
-                    storageUsed = snap.storage.usedBytes,
-                    storageTotal = snap.storage.totalBytes,
-                    networkType = snap.network.type,
-                    connectedClients = container.connectedClients.value.size
-                )
-                runCatching { container.statisticsRepository.insert(stats) }
+                while (true) {
+                    delay(Constants.STATS_INTERVAL_MS)
+                    val snap: SystemInfo = container.systemInfoProvider.collectSnapshot()
+                    container.server.broadcastStats(snap)
+                    container.server.pruneClients()
+                    val stats = StatisticsSnapshot(
+                        timestamp = snap.timestamp,
+                        cpuUsage = snap.cpu.usagePercent,
+                        memoryUsed = snap.memory.usedBytes,
+                        memoryTotal = snap.memory.totalBytes,
+                        batteryLevel = snap.battery.level,
+                        batteryTempC = snap.battery.temperatureCelsius,
+                        storageUsed = snap.storage.usedBytes,
+                        storageTotal = snap.storage.totalBytes,
+                        networkType = snap.network.type,
+                        connectedClients = container.connectedClients.value.size
+                    )
+                    runCatching { container.statisticsRepository.insert(stats) }
+                }
             }
         }
     }
 
     private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LocalHub::server").apply {
             setReferenceCounted(false)
-            acquire(10 * 60 * 1000L)
+            acquire()
         }
     }
 

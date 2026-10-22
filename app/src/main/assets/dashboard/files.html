@@ -322,7 +322,11 @@
       function fmtSpeed(bps){ return fmtSize(bps)+"/s"; }
       function fmtTime(ms){ ms=Math.max(0,ms||0); var s=Math.floor(ms/1000); if(s<60) return s+"s"; var m=Math.floor(s/60); s=s%60; return m+"m "+s+"s"; }
       function fmtDate(ms){ if(!ms) return ""; var d=new Date(ms); return d.toLocaleDateString()+" "+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
-      function contentUrl(p){ return apiBase + "/api/fs/content?path=" + encodeURIComponent(p); }
+      function contentUrl(p){
+        var authT = "";
+        try { authT = new URLSearchParams(location.search).get("token") || sessionStorage.getItem("lhtoken") || localStorage.getItem("lhtoken") || ""; } catch (e) {}
+        return apiBase + "/api/fs/content?path=" + encodeURIComponent(p) + (authT ? "&token=" + encodeURIComponent(authT) : "");
+      }
       function extOf(name){ var i=name.lastIndexOf('.'); return i<0?"":name.substring(i+1).toLowerCase(); }
       function baseName(p){ return p.split("/").pop() || p; }
 

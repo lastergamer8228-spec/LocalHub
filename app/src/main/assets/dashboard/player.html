@@ -437,7 +437,12 @@
       isAudio = ["mp3","wav","flac","ogg","m4a","aac"].indexOf(ext) >= 0;
       if (!isVideo && !isAudio) { toast("Unsupported media type: ."+ext); $("controlbar").style.display="none"; return; }
 
-      var src = "/api/fs/content?path=" + encodeURIComponent(file);
+      var token = "";
+      try {
+        var q = new URLSearchParams(location.search);
+        token = q.get("token") || sessionStorage.getItem("lhtoken") || localStorage.getItem("lhtoken") || "";
+      } catch (e) {}
+      var src = "/api/fs/content?path=" + encodeURIComponent(file) + (token ? "&token=" + encodeURIComponent(token) : "");
       media.src = src;
       if (isAudio) { media.style.display="none"; $("art-wrap").style.display="flex"; $("logo").textContent="🎵"; }
 

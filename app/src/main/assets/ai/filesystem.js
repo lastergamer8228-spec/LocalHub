@@ -91,12 +91,14 @@
       return get("/api/fs/empty?path=" + encodeURIComponent(dir || ""));
     },
     contentUrl: function (path) {
-      return base + "/api/fs/content?path=" + encodeURIComponent(path);
+      var t = authToken();
+      return base + "/api/fs/content?path=" + encodeURIComponent(path) + (t ? "&token=" + encodeURIComponent(t) : "");
     },
     /** Download URL for one or more paths (folders / multi = streamed zip). */
     downloadUrl: function (paths) {
       if (Array.isArray(paths)) paths = paths.join("|");
-      return base + "/api/fs/download?paths=" + encodeURIComponent(paths);
+      var t = authToken();
+      return base + "/api/fs/download?paths=" + encodeURIComponent(paths) + (t ? "&token=" + encodeURIComponent(t) : "");
     },
     download: function (paths) {
       var a = global.document.createElement("a");

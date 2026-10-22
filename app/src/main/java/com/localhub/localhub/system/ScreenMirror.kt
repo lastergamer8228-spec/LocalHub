@@ -74,9 +74,17 @@ class ScreenMirror(private val context: Context) {
             }.onFailure {
                 metrics.setToDefaults()
             }
-            if (metrics.widthPixels > 0 && metrics.heightPixels > 0) {
-                captureWidth = metrics.widthPixels
-                captureHeight = metrics.heightPixels
+            var w = metrics.widthPixels
+            var h = metrics.heightPixels
+            val maxDim = 1280
+            if (w > 0 && h > 0) {
+                if (maxOf(w, h) > maxDim) {
+                    val scale = maxDim.toFloat() / maxOf(w, h)
+                    w = (w * scale).toInt()
+                    h = (h * scale).toInt()
+                }
+                captureWidth = if (w % 2 == 0) w else w - 1
+                captureHeight = if (h % 2 == 0) h else h - 1
             } else {
                 // Fallback to a sane default if real metrics are unavailable.
                 captureWidth = 720

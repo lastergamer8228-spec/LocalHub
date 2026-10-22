@@ -270,8 +270,17 @@ class LocalHubServer(
             ?: runCatching { session.getCookies().read("lhsession") }.getOrNull()
             ?: ""
 
-        val isProtected = uri == "/" || uri == "/files" || uri == "/player" || uri == "/ai" ||
-            uri == "/mirror" || uri == "/tts" || uri.startsWith("/files/")
+        val clean = uri.trimEnd('/')
+        val isProtected = clean == "" || clean == "/" || clean == "/index.html" ||
+            clean == "/files" || clean.startsWith("/files/") ||
+            clean == "/player" || clean == "/player.html" ||
+            clean == "/ai" || clean == "/ai/index.html" ||
+            clean == "/mirror" || clean == "/mirror.html" ||
+            clean == "/tts" || clean == "/tts.html" ||
+            clean == "/core" || clean == "/core.html" ||
+            clean == "/selfheal" || clean == "/selfheal.html" ||
+            clean == "/brain" || clean == "/brain.html" ||
+            clean == "/os" || clean == "/os/index.html"
 
         val authed = sessionManager.validate(token, session.remoteIpAddress ?: "?") != null
 

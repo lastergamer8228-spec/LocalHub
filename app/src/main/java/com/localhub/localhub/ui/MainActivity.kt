@@ -64,9 +64,16 @@ private fun StorageAccessBootstrap() {
         ActivityResultContracts.RequestPermission()
     ) { }
 
+    val notifLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         val packageName = context.applicationContext.packageName
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
                 val uri = Uri.parse("package:$packageName")
