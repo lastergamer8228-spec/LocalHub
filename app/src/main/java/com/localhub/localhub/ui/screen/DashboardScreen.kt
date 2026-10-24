@@ -120,11 +120,22 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(), onManageServer:
                 )
             }
         }
+        val recentLogs = logs.take(5)
         itemsIndexed(
-            logs,
+            recentLogs,
             key = { index, entry -> ListKeys.log(index, entry) },
             contentType = { _, _ -> "log" }
         ) { _, entry -> LogItem(entry) }
+        if (logs.size > 5) {
+            item {
+                Text(
+                    "Showing latest 5 of ${logs.size} events. Full history is stored in the Activity tab.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+        }
     }
 }
 

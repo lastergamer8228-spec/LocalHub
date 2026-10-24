@@ -272,6 +272,21 @@
 
     setText("server-url", "http://" + (net.ipAddress || "127.0.0.1") + ":" + (location.port || "8080"));
 
+    var sSummary = $("storage-summary");
+    var sBar = $("storage-bar");
+    if (sSummary && sto.totalBytes) {
+      var sPct = usagePct(sto.usedBytes, sto.totalBytes);
+      sSummary.textContent = fmtBytes(sto.usedBytes) + " / " + fmtBytes(sto.totalBytes) + " (" + Math.round(100 - sPct) + "% free)";
+      if (sBar) sBar.style.width = sPct.toFixed(1) + "%";
+    }
+
+    var bSummary = $("battery-summary");
+    var bBar = $("battery-bar");
+    if (bSummary && bat.level != null) {
+      bSummary.textContent = bat.level + "%" + (bat.isCharging ? " (Charging)" : "");
+      if (bBar) bBar.style.width = bat.level + "%";
+    }
+
     // WOW: push live data into the glowing sparkline charts.
     if (window.LH_VIS) {
       window.LH_VIS.push("cpu-chart", (cpu.usagePercent != null ? cpu.usagePercent : 0) / 100,
@@ -581,8 +596,26 @@
         ? '<div class="hint ok">✓ Connected via friendly hostname</div>'
         : '<div class="hint">Tip: on mDNS-capable networks use <b class="mono">' + escapeHtml(nameUrl) + "</b>; otherwise use the IP link above.</div>") +
       '</div></div>' +
-      '<div class="btn-row"><a class="btn ghost" href="' + escapeHtml(nameUrl) + '" target="_blank">Open hostname</a>' +
+      '<div class="btn-row">' +
+      '<button class="btn btn-primary" data-copy-url="' + escapeHtml(activeUrl) + '" type="button">📋 Copy Wi-Fi Link</button>' +
+      '<a class="btn ghost" href="' + escapeHtml(nameUrl) + '" target="_blank">Open hostname</a>' +
       '<a class="btn ghost" href="' + escapeHtml(ipUrl) + '" target="_blank">Open IP</a></div>';
+
+    var copyBtn = body.querySelector("[data-copy-url]");
+    if (copyBtn) {
+      copyBtn.onclick = function () {
+        var urlToCopy = copyBtn.getAttribute("data-copy-url");
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(urlToCopy).then(function () {
+            copyBtn.textContent = "Copied! ✓";
+            setTimeout(function () { copyBtn.textContent = "📋 Copy Wi-Fi Link"; }, 2000);
+          }).catch(function () {
+            copyBtn.textContent = "Copied! ✓";
+            setTimeout(function () { copyBtn.textContent = "📋 Copy Wi-Fi Link"; }, 2000);
+          });
+        }
+      };
+    }
   }
 
   // Clients are tracked server-side; expose a lightweight fetch.
@@ -792,9 +825,152 @@
     getJson("/api/status").then(function (st) { renderConnect(st); renderStatus(st); updateDetail(null, st); });
   }
 
+  // ---- Wireless Quick Drop (AirDrop for local Wi-Fi) ----
+  function wireQuickDrop() {
+    var input = $("quickdrop-input");
+    var zone = $("quickdrop-zone");
+    var prog = $("quickdrop-progress");
+    var bar = $("quickdrop-bar");
+    var status = $("quickdrop-status");
+    var pctText = $("quickdrop-pct");
+    if (!input || !zone || !prog || !bar || !status || !pctText) return;
+
+    zone.onclick = function () { input.click(); };
+
+    function uploadBatch(files) {
+      if (!files || !files.length) return;
+      var file = files[0];
+      prog.style.display = "block";
+      status.textContent = "Sending " + file.name + " (" + fmtBytes(file.size) + ")…";
+      bar.style.width = "0%";
+      pctText.textContent = "0%";
+
+      var xhr = new XMLHttpRequest();
+      var fd = new FormData();
+      fd.append("file", file);
+      var uploadUrl = apiBase + "/api/fs/upload?dir=" + encodeURIComponent("/storage/emulated/0/Download") + "&overwrite=true";
+
+      xhr.upload.onprogress = function (e) {
+        if (e.lengthComputable) {
+          var p = Math.round((e.loaded / e.total) * 100);
+          bar.style.width = p + "%";
+          pctText.textContent = p + "%";
+        }
+      };
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          status.textContent = "✓ " + file.name + " saved to phone Downloads!";
+          bar.style.width = "100%";
+          pctText.textContent = "100%";
+          setTimeout(function () { prog.style.display = "none"; }, 3500);
+          if (files.length > 1) {
+            uploadBatch(Array.prototype.slice.call(files, 1));
+          }
+        } else {
+          status.textContent = "Upload failed: " + xhr.statusText;
+        }
+      };
+      xhr.onerror = function () {
+        status.textContent = "Network error while uploading.";
+      };
+      xhr.open("POST", uploadUrl);
+      if (authToken) xhr.setRequestHeader("Authorization", "Bearer " + authToken);
+      xhr.send(fd);
+    }
+
+    input.onchange = function () {
+      if (input.files && input.files.length) uploadBatch(input.files);
+    };
+
+    zone.ondragover = function (e) { e.preventDefault(); zone.classList.add("dragover"); };
+    zone.ondragleave = function () { zone.classList.remove("dragover"); };
+    zone.ondrop = function (e) {
+      e.preventDefault();
+      zone.classList.remove("dragover");
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        uploadBatch(e.dataTransfer.files);
+      }
+    };
+  }
+
+  // ---- Remote Phone Hardware Controls (Torch, Find, Volume, Mirror) ----
+  function wirePhoneControls() {
+    var torchBtn = $("btn-torch");
+    var torchState = false;
+    if (torchBtn) {
+      torchBtn.onclick = function () {
+        torchState = !torchState;
+        authFetch(apiBase + "/api/device/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "torch", state: torchState })
+        }).then(function (r) { return r.json(); }).then(function (res) {
+          if (res && res.ok) {
+            torchBtn.textContent = "🔦 Flashlight: " + (torchState ? "ON" : "OFF");
+            torchBtn.classList.toggle("btn-primary", torchState);
+          }
+        });
+      };
+    }
+
+    var vibBtn = $("btn-vibrate");
+    if (vibBtn) {
+      vibBtn.onclick = function () {
+        vibBtn.disabled = true;
+        vibBtn.textContent = "📳 Buzzing phone…";
+        authFetch(apiBase + "/api/device/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "vibrate", value: 1500 })
+        }).then(function () {
+          setTimeout(function () {
+            vibBtn.disabled = false;
+            vibBtn.textContent = "📳 Vibrate Phone (Find)";
+          }, 1600);
+        });
+      };
+    }
+
+    var volUp = $("btn-volume-up");
+    if (volUp) {
+      volUp.onclick = function () {
+        authFetch(apiBase + "/api/device/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "volume_up" })
+        });
+      };
+    }
+
+    var volDown = $("btn-volume-down");
+    if (volDown) {
+      volDown.onclick = function () {
+        authFetch(apiBase + "/api/device/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "volume_down" })
+        });
+      };
+    }
+
+    var mirrorBtn = $("btn-mirror");
+    if (mirrorBtn) {
+      mirrorBtn.onclick = function () {
+        authFetch(apiBase + "/api/mirror/start", { method: "POST" })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            var st = $("remote-action-status");
+            if (st) st.textContent = (res && res.message) || (res && res.error) || "Mirror requested on phone.";
+          });
+      };
+    }
+  }
+
   setInterval(updateUptime, 1000);
   wireServerControl();
   wireDevMode();
+  wireQuickDrop();
+  wirePhoneControls();
   connect();
   animInit();
   // WOW: cinematic boot splash + live charts.

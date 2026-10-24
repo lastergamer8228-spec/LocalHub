@@ -8,54 +8,182 @@
   <link rel="stylesheet" href="/theme-pro.css" />
   <link rel="stylesheet" href="/animations.css" />
   <style>
-    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .login-card { width: 100%; max-width: 380px; }
-    .login-logo { text-align: center; margin-bottom: 18px; }
-    .login-logo .logo { font-size: 42px; }
-    .login-logo h1 { margin: 8px 0 2px; font-size: 22px; }
-    .login-logo p { margin: 0; color: var(--muted); font-size: 13px; }
-    .login-form { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
-    .login-form label { font-size: 12px; color: var(--muted); }
-    .login-form input {
-      width: 100%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
-      border-radius: 10px; padding: 11px 13px; font-size: 14px; margin-top: 5px;
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: radial-gradient(circle at 50% 20%, rgba(76, 154, 255, 0.08), transparent 60%),
+                  radial-gradient(circle at 80% 80%, rgba(52, 211, 153, 0.05), transparent 50%),
+                  var(--bg);
     }
-    .login-form input:focus { outline: none; border-color: var(--accent); }
-    .remember-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-    .remember-row input { width: auto; margin: 0; }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      background: rgba(19, 26, 35, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 28px 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    .login-logo .brand-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), #38bdf8);
+      color: #06121f;
+      display: inline-grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 800;
+      box-shadow: 0 8px 24px rgba(76, 154, 255, 0.3);
+      margin-bottom: 12px;
+    }
+    .login-logo h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .login-logo p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-family: var(--mono);
+    }
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .form-group label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .login-form input[type="text"],
+    .login-form input[type="password"] {
+      width: 100%;
+      height: 40px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 0 12px;
+      font-size: 13.5px;
+      transition: all 0.15s ease;
+    }
+    .login-form input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(76, 154, 255, 0.15);
+      background: var(--surface);
+    }
+    .remember-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .remember-row input {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
     .login-btn {
-      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #062a21; border: none;
-      border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--accent), #38bdf8);
+      color: #06121f;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 16px rgba(76, 154, 255, 0.25);
     }
-    .login-btn:hover { filter: brightness(1.1); }
-    .login-btn:disabled { opacity: 0.6; }
-    .login-error { color: var(--danger); font-size: 13px; min-height: 18px; text-align: center; }
-    .login-info { text-align: center; margin-top: 16px; font-size: 12px; color: var(--muted); }
-    .login-info b { color: var(--text); }
+    .login-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+    .login-btn:active {
+      transform: scale(0.99);
+    }
+    .login-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .login-error {
+      color: var(--danger);
+      font-size: 12.5px;
+      min-height: 18px;
+      text-align: center;
+      font-weight: 500;
+    }
+    .login-info {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-soft);
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .login-info b {
+      color: var(--text);
+    }
   </style>
 </head>
 <body class="lh-page">
   <div class="login-wrap">
     <div class="card login-card lh-pop">
       <div class="login-logo">
-        <span class="logo">&#9672;</span>
+        <div class="brand-mark">L</div>
         <h1>LocalHub</h1>
-        <p id="server-info">local server</p>
+        <p id="server-info">private local cloud</p>
       </div>
       <form class="login-form" id="login-form">
-        <div>
-          <label>Username</label>
-          <input type="text" id="username" autocomplete="username" autofocus />
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" autocomplete="username" placeholder="admin or username" autofocus />
         </div>
-        <div>
-          <label>Password</label>
-          <input type="password" id="password" autocomplete="current-password" />
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" />
         </div>
-        <label class="remember-row"><input type="checkbox" id="remember" /> Remember login</label>
+        <label class="remember-row">
+          <input type="checkbox" id="remember" />
+          <span>Remember on this browser</span>
+        </label>
         <div class="login-error" id="login-error"></div>
-        <button type="submit" class="login-btn lh-btn lh-ripple" id="login-btn">Login</button>
+        <button type="submit" class="login-btn lh-btn lh-ripple" id="login-btn">Sign In to LocalHub</button>
       </form>
-      <div class="login-info">Administrator and Standard User access available.<br/>All data stays on your device.</div>
+      <div class="login-info">
+        Personal Cloud · 100% Local &amp; Private<br/>
+        All data is hosted directly on your device.
+      </div>
     </div>
   </div>
   <script src="/animations.js"></script>

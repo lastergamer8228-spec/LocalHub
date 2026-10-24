@@ -87,8 +87,9 @@ class FileManager(private val rootPath: String = "/storage/emulated/0") {
 
     /** Normalizes a path, rejects traversal, and forces it under the storage root. */
     private fun sanitize(rawPath: String): String {
+        val rootFile = File(rootPath).absoluteFile
         var p = rawPath.replace("\\", "/").replace("\u0000", "").trim()
-        if (p.isEmpty()) return rootPath
+        if (p.isEmpty()) return rootFile.absolutePath
         val segments = java.util.ArrayDeque<String>()
         for (seg in p.split("/")) {
             when (seg) {
@@ -97,7 +98,16 @@ class FileManager(private val rootPath: String = "/storage/emulated/0") {
                 else -> segments.addLast(seg)
             }
         }
-        val canonical = "/" + segments.joinToString("/")
-        return if (canonical.startsWith(rootPath)) canonical else rootPath
+        val candidatePath = if (segments.firstOrNull()?.contains(":") == true) {
+            segments.joinToString(File.separator)
+        } else {
+            "/" + segments.joinToString("/")
+        }
+        val candidateFile = File(candidatePath).absoluteFile
+        return if (candidateFile.absolutePath.startsWith(rootFile.absolutePath)) {
+            candidateFile.absolutePath
+        } else {
+            rootFile.absolutePath
+        }
     }
 }

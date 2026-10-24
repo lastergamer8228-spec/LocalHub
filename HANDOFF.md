@@ -87,3 +87,23 @@ python3 tests/check_controller_contracts.py   # Android-side source contracts
 See `docs/quality/` for the history: crash fixes (`list-key-crash.md`), the
 redesign attempt (`web-redesign.md`), and the Play assessment
 (`play-readiness.md`).
+
+---
+
+## Recent Modernizations & Upgrades
+
+1. **Dual-Segmented Web Dashboard**:
+   - `⚡ Hub Portal`: High-level quick access for connected users (Quick Drop wireless upload, Launchpad shortcuts, live phone storage/battery vitals, remote phone hardware controls).
+   - `⚙ System & Diagnostics`: Dedicated home for internal telemetry (Transfer monitor, holographic canvas, server logs, raw module statuses).
+2. **Mobile Web Navigation Dock**:
+   - Fixed bottom navigation bar for screens `≤ 768px` using existing 6 navigation links to preserve all contract tests while giving users a native-app mobile experience.
+   - Hidden during fullscreen video playback (`body.cinema`, `body.lh-fullscreen`).
+3. **Wireless Quick Drop**:
+   - 1-tap/drag-and-drop file upload streaming straight to the phone's `Download/` folder with live upload progress.
+4. **Remote Phone Hardware Actions**:
+   - Integrated toggles on dashboard for Flashlight (torch), Phone Vibration ("Find my phone"), Volume Adjustments, and Screen Mirroring via existing `/api/device/action` endpoints.
+5. **Android Native App Polish**:
+   - `ServerStatusCard.kt`: Tap-to-copy URL with Toast feedback, plus native Android Share Sheet button (`Intent.ACTION_SEND`) to share the Wi-Fi link directly via WhatsApp/Telegram.
+   - `DashboardScreen.kt`: Capped infinite log list to latest 5 items on the main home screen.
+   - `FileManager.kt`: Cross-platform path sanitization supporting Windows drive letters in JVM unit tests.
+
