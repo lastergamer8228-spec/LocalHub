@@ -12,14 +12,25 @@ android {
         applicationId 'com.localhub.localhub'
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName '1.0.0'
+        versionCode 21
+        versionName '1.0.20'
+        manifestPlaceholders = [appLabel: '@string/app_name']
+        if (project.hasProperty('aacPreview')) {
+            applicationIdSuffix '.aacpreview'
+            manifestPlaceholders.appLabel = 'LocalHub Preview'
+            ndk { abiFilters 'arm64-v8a' }
+        }
 
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            // R8 is on for release builds. Every reflective/JSON/native surface
+            // is pinned in app/proguard-rules.pro - do not add rules blindly.
+            minifyEnabled true
+            // Resource shrinking off on purpose: the payload that matters lives
+            // in src/main/assets (the web dashboard), which it does not touch.
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -35,6 +46,32 @@ android {
 
     kotlinOptions {
         jvmTarget = '17'
+    }
+
+    lint {
+        lintConfig = file('lint.xml')
+        // Lint has not been triaged end-to-end yet (see docs/quality/play-readiness.md).
+        // Non-fatal so an untriaged warning cannot block a release build; flip
+        // abortOnError to true once lintBaseline has been reviewed and emptied.
+        abortOnError = false
+        checkReleaseBuilds = false
+        warningsAsErrors = false
+        disable.addAll(
+            'GoogleAppIndexingWarning',
+            'SetTextI18n',
+            'OldTargetApi',
+            'UnsafeOptInUsageError',
+            'UnusedMaterial3ScaffoldPaddingParameter'
+        )
+    }
+
+    testOptions {
+        unitTests.includeAndroidResources = true
+        unitTests.all {
+            maxHeapSize = "640m"
+            systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2' 
+            jvmArgs '-XX:ActiveProcessorCount=1', '-XX:+UseSerialGC'
+        }
     }
 
     buildFeatures {
@@ -57,6 +94,14 @@ android {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.12.2'
+    testImplementation 'androidx.compose.ui:ui-test-junit4'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
+
+    // LGPL native decoder: AC-3/E-AC-3 -> AAC; video is not re-encoded.
+    implementation 'com.moizhassan.ffmpeg:ffmpeg-kit-16kb:6.1.1'
+
     // AndroidX core
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'

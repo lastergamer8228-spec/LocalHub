@@ -66,7 +66,7 @@ class SystemInfoProvider(private val context: Context) {
         val arch = Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
         val (minF, maxF) = readCpuFreq()
         val usage = computeCpuUsage()
-        return CpuInfo(cores, model, arch, minF, maxF, usage)
+        return CpuInfo(cores, model, arch, minF, maxF, usage.coerceAtLeast(0f), available = usage >= 0f)
     }
 
     private fun readCpuModel(): String = runCatching {
@@ -96,7 +96,7 @@ class SystemInfoProvider(private val context: Context) {
             val parts = line.split("\\s+".toRegex()).drop(1).map { it.toLongOrNull() ?: 0L }
             val idle = parts.getOrElse(3) { 0L } + parts.getOrElse(4) { 0L }
             val total = parts.sum()
-            var usage = 0f
+            var usage = -1f
             if (lastCpuTotal > 0 && total > lastCpuTotal) {
                 val totalDelta = total - lastCpuTotal
                 val idleDelta = idle - lastCpuIdle
@@ -106,16 +106,10 @@ class SystemInfoProvider(private val context: Context) {
             lastCpuIdle = idle
             return@runCatching usage
         }
-        // Fallback for Android 10+ where SELinux restricts /proc/stat:
-        // Estimate load based on available threads, memory pressure, and server activity
-        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-        val mi = ActivityManager.MemoryInfo()
-        am?.getMemoryInfo(mi)
-        val memRatio = if (mi.totalMem > 0) ((mi.totalMem - mi.availMem).toFloat() / mi.totalMem) else 0.5f
-        val baseLoad = (memRatio * 20f).coerceIn(5f, 35f)
-        val jitter = ((System.currentTimeMillis() % 1000) / 100f).toFloat() - 5f
-        (baseLoad + jitter).coerceIn(2f, 40f)
-    }.getOrDefault(8.5f)
+        // Modern Android may deny /proc/stat. Do NOT fabricate system CPU load
+        // using RAM pressure or random/timestamp jitter.
+        -1f
+    }.getOrDefault(-1f)
 
     private fun getMemoryInfo(): MemoryInfo {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager

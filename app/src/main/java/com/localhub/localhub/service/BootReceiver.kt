@@ -24,18 +24,22 @@ class BootReceiver : BroadcastReceiver() {
             receivedAction == Intent.ACTION_MY_PACKAGE_REPLACED
         ) {
 
+            val app = context.applicationContext
             val autostart = runBlocking {
-                PreferencesManager(context.applicationContext)
+                PreferencesManager(app)
                     .autostartFlow
                     .first()
             }
+            // Safe mode means the app recently kept crashing: do not start the
+            // server automatically, otherwise boot can enter a crash loop.
+            val safeMode = (app as? com.localhub.localhub.LocalHubApplication)?.healthStore?.read()?.safeMode ?: false
 
-            if (autostart) {
+            if (autostart && !safeMode) {
                 val startIntent = Intent(context, LocalHubService::class.java).apply {
                     action = Constants.ACTION_START
                 }
 
-                context.startForegroundService(startIntent)
+                runCatching { androidx.core.content.ContextCompat.startForegroundService(context, startIntent) }
             }
         }
     }

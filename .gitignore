@@ -41,7 +41,12 @@ captures/
 # Compose / Kotlin
 .kotlin/
 
-# Large bundled ML model (drop manually before build)
-app/src/main/assets/tts/pocket/*.onnx
-app/src/main/assets/tts/pocket/*.json
-app/src/main/assets/tts/pocket/!README.txt
+# Local verification output
+verification/*.png
+
+# Disposable local browser/tool output
+.cache/
+
+# LocalHub
+deliverables/
+.kotlin/

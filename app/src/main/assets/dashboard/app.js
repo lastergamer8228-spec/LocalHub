@@ -246,7 +246,7 @@
 
     var cpuPct = (typeof cpu.usagePercent === "number") ? cpu.usagePercent : 0;
     setMetric("cpu",
-      (cpu.usagePercent != null ? cpu.usagePercent.toFixed(1) : "0.0") + "%",
+      (cpu.available === false ? "Unavailable" : (cpu.usagePercent != null ? cpu.usagePercent.toFixed(1) : "0.0") + "%"),
       (cpu.cores || 1) + " cores",
       cpuPct / 100);
 
@@ -275,7 +275,7 @@
     // WOW: push live data into the glowing sparkline charts.
     if (window.LH_VIS) {
       window.LH_VIS.push("cpu-chart", (cpu.usagePercent != null ? cpu.usagePercent : 0) / 100,
-        (cpu.usagePercent != null ? cpu.usagePercent.toFixed(0) : "0") + "%");
+        (cpu.available === false ? "Unavailable" : (cpu.usagePercent != null ? cpu.usagePercent.toFixed(0) : "0") + "%"));
       window.LH_VIS.push("mem-chart", usagePct(mem.usedBytes || 0, mem.totalBytes || 0) / 100,
         Math.round(usagePct(mem.usedBytes || 0, mem.totalBytes || 0)) + "%");
       window.LH_VIS.push("sto-chart", usagePct(sto.usedBytes || 0, sto.totalBytes || 0) / 100,
@@ -528,17 +528,18 @@
 
   function renderDevices(list) {
     var el = $("devices");
+    setText("sb-clients", String((list && list.length) || 0));
     if (!el) return;
-    if (!list || !list.length) { el.innerHTML = '<div class="empty">No devices connected.</div>'; return; }
+    if (!list || !list.length) { el.innerHTML = '<div class="empty" style="padding:10px;color:var(--muted)">No devices connected.</div>'; return; }
     el.innerHTML = list.map(function (c) {
       var since = c.connectedAt ? new Date(c.connectedAt).toLocaleTimeString() : "—";
       var last = c.lastActivity ? new Date(c.lastActivity).toLocaleTimeString() : "—";
       var ip = escapeHtml(c.ip || "?");
       var controls = currentRole === "admin" ?
         '<div class="dmeta" style="margin-top:6px">' +
-          '<button class="chip" data-dev-block="' + ip + '" style="color:var(--danger)">🚫 Block</button> ' +
-          '<button class="chip" data-dev-ro="' + ip + '">🔒 Read-only</button> ' +
-          '<button class="chip" data-dev-deny="' + ip + '" style="color:var(--danger)">🚫 Deny Files</button> ' +
+          '<button class="btn btn-danger" data-dev-block="' + ip + '">Block</button> ' +
+          '<button class="btn" data-dev-ro="' + ip + '">Read-only</button> ' +
+          '<button class="btn btn-danger" data-dev-deny="' + ip + '">Deny files</button> ' +
           '<button class="chip" data-dev-none="' + ip + '">✓ Full</button>' +
         "</div>" : "";
       var row =
@@ -664,7 +665,7 @@
     el.innerHTML =
       act("⬇ Downloads today", t.downloadsToday || 0) +
       act("⬆ Uploads today", t.uploadsToday || 0) +
-      act("🎬 Media streams", t.mediaStreams || 0) +
+      act("Media streams", t.mediaStreams || 0) +
       act("📂 Files opened", t.filesOpened || 0) +
       act("👥 Connected", (s && s.length) || 0) +
       act("🔝 Peak connections", t.peakConcurrent || 0);

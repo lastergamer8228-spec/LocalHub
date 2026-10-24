@@ -17,8 +17,8 @@ class WebSocketHub {
         sockets.remove(ws)
     }
 
-    fun broadcast(json: String) {
-        for (ws in sockets) ws.sendSafe(json)
+    fun broadcast(json: String, adminOnly: Boolean = false) {
+        for (ws in sockets) if (!adminOnly || ws.isAdmin) ws.sendSafe(json)
     }
 
     fun count(): Int = sockets.size

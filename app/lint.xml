@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  LocalHub lint configuration.
+
+  Honest status: lint has NOT been run end-to-end on this codebase yet, so this
+  file only records the checks we know are noise for a *local* server app. It is
+  not evidence that the project is lint-clean. See docs/quality/play-readiness.md.
+-->
+<lint>
+    <!-- LocalHub is a personal LAN server: it is deliberately not indexed by
+         Google and has no public deep links. -->
+    <issue id="GoogleAppIndexingWarning" severity="ignore" />
+
+    <!-- Server responses and logs are English by design; no per-locale strings
+         are shipped for them. -->
+    <issue id="SetTextI18n" severity="ignore" />
+
+    <!-- minSdk 24 is intentional: it covers every device that can realistically
+         host the server, so "old API" warnings about newer APIs are expected. -->
+    <issue id="OldTargetApi" severity="warning" />
+
+    <!-- Compose / Room experimental annotations we have opted into knowingly. -->
+    <issue id="UnsafeOptInUsageError" severity="warning" />
+
+    <!-- Large heap is required: the server, the media scanner and the assistant
+         libraries all live in one process. -->
+    <issue id="LargeHeap" severity="warning" />
+
+    <!-- androidx.startup / manifest warnings that do not affect behaviour. -->
+    <issue id="UnusedMaterial3ScaffoldPaddingParameter" severity="warning" />
+</lint>

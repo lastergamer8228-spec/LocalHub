@@ -12,6 +12,20 @@ import java.io.IOException
  */
 class AssetServer(private val context: Context) {
 
+    private companion object {
+        /**
+         * Any other root-level static file belongs to the dashboard bundle.
+         *
+         * Without this fallback every new dashboard asset silently 404s: on
+         * 2026-10-24 theme-pro.css and nav.js shipped in the APK but were not in
+         * the explicit map below, so the redesign rendered half-styled and with
+         * no navigation. Extensions are allow-listed so this can never shadow
+         * an API route or a page route such as /files or /player.
+         */
+        private val ROOT_DASHBOARD_ASSET =
+            Regex("^/[A-Za-z0-9._-]+\\.(css|js|mjs|json|png|jpe?g|gif|svg|ico|webmanifest|txt|map|woff2?)$")
+    }
+
     fun serve(uri: String): Response? {
         val assetPath = resolve(uri) ?: return null
         return try {
@@ -61,6 +75,7 @@ class AssetServer(private val context: Context) {
         uri.startsWith("/assets/") -> uri.removePrefix("/")
         uri == "/ai" || uri == "/ai/index.html" -> "ai/index.html"
         uri.startsWith("/ai/") -> "ai/${uri.removePrefix("/ai/")}"
+        ROOT_DASHBOARD_ASSET.matches(uri) -> "dashboard/${uri.removePrefix("/")}"
         else -> null
     }
 }

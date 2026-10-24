@@ -72,9 +72,13 @@ class MirrorService : Service() {
 
         if (resultCode != android.app.Activity.RESULT_CANCELED && resultData != null) {
             val container = (application as LocalHubApplication).appContainer
-            container.screenMirror.start(this, resultCode, resultData)
-        }
-        return START_STICKY
+            val allowed = container.moduleManager.getModule("core.mirror")?.isEnabled == true
+            if (!allowed || !container.screenMirror.start(this, resultCode, resultData)) {
+                stopForeground(STOP_FOREGROUND_REMOVE); stopSelf()
+            }
+        } else { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf() }
+        // Consent cannot be reused after process death; require a fresh prompt.
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {

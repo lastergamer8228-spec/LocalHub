@@ -137,102 +137,15 @@
     });
   }
 
-  // Runs a planned multi-step task sequentially with real work per step.
+  // One reviewed adapter owns plan execution; old defaults must never silently
+  // turn unknown steps into success or export logs as a substitute download.
   function runPlan(plan) {
-    Context && Context.set("currentTask", plan.name);
-    var collectedTarget = null;
-    return TaskPlanner.execute(plan, function (step) {
-      var a = step.action;
-      var FS = global.LH_AI.FS;
-      if (a === "openFolder") {
-        Context.setFolder(step.params && step.params.path);
-        return { openFM: "/files?path=" + encodeURIComponent(step.params.path || Context.ROOT), message: "Opened folder." };
-      }
-      if (a === "findLatestVideo" || a === "findLatestAudio") {
-        var ext = a === "findLatestVideo" ? "mp4" : "mp3";
-        var dir = (step.params && step.params.path) || "/storage/emulated/0/Download";
-        return FS.search("." + ext, dir).then(function (r) {
-          var hits = (r.matches || []);
-          // newest by name suffix heuristic (no server mtime in search result)
-          var latest = hits[0] || null;
-          collectedTarget = latest ? latest.path : null;
-          return { latest: latest, dir: dir };
-        });
-      }
-      if (a === "openMediaPlayer" || a === "startPlayback") {
-        var target = collectedTarget || (Context && Context.get && Context.get("lastPlanFile"));
-        return { openFM: target ? "/player?file=" + encodeURIComponent(target) : "/player", message: "Opening media player." };
-      }
-      if (a === "restart") return { action: "server/restart", message: "Restarting server…" };
-      if (a === "wait") {
-        var ms = (step.params && step.params.ms) || 1000;
-        return new Promise(function (resolve) { setTimeout(function () { resolve({ waited: ms }); }, ms); });
-      }
-      if (a === "showLogs") return FS.logs().then(function (l) {
-        var logs = (l && l.logs) || [];
-        return { message: "Recent logs:\n" + logs.slice(0, 8).map(function (x) { return "[" + (x.level || "INFO") + "] " + x.message; }).join("\n") };
-      });
-      if (a === "download") return { action: "server/export-logs", message: "Downloading…" };
-      if (a === "open") return { openFM: "/", message: "Opened." };
-      if (a === "list") return FS.list(step.params && step.params.path).then(function (d) { return { entries: (d && d.files) || [], folders: (d && d.folders) || [] }; });
-      if (a === "sortByType") {
-        // Group the listed files by extension and remember them for the next step.
-        return FS.list("/storage/emulated/0/Download").then(function (d) {
-          var groups = {};
-          (d.files || []).forEach(function (f) {
-            var ext = (f.name.split(".").pop() || "other").toLowerCase();
-            (groups[ext] = groups[ext] || []).push(f.path);
-          });
-          return { groups: groups };
-        });
-      }
-      if (a === "createFolders") {
-        // Create category folders for extensions actually present.
-        return FS.list("/storage/emulated/0/Download").then(function (d) {
-          var made = [];
-          var exts = {};
-          (d.files || []).forEach(function (f) { exts[(f.name.split(".").pop() || "other").toLowerCase()] = 1; });
-          var chain = Promise.resolve();
-          Object.keys(exts).forEach(function (ext) {
-            chain = chain.then(function () {
-              return FS.mkdir("/storage/emulated/0/Download", ext.toUpperCase() + " files").then(function () { made.push(ext); });
-            });
-          });
-          return chain.then(function () { return { created: made }; });
-        });
-      }
-      if (a === "moveFiles") {
-        // Move files into their extension folder.
-        return FS.list("/storage/emulated/0/Download").then(function (d) {
-          var chain = Promise.resolve(); var moved = [];
-          (d.files || []).forEach(function (f) {
-            var ext = (f.name.split(".").pop() || "other").toLowerCase();
-            var dest = "/storage/emulated/0/Download/" + ext.toUpperCase() + " files";
-            chain = chain.then(function () { return FS.move(f.path, dest); }).then(function () { moved.push(f.name); });
-          });
-          return chain.then(function () { return { moved: moved }; });
-        });
-      }
-      return { ok: true };
-    }).then(function (out) {
-      // Collect the last openFM / action from the steps.
-      var openFM = null, action = null, message = "Task complete.";
-      for (var i = 0; i < (out.results || []).length; i++) {
-        var r = out.results[i].result;
-        if (r && r.openFM) openFM = r.openFM;
-        if (r && r.action) action = r.action;
-        if (r && r.message && r.message !== "Opened folder.") message = r.message;
-      }
-      var target = collectedTarget;
-      if (target && openFM && openFM.indexOf("/player") === 0) {
-        openFM = "/player?file=" + encodeURIComponent(target);
-        Context && Context.setMedia(target, "video");
-      }
-      var result = { ok: true, message: message };
-      if (openFM) result.openFM = openFM;
-      if (action) result.action = action;
-      Context && Context.set("currentTask", null);
-      return result;
+    if (!global.LH_AI.AssistantRuntime || !global.LH_AI.AssistantRuntime.runReviewedPlan) {
+      return Promise.resolve({ok:false,message:"The reviewed workflow executor is unavailable.",execution:{status:"UNAVAILABLE",verified:false}});
+    }
+    if (Context) Context.set("currentTask", plan.name);
+    return global.LH_AI.AssistantRuntime.runReviewedPlan(plan).finally(function () {
+      if (Context) Context.set("currentTask", null);
     });
   }
 
@@ -240,17 +153,17 @@
     if (!ref) return Promise.resolve({ ok: false, message: "No context to act on. Specify a file or folder." });
     if (ref.type === "folder") {
       Context.setFolder(ref.path);
-      return Promise.resolve({ ok: true, message: "Opened " + (ref.path || "root") + ".", openFM: "/files?path=" + encodeURIComponent(ref.path || Context.ROOT) });
+      return Promise.resolve({ ok: true, message: "Requesting folder navigation to " + (ref.path || "root") + ".", openFM: "/files?path=" + encodeURIComponent(ref.path || Context.ROOT) });
     }
     if (ref.type === "media") {
       Context.setMedia(ref.path, ref.type);
       var folder = ref.path.substring(0, ref.path.lastIndexOf("/"));
-      return Promise.resolve({ ok: true, message: "Playing " + ref.path.split("/").pop() + ".", openFM: "/player?file=" + encodeURIComponent(ref.path) });
+      return Promise.resolve({ ok: true, message: "Opening player for " + ref.path.split("/").pop() + "; playback is not yet confirmed.", openFM: "/player?file=" + encodeURIComponent(ref.path) });
     }
     if (ref.type === "search" && ref.query) {
       return Commands && Commands.parse("search files named " + ref.query)
         ? Commands.execute(Commands.parse("search files named " + ref.query))
-        : Promise.resolve({ ok: true, message: "Repeating search for '" + ref.query + "'." });
+        : Promise.resolve({ ok: false, message: "The previous search could not be dispatched. Please state the query again." });
     }
     return Promise.resolve({ ok: false, message: "No context to act on." });
   }
@@ -259,7 +172,7 @@
   function respond(result) {
     // Keep responses short and professional.
     if (result && result.message) return result;
-    return { ok: true, message: "Done." };
+    return { ok: false, message: "The handler returned no usable result. Completion cannot be verified.", execution: {status:"FAILED",verified:false} };
   }
 
   // ---- full pipeline ----

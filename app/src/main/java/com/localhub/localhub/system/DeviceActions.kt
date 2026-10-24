@@ -87,7 +87,12 @@ class DeviceActions(private val context: Context) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !notificationPolicyAccess()) {
                     return mapOf("ok" to false, "error" to "DND requires Notification access permission", "action" to "dnd")
                 }
-                return mapOf("ok" to true, "action" to "dnd", "state" to true)
+                return try {
+                    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                    manager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+                    val applied = manager.currentInterruptionFilter == android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY
+                    mapOf("ok" to applied, "action" to "dnd", "state" to applied)
+                } catch (e: Exception) { mapOf("ok" to false, "error" to (e.message ?: "DND change rejected")) }
             }
             else -> return mapOf("ok" to false, "error" to "Unknown ringer mode: $mode")
         }

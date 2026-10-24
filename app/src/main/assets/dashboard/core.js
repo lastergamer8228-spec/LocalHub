@@ -250,7 +250,7 @@
   function updateInfo() {
     var el = document.getElementById("core-info"); if (!el) return;
     var ram = (sys.memory.usedBytes||0)/(sys.memory.totalBytes||1);
-    el.textContent = "clients: "+clients.length+" · cpu: "+Math.round(sys.cpu.usagePercent||0)+"% · ram: "+Math.round(ram*100)+"% · "+(sys.network.type||"");
+    el.textContent = "clients: "+clients.length+" · cpu: "+(sys.cpu.available===false?"unavailable":Math.round(sys.cpu.usagePercent||0)+"%")+" · ram: "+Math.round(ram*100)+"% · "+(sys.network.type||"");
   }
 
   function poll() {

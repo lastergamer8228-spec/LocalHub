@@ -7,7 +7,8 @@ data class CpuInfo(
     val architecture: String,
     val minFreqKhz: Long,
     val maxFreqKhz: Long,
-    val usagePercent: Float
+    val usagePercent: Float,
+    val available: Boolean = true
 )
 
 /** RAM telemetry. */

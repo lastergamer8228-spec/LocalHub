@@ -3,166 +3,168 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LocalHub Dashboard</title>
+  <title>LocalHub — Dashboard</title>
   <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/theme-pro.css" />
   <link rel="stylesheet" href="/animations.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#0b1220" />
+  <meta name="theme-color" content="#0c1015" />
   <link rel="icon" type="image/png" href="/icon-192.png" />
 </head>
 <body class="lh-page">
-  <div class="lh-aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo">&#9672;</span>
-      <div>
-        <h1>LocalHub</h1>
-        <p id="server-url">local server</p>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <div class="status" id="ws-status"><span class="dot off"></span> connecting&hellip;</div>
-      <a class="linkbtn" id="core-btn" href="/core" target="_blank" title="System Core hologram">🌀 Core</a>
-      <span class="role-badge" id="role-badge"></span>
-      <button class="linkbtn" id="logout-btn" title="Sign out">Sign out</button>
-    </div>
-  </header>
+  <!-- Shared top navigation (rendered by /nav.js) -->
+  <div id="lh-nav"></div>
 
   <main>
-    <!-- Server status banner -->
-    <section class="card status-banner" id="status-banner">
-      <div class="sb-item"><span class="dot off" id="online-dot"></span><b id="online-text">Offline</b></div>
-      <div class="sb-item"><span>Name</span><b id="sb-name">—</b></div>
-      <div class="sb-item"><span>IP</span><b id="sb-ip">—</b></div>
-      <div class="sb-item"><span>Port</span><b id="sb-port">—</b></div>
-      <div class="sb-item"><span>Version</span><b id="sb-version">—</b></div>
-      <div class="sb-item"><span>Uptime</span><b id="sb-uptime">—</b></div>
-      <div class="sb-item"><span>Restarts</span><b id="sb-restarts">—</b></div>
-    </section>
-
-    <!-- System Core (holographic live visualization — replaces traditional metrics) -->
-    <section class="card" id="core-card">
-      <h2 style="display:flex;align-items:center;gap:8px"><span class="dot on" id="core-dot" style="background:var(--accent);box-shadow:0 0 8px var(--accent)"></span> System Core <span style="margin-left:auto;font-size:11px;color:var(--muted);font-family:monospace" id="core-info">loading…</span></h2>
-      <div class="core-stage" style="position:relative;width:100%;height:min(60vh,420px);min-height:300px;border-radius:12px;overflow:hidden">
-        <canvas data-core id="core-embed" style="width:100%;height:100%;display:block"></canvas>
+    <!-- Page head: what this is + the one thing you usually want to do -->
+    <div class="lh-page-head">
+      <div>
+        <div class="lh-page-title">Dashboard</div>
+        <div class="lh-page-sub" id="server-url">local server</div>
       </div>
-      <div class="hint" style="margin-top:8px">◆ LIVE holographic core — connected clients orbit · CPU/RAM/Storage arcs · drag to rotate</div>
+      <div class="lh-page-actions">
+        <a class="btn btn-primary" href="/files" data-test="open-files">Open File Manager</a>
+        <a class="btn" href="/ai/">Assistant</a>
+        <a class="btn admin-only" href="/core" data-test="open-core">System Core</a>
+      </div>
+    </div>
+
+    <!-- 1. State at a glance: four numbers, not seven pills -->
+    <section class="status-banner lh-metrics" id="status-banner">
+      <div class="sb-item"><span>Server</span><b id="online-text"><span class="dot off" id="online-dot"></span> Offline</b></div>
+      <div class="sb-item"><span>Uptime</span><b id="sb-uptime">—</b></div>
+      <div class="sb-item"><span>Clients</span><b id="sb-clients">0</b></div>
+      <div class="sb-item"><span>Version</span><b id="sb-version">—</b></div>
     </section>
 
-    <!-- Connect -->
+    <!-- 2. Connect: the primary job of this page -->
     <section class="card" id="connect-card">
-      <h2>Connect</h2>
+      <h2>Connect <span class="spacer"></span><span class="hint" id="sb-name" style="text-transform:none;letter-spacing:0"></span></h2>
       <div id="connect-body">
         <div class="loading"><div class="spinner"></div>Loading&hellip;</div>
       </div>
-    </section>
-
-    <!-- ===== ADMIN-ONLY SECTIONS (strictly admin) ===== -->
-
-    <!-- Transfer monitor (admin only) -->
-    <section class="card admin-only">
-      <h2>Transfer Monitor</h2>
-      <div class="tm-grid">
-        <div class="tm-item"><span>Download</span><b id="tm-dl">0 B/s</b></div>
-        <div class="tm-item"><span>Upload</span><b id="tm-ul">0 B/s</b></div>
-        <div class="tm-item"><span>Total Down</span><b id="tm-totdl">0 B</b></div>
-        <div class="tm-item"><span>Total Up</span><b id="tm-totul">0 B</b></div>
-        <div class="tm-item"><span>Active</span><b id="tm-active">0</b></div>
-        <div class="tm-item"><span>Peak Concurrent</span><b id="tm-peak">0</b></div>
+      <div class="row" style="margin-top:10px;gap:14px;flex-wrap:wrap">
+        <span class="hint">Address <b id="sb-ip" style="font-family:var(--mono);color:var(--text-dim)">—</b></span>
+        <span class="hint">Port <b id="sb-port" style="font-family:var(--mono);color:var(--text-dim)">—</b></span>
+        <span class="hint">Restarts <b id="sb-restarts" style="font-family:var(--mono);color:var(--text-dim)">—</b></span>
       </div>
     </section>
 
-    <!-- Activity (admin only) -->
-    <section class="card admin-only">
-      <h2>Server Activity</h2>
-      <div class="act-grid" id="activity-body">Loading&hellip;</div>
-      <div id="lh-ticker" style="margin-top:12px"></div>
+    <!-- 3. What you can do: real buttons in one row (no chip soup) -->
+    <section class="card user-only">
+      <h2>Quick actions</h2>
+      <div class="ctrl-row" id="user-quick"></div>
     </section>
 
-    <!-- Server control (admin only) -->
-    <section class="card admin-only">
-      <h2>Server Control</h2>
-      <div class="ctrl-row">
-        <button class="chip ctl" data-cmd="restart" style="color:var(--accent2)">↻ Restart</button>
-        <button class="chip ctl" data-cmd="stop" style="color:var(--danger)">■ Stop</button>
-        <button class="chip ctl" data-cmd="clear-cache">🧹 Clear Cache</button>
-        <button class="chip ctl" data-cmd="clear-logs">🗑 Clear Logs</button>
-        <button class="chip ctl" data-cmd="backup">💾 Backup Config</button>
-        <button class="chip ctl" data-cmd="restore">↩ Restore Config</button>
+    <!-- ===== ADMIN ===== -->
+
+    <section class="card admin-only" id="server-control-card">
+      <h2>Server control</h2>
+      <div class="ctrl-row" id="ctrl-row">
+        <button class="btn" data-cmd="restart" data-test="server-restart">Restart</button>
+        <button class="btn btn-danger" data-cmd="stop" data-test="server-stop">Stop</button>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost" data-cmd="backup">Backup config</button>
+        <button class="btn btn-ghost" data-cmd="restore">Restore config</button>
+        <button class="btn btn-ghost" data-cmd="clear-cache">Clear cache</button>
       </div>
-      <div id="ctrl-status" class="hint"></div>
+      <div id="ctrl-status" class="hint" style="margin-top:8px"></div>
     </section>
 
-    <!-- Connected devices + device management (admin only) -->
+    <div class="lh-cols">
+      <section class="card admin-only">
+        <h2>Transfer monitor</h2>
+        <div class="tm-grid">
+          <div class="tm-item"><span>Download</span><b id="tm-dl">0 B/s</b></div>
+          <div class="tm-item"><span>Upload</span><b id="tm-ul">0 B/s</b></div>
+          <div class="tm-item"><span>Active</span><b id="tm-active">0</b></div>
+          <div class="tm-item"><span>Total down</span><b id="tm-totdl">0 B</b></div>
+          <div class="tm-item"><span>Total up</span><b id="tm-totul">0 B</b></div>
+          <div class="tm-item"><span>Peak</span><b id="tm-peak">0</b></div>
+        </div>
+      </section>
+
+      <section class="card admin-only">
+        <h2>Server activity</h2>
+        <div class="act-grid" id="activity-body">Loading&hellip;</div>
+      </section>
+    </div>
+
+    <!-- System Core keeps its holographic visualisation, but it no longer
+         eats the whole first screen: collapsed until you ask for it. -->
+    <details class="card" id="core-card">
+      <summary>System Core — live visualisation</summary>
+      <div class="card-body">
+        <div class="core-stage" style="position:relative;width:100%;height:min(52vh,380px);min-height:280px;border-radius:6px;overflow:hidden;background:var(--bg-2)">
+          <canvas data-core id="core-embed" style="width:100%;height:100%;display:block"></canvas>
+        </div>
+        <div class="hint" style="margin-top:8px">
+          <span class="dot on" id="core-dot"></span>
+          <span id="core-info">loading…</span> — connected clients orbit · CPU / RAM / storage arcs · drag to rotate
+        </div>
+      </div>
+    </details>
+
     <section class="card admin-only">
-      <h2>Connected Devices &amp; Management</h2>
-      <p class="hint">Block a device or restrict its file access. Enforced server-side.</p>
+      <h2>Connected devices <span class="spacer"></span><span class="hint" style="text-transform:none;letter-spacing:0">Blocking and restrictions are enforced server-side.</span></h2>
       <div id="devices" class="list">No devices connected.</div>
       <div id="device-policy" style="margin-top:12px"></div>
     </section>
 
-    <!-- ===== USER-ONLY SECTIONS (standard web user) ===== -->
-
-    <!-- My Media / continue watching (user) -->
-    <section class="card user-only">
-      <h2>🎬 My Media</h2>
-      <div id="user-media" class="list"><div class="hint">Recently played media will appear here.</div></div>
-    </section>
-
-    <!-- My files / favorites (user) -->
-    <section class="card user-only">
-      <h2>📁 My Files</h2>
-      <div id="user-files" class="list"><div class="hint">Your frequently used folders will appear here.</div></div>
-    </section>
-
-    <!-- Quick actions (user) -->
-    <section class="card user-only">
-      <h2>⚡ Quick Actions</h2>
-      <div id="user-quick" class="chips"></div>
-    </section>
-
-    <!-- Shared for both: Modules + Device info -->
-    <section class="grid-2">
-      <div class="card">
+    <div class="lh-cols">
+      <section class="card">
         <h2>Modules</h2>
         <div id="modules" class="list">Loading&hellip;</div>
-      </div>
-      <div class="card" id="device-card">
+      </section>
+      <section class="card" id="device-card">
         <h2>Device</h2>
         <div id="device">Loading&hellip;</div>
-      </div>
+      </section>
+    </div>
+
+    <!-- ===== STANDARD WEB USER ===== -->
+    <section class="card user-only">
+      <h2>Continue watching</h2>
+      <div id="user-media" class="list"><div class="hint" style="padding:8px 10px">Recently played media appears here.</div></div>
     </section>
 
-    <!-- API explorer (hidden until developer mode) -->
+    <section class="card user-only">
+      <h2>Your folders</h2>
+      <div id="user-files" class="list"><div class="hint" style="padding:8px 10px">Folders you use most appear here.</div></div>
+    </section>
+
+    <!-- ===== SUPPORTING / COLLAPSED ===== -->
+    <details class="card" id="logs-card" style="display:none">
+      <summary>Access logs</summary>
+      <div class="card-body">
+        <div class="logtoolbar">
+          <button class="chip lf active" data-filter="all">All</button>
+          <button class="chip lf" data-filter="GET">GET</button>
+          <button class="chip lf" data-filter="POST">POST</button>
+          <button class="chip lf" data-filter="download">Download</button>
+          <button class="chip lf" data-filter="media">Media</button>
+          <button class="chip lf" data-filter="error">Errors</button>
+          <span class="spacer"></span>
+          <button class="chip" id="export-logs">Export</button>
+          <button class="chip" id="download-logs">Download</button>
+          <button class="chip btn-danger" id="clear-logs">Clear</button>
+        </div>
+        <div id="logs" class="logs" style="margin-top:10px"></div>
+      </div>
+    </details>
+
     <section class="card dev-only" style="display:none">
-      <h2>API Explorer</h2>
+      <h2>API explorer</h2>
       <div class="logtoolbar">
         <button class="chip" id="dev-refresh-endpoints">Refresh</button>
         <span class="spacer"></span>
-        <button class="chip" id="dev-hide">Hide Dev Tools</button>
+        <button class="chip" id="dev-hide">Hide dev tools</button>
       </div>
       <div id="endpoints" class="list">Loading&hellip;</div>
     </section>
-
-    <!-- Access / live logs (Administrator only — rendered by JS for admin role) -->
-    <section class="card" id="logs-card" style="display:none">
-      <h2>Access Logs</h2>
-      <div class="logtoolbar">
-        <button class="chip lf active" data-filter="all">All</button>
-        <button class="chip lf" data-filter="GET">GET</button>
-        <button class="chip lf" data-filter="POST">POST</button>
-        <button class="chip lf" data-filter="download">Download</button>
-        <button class="chip lf" data-filter="media">Media</button>
-        <button class="chip lf" data-filter="error">Errors</button>
-        <span class="spacer"></span>
-        <button class="chip" id="export-logs">Export</button>
-        <button class="chip" id="clear-logs">Clear</button>
-        <button class="chip" id="download-logs">Download Logs</button>
-      </div>
-      <div id="logs" class="logs"></div>
-    </section>
   </main>
 
+  <script src="/nav.js"></script>
   <script src="/animations.js"></script>
   <script src="/visuals.js"></script>
   <script src="/core.js"></script>

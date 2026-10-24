@@ -7,143 +7,120 @@ import androidx.lifecycle.viewModelScope
 import com.localhub.localhub.core.Constants
 import com.localhub.localhub.model.SystemInfo
 import com.localhub.localhub.service.LocalHubService
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SettingsViewModel(app: Application) : LocalHubViewModel(app) {
-
     private val ctx = getApplication<Application>().applicationContext
-
-    val running: StateFlow<Boolean> = container.isServerRunning
-    val serverStatus: StateFlow<com.localhub.localhub.model.ServerStatus> = container.serverStatus
-
-    val port: StateFlow<Int> = container.preferencesManager.portFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), Constants.DEFAULT_PORT)
-
-    val theme: StateFlow<String> = container.preferencesManager.themeFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "dark")
-
-    val autostart: StateFlow<Boolean> = container.preferencesManager.autostartFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    val serverName: StateFlow<String> = container.preferencesManager.serverNameFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "LocalHub")
-
-    val httpsEnabled: StateFlow<Boolean> = container.preferencesManager.httpsEnabledFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    val auditEnabled: StateFlow<Boolean> = container.preferencesManager.auditEnabledFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
-    /** Live device/system snapshot (refreshed by the foreground service every ~2s). */
+    val running = container.isServerRunning
+    val serverStatus = container.serverStatus
+    val serverError = container.serverError
+    val feedback = MutableStateFlow<String?>(null)
+    private val busy = MutableStateFlow(false)
+    val working: StateFlow<Boolean> = busy
+    val port = container.preferencesManager.portFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), Constants.DEFAULT_PORT)
+    val theme = container.preferencesManager.themeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "dark")
+    val autostart = container.preferencesManager.autostartFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val serverName = container.preferencesManager.serverNameFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "LocalHub")
+    val httpsEnabled = container.preferencesManager.httpsEnabledFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val auditEnabled = container.preferencesManager.auditEnabledFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val systemInfo: StateFlow<SystemInfo?> = container.systemInfoProvider.lastSnapshot
+    val connectedClients = container.connectedClients.map { it.size }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    /** Live connected-client count. */
-    val connectedClients: StateFlow<Int> = container.connectedClients
-        .map { it.size }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-
-    /** Sends a restart via the same-port apply action (recreates the server). */
-    fun restartServer() {
-        val p = container.serverStatus.value.port
-        applyPort(if (p in 1024..65535) p else Constants.DEFAULT_PORT)
+    private fun task(block: suspend () -> String) {
+        if (busy.value) return
+        busy.value = true
+        viewModelScope.launch {
+            try { feedback.value = block() }
+            catch (e: Exception) { feedback.value = e.message ?: "Action failed" }
+            finally { busy.value = false }
+        }
     }
-
-    fun openBrowser(url: String) {
+    private fun command(action: String) {
         runCatching {
-            ctx.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-        }
+            val intent = Intent(ctx, LocalHubService::class.java).setAction(action)
+            if (action == Constants.ACTION_START || action == Constants.ACTION_RESTART) androidx.core.content.ContextCompat.startForegroundService(ctx, intent)
+            else ctx.startService(intent)
+            feedback.value = "Request sent. Watch the live server status for the result."
+        }.onFailure { feedback.value = it.message ?: "Could not send server command" }
     }
-
-    /** The advertised friendly hostname (localhub.local by default). */
-    fun friendlyHostname(): String {
-        val name = serverName.value
-        val n = name.trim().lowercase().replace(Regex("[^a-z0-9-]"), "-").trim('-')
-        return (if (n.isEmpty()) "localhub" else n) + ".local"
+    fun startServer() = command(Constants.ACTION_START)
+    fun stopServer() = command(Constants.ACTION_STOP)
+    fun restartServer() { if (running.value) command(Constants.ACTION_RESTART) else { feedback.value = "Server is stopped. Use Start." } }
+    fun openBrowser(url: String) {
+        runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .onFailure { feedback.value = "Could not open browser: ${it.message}" }
     }
-
-    fun startServer() {
-        ctx.startForegroundService(
-            Intent(ctx, LocalHubService::class.java).apply { action = Constants.ACTION_START }
+    fun friendlyHostname() = "localhub.local"
+    fun applyPort(newPort: Int) = task {
+        require(newPort in 1024..65535) { "Port must be between 1024 and 65535." }
+        container.preferencesManager.setPort(newPort)
+        ctx.startService(Intent(ctx, LocalHubService::class.java).setAction(Constants.ACTION_APPLY_PORT).putExtra(Constants.EXTRA_PORT, newPort))
+        "Port saved. If running, server will rebind; check live status."
+    }
+    fun setTheme(value: String) = task { container.preferencesManager.setTheme(value); "Theme saved." }
+    fun setAutostart(value: Boolean) = task { container.preferencesManager.setAutostart(value); "Boot preference saved; Android battery/background restrictions still apply." }
+    fun setHttpsEnabled(value: Boolean) = task {
+        container.preferencesManager.setHttpsEnabled(value)
+        if (running.value) command(Constants.ACTION_RESTART)
+        "HTTPS preference saved. Browser links now use ${if(value) "https" else "http"}. Verify live status after restart."
+    }
+    fun setAuditEnabled(value: Boolean) = task {
+        container.preferencesManager.setAuditEnabled(value)
+        container.logger.auditEnabled = value
+        "Security audit logging ${if(value) "enabled" else "disabled"}."
+    }
+    fun setServerName(value: String) = task {
+        require(value.isNotBlank() && value.length <= 64) { "Use a server name between 1 and 64 characters." }
+        container.preferencesManager.setServerName(value.trim())
+        if (running.value) ctx.startService(Intent(ctx, LocalHubService::class.java).setAction(Constants.ACTION_SAVE_NAME).putExtra(Constants.EXTRA_NAME,value.trim()))
+        "Display name saved. mDNS discovery is best-effort; the IP URL is the reliable fallback."
+    }
+    fun clearLogs() = task { container.logRepository.clear(); "Stored logs cleared. New activity may create new entries." }
+    /** Settings backup contains non-secret preferences only (never passwords/TOTP). */
+    suspend fun buildSettingsBackup(): String {
+        val preferences = container.preferencesManager
+        val values = mapOf(
+            "port" to preferences.portFlow.first().toString(),
+            "theme" to preferences.themeFlow.first(),
+            "autostart" to preferences.autostartFlow.first().toString(),
+            "serverName" to preferences.serverNameFlow.first()
         )
+        return com.localhub.localhub.data.backup.BackupSerializer.exportSettings(values, System.currentTimeMillis())
     }
 
-    fun stopServer() {
-        ctx.startService(
-            Intent(ctx, LocalHubService::class.java).apply {
-                action = Constants.ACTION_STOP
-            }
-        )
+    suspend fun buildLogsBackup(): String {
+        val logs = container.logRepository.all().first()
+        return com.localhub.localhub.data.backup.BackupSerializer.exportLogs(logs, System.currentTimeMillis())
     }
 
-    fun applyPort(newPort: Int) {
-        viewModelScope.launch {
-            runCatching {
-                container.preferencesManager.setPort(newPort)
-                ctx.startService(
-                    Intent(ctx, LocalHubService::class.java).apply {
-                        action = Constants.ACTION_APPLY_PORT
-                        putExtra(Constants.EXTRA_PORT, newPort)
-                    }
-                )
-            }.onFailure {
-                container.logger.error("Settings", it.stackTraceToString())
-            }
-        }
+    /** Restores only validated, non-secret settings; reports what was skipped. */
+    suspend fun applySettingsBackup(json: String): String {
+        val result = com.localhub.localhub.data.backup.BackupSerializer.parseSettings(json)
+        if (result.error != null) return result.error
+        if (result.values.isEmpty()) return "No usable settings found in that backup."
+        val preferences = container.preferencesManager
+        result.values["port"]?.toIntOrNull()?.let { preferences.setPort(it) }
+        result.values["theme"]?.let { preferences.setTheme(it) }
+        result.values["autostart"]?.let { preferences.setAutostart(it == "true") }
+        result.values["serverName"]?.let { preferences.setServerName(it) }
+        val restored = result.values.keys.sorted().joinToString(", ")
+        val skipped = if (result.ignoredKeys.isEmpty()) "" else
+            " Skipped ${result.ignoredKeys.distinct().size} unsupported key(s): ${result.ignoredKeys.distinct().joinToString(", ")}. Passwords and 2FA secrets are never restored."
+        return "Restored: $restored.$skipped"
     }
 
-    fun setTheme(theme: String) {
-        viewModelScope.launch { container.preferencesManager.setTheme(theme) }
-    }
-
-    fun setAutostart(enabled: Boolean) {
-        viewModelScope.launch { container.preferencesManager.setAutostart(enabled) }
-    }
-
-    fun setHttpsEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            container.preferencesManager.setHttpsEnabled(enabled)
-            // Restart the server so the TLS setting takes effect.
-            restartServer()
-        }
-    }
-
-    fun setAuditEnabled(enabled: Boolean) {
-        viewModelScope.launch { container.preferencesManager.setAuditEnabled(enabled) }
-    }
-
-    fun setServerName(name: String) {
-        viewModelScope.launch {
-            runCatching {
-                ctx.startService(
-                    Intent(ctx, LocalHubService::class.java).apply {
-                        action = Constants.ACTION_SAVE_NAME
-                        putExtra(Constants.EXTRA_NAME, name)
-                    }
-                )
-            }.onFailure {
-                container.logger.error("Settings", it.stackTraceToString())
+    fun clearTemporaryCache() = task {
+        check(!running.value) { "Stop the server before clearing temporary media cache." }
+        withContext(Dispatchers.IO) {
+            check(container.server.cancelMediaWork()) { "Audio conversion is still stopping. Try again shortly." }
+            listOf("compatible-audio", "compatible-audio-v2", "tts").forEach { name ->
+                val folder = java.io.File(ctx.cacheDir, name)
+                check(!folder.exists() || folder.deleteRecursively()) { "Could not clear $name cache." }
             }
         }
-    }
-
-    fun clearLogs() {
-        viewModelScope.launch {
-            runCatching {
-                ctx.startService(
-                    Intent(ctx, LocalHubService::class.java).apply {
-                        action = Constants.ACTION_CLEAR_LOGS
-                    }
-                )
-            }.onFailure {
-                container.logger.error("Settings", it.stackTraceToString())
-            }
-        }
+        "Temporary media cache cleared. Your source files were not modified."
     }
 }

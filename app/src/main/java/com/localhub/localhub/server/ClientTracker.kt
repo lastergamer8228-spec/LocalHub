@@ -24,6 +24,10 @@ class ClientTracker {
 
     /** IPs that are blocked entirely from the server. */
     private val blockedIps = ConcurrentHashMap.newKeySet<String>()
+    private val _blocked = MutableStateFlow<Set<String>>(emptySet())
+    val blockedFlow: StateFlow<Set<String>> = _blocked.asStateFlow()
+    private val _restrictions = MutableStateFlow<Map<String, String>>(emptyMap())
+    val restrictionsFlow: StateFlow<Map<String, String>> = _restrictions.asStateFlow()
 
     /**
      * Per-IP file access restrictions. Values:
@@ -35,15 +39,16 @@ class ClientTracker {
 
     fun isBlocked(ip: String): Boolean = blockedIps.contains(ip)
 
-    fun block(ip: String) { blockedIps.add(ip) }
+    fun block(ip: String) { blockedIps.add(ip); _blocked.value = blockedIps.toSet() }
 
-    fun unblock(ip: String) { blockedIps.remove(ip) }
+    fun unblock(ip: String) { blockedIps.remove(ip); _blocked.value = blockedIps.toSet() }
 
     fun blockedList(): List<String> = blockedIps.sorted()
 
     fun setRestriction(ip: String, restriction: String) {
         if (restriction.isBlank() || restriction == "none") ipRestrictions.remove(ip)
         else ipRestrictions[ip] = restriction
+        _restrictions.value = ipRestrictions.toMap()
     }
 
     /** "" = none, "RO" = read-only, "deny" = no file access. */

@@ -9,12 +9,15 @@ import java.io.File
  */
 class FileOperations(private val rootPath: String = "/storage/emulated/0") {
 
+    /** Resolves a folder for uploads under the storage root (rejects traversal). */
+    fun directory(raw: String?): File = File(sanitize(raw ?: rootPath))
+
     fun exists(path: String): Boolean = File(sanitize(path)).exists()
 
     fun isDirectory(path: String): Boolean = File(sanitize(path)).isDirectory
 
-    fun list(path: String?): Map<String, Any> =
-        FileManager(rootPath).list(path)
+    fun list(path: String?, maxEntries: Int = FileManager.DEFAULT_LIST_LIMIT): Map<String, Any> =
+        FileManager(rootPath).list(path, maxEntries)
 
     fun search(query: String, dir: String?, maxDepth: Int = 3, limit: Int = 200): Map<String, Any> {
         val q = query.trim().lowercase()

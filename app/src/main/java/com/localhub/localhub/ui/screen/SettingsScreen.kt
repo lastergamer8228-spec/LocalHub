@@ -1,377 +1,293 @@
 package com.localhub.localhub.ui.screen
 
+import android.graphics.BitmapFactory
 import android.os.Build
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.localhub.localhub.model.ServerStatus
-import com.localhub.localhub.model.SystemInfo
-import com.localhub.localhub.ui.components.PremiumButton
-import com.localhub.localhub.ui.components.PremiumCard
-import com.localhub.localhub.ui.components.PremiumSwitch
-import com.localhub.localhub.ui.components.PremiumTextField
-import com.localhub.localhub.ui.components.SectionHeader
-import com.localhub.localhub.ui.components.SegmentSelector
-import com.localhub.localhub.ui.theme.LocalLocalHubColors
+import com.localhub.localhub.BuildConfig
+import com.localhub.localhub.server.QrGenerator
+import com.localhub.localhub.ui.components.*
 import com.localhub.localhub.ui.viewmodel.SettingsViewModel
-import kotlinx.coroutines.delay
 
+/** Each action has one home and an actual effect; no placeholder restart aliases. */
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val running by viewModel.running.collectAsStateWithLifecycle()
     val status by viewModel.serverStatus.collectAsStateWithLifecycle()
+    val serverError by viewModel.serverError.collectAsStateWithLifecycle()
+    val working by viewModel.working.collectAsStateWithLifecycle()
+    val feedback by viewModel.feedback.collectAsStateWithLifecycle()
+    val port by viewModel.port.collectAsStateWithLifecycle()
+    val serverName by viewModel.serverName.collectAsStateWithLifecycle()
+    val https by viewModel.httpsEnabled.collectAsStateWithLifecycle()
+    val audit by viewModel.auditEnabled.collectAsStateWithLifecycle()
     val theme by viewModel.theme.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
-    val serverName by viewModel.serverName.collectAsStateWithLifecycle()
-    val httpsEnabled by viewModel.httpsEnabled.collectAsStateWithLifecycle()
-    val auditEnabled by viewModel.auditEnabled.collectAsStateWithLifecycle()
     val sys by viewModel.systemInfo.collectAsStateWithLifecycle()
-    val clientCount by viewModel.connectedClients.collectAsStateWithLifecycle()
-
-    var nameText by remember { mutableStateOf(serverName) }
-
-    // Ticking clock for live uptime.
-    var now by remember { mutableStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); delay(1000) } }
-
-    val hostname = viewModel.friendlyHostname()
-    val ip = sys?.network?.ipAddress ?: status.host
-    val baseUrl = "http://$ip:${status.port}"
-    val haptics = LocalHapticFeedback.current
-    // Captured in the composable body so it can be used inside onClick lambdas.
+    var nameText by remember { mutableStateOf("") }
+    var portText by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf<String?>(null) }
+    var showQr by remember { mutableStateOf(false) }
+    LaunchedEffect(serverName) { nameText = serverName }
+    LaunchedEffect(port) { portText = port.toString() }
+    val ip = sys?.network?.ipAddress ?: status.host.ifBlank { "127.0.0.1" }
+    val scheme = if(running) status.protocol else if(https) "https" else "http"
+    val url = "$scheme://$ip:${if(running) status.port else port}"
     val clipboard = LocalClipboardManager.current
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        item { LiveStatusStrip(sys, status, now, clientCount) }
-
-        item { SectionHeader("Server") }
-        item { ServerCard(running, status, sys, hostname, baseUrl, viewModel) }
-
-        item { SectionHeader("Server Identity") }
+    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item { SectionHeader("Server control") }
         item {
             PremiumCard {
-                PremiumTextField(
-                    value = nameText,
-                    onValueChange = { nameText = it },
-                    label = "Server Name"
-                )
-                PremiumTextField(
-                    value = hostname,
-                    onValueChange = {},
-                    label = "Friendly Hostname",
-                    supportingText = "mDNS hostname on your local network"
-                )
-                PremiumTextField(
-                    value = "$baseUrl",
-                    onValueChange = {},
-                    label = "Friendly URL",
-                    supportingText = "Open this from any device on the network"
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    PremiumButton(
-                        text = "Save Name",
-                        modifier = Modifier.weight(1f),
-                        onClick = { viewModel.setServerName(nameText) }
-                    )
-                    PremiumButton(
-                        text = "Copy URL",
-                        modifier = Modifier.weight(1f),
-                        accent = LocalLocalHubColors.current.accentBlue,
-                        leadingIcon = { Icon(Icons.Default.ContentCopy, null, Modifier.padding(end = 2.dp)) },
-                        onClick = {
-                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                            clipboard.setText(AnnotatedString(baseUrl))
-                        }
-                    )
+                Text(if(running) "Server online" else "Server stopped", style = MaterialTheme.typography.titleMedium)
+                serverError?.let { Text(it, color=MaterialTheme.colorScheme.error, maxLines=3, overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+                Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                    PremiumButton(if(running) "Stop server" else "Start server", modifier=Modifier.weight(1f), enabled=!working,
+                        onClick={ if(running) viewModel.stopServer() else viewModel.startServer() })
+                    PremiumButton("Restart server", modifier=Modifier.weight(1f), enabled=running && !working, onClick=viewModel::restartServer)
                 }
+
             }
         }
-
-        item { SectionHeader("Appearance") }
+        feedback?.let { message -> item { Text(message, style=MaterialTheme.typography.bodyMedium, maxLines=3, overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis) } }
+        item { SectionHeader("Health & recovery") }
+        item { HealthCard() }
+        item { SectionHeader("Connection") }
         item {
             PremiumCard {
-                Text("Theme", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                SegmentSelector(
-                    options = listOf("dark" to "Dark", "light" to "Light", "system" to "System"),
-                    selected = theme,
-                    onSelect = { viewModel.setTheme(it) }
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("Autostart on boot", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "Launch the server when the device starts",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                    }
-                    PremiumSwitch(checked = autostart, onCheckedChange = { viewModel.setAutostart(it) })
+                Text(url, style=MaterialTheme.typography.bodyMedium, maxLines=2, overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                    PremiumButton("Copy URL",modifier=Modifier.weight(1f),onClick={clipboard.setText(AnnotatedString(url))})
+                    PremiumButton("Open browser",modifier=Modifier.weight(1f),enabled=running,onClick={viewModel.openBrowser(url)})
                 }
+                PremiumButton("Show connection QR", onClick={showQr=true})
+                if(!running) Text("The QR/URL will work after you start the server.",style=MaterialTheme.typography.bodySmall)
+                PremiumTextField(nameText,{nameText=it},"Server display name")
+                PremiumButton("Save name",enabled=!working && nameText.isNotBlank() && nameText.length<=64,onClick={viewModel.setServerName(nameText)})
+                Text("Discovery hostname: localhub.local (best-effort). Use the IP URL if discovery is unavailable.",style=MaterialTheme.typography.bodySmall)
+                PremiumTextField(portText,{portText=it},"Port",supportingText="1024–65535. A running server will rebind to this port.")
+                PremiumButton("Apply port",enabled=!working && (portText.toIntOrNull() ?: 0) in 1024..65535,onClick={viewModel.applyPort(portText.toInt())})
             }
         }
-
+        item { SectionHeader("Appearance & startup") }
+        item {
+            PremiumCard {
+                SegmentSelector(listOf("dark" to "Dark","light" to "Light","system" to "System"),theme,viewModel::setTheme)
+                SettingToggle("Start on device boot", "Requires Android background-start permission; some manufacturers restrict it.",autostart,viewModel::setAutostart)
+            }
+        }
         item { SectionHeader("Security") }
         item {
             PremiumCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("HTTPS (self-signed)", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "Encrypt local traffic. Note: browsers warn on the self-signed cert.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                    }
-                    PremiumSwitch(checked = httpsEnabled, onCheckedChange = { viewModel.setHttpsEnabled(it) })
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("Security audit events", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "Log failed logins and permission denials to the Activity Timeline / logs.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                    }
-                    PremiumSwitch(checked = auditEnabled, onCheckedChange = { viewModel.setAuditEnabled(it) })
-                }
+                SettingToggle("HTTPS", "Self-signed certificate: browsers show a warning. Changes restart a running listener.",https,viewModel::setHttpsEnabled)
+                SettingToggle("Security audit logging", "Controls new AUDIT events. Authentication and permissions always remain enforced.",audit,viewModel::setAuditEnabled)
             }
         }
-
-        item { SectionHeader("Quick Actions") }
+        item { SectionHeader("Maintenance") }
         item {
             PremiumCard {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PremiumButton("Restart Server", modifier = Modifier.weight(1f), onClick = { viewModel.restartServer() })
-                    PremiumButton("Stop Server", modifier = Modifier.weight(1f), accent = LocalLocalHubColors.current.danger, onClick = { viewModel.stopServer() })
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PremiumButton("Restart Assets", modifier = Modifier.weight(1f), onClick = { viewModel.restartServer() })
-                    PremiumButton("Restart Media", modifier = Modifier.weight(1f), onClick = { viewModel.restartServer() })
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PremiumButton("Clear Cache", modifier = Modifier.weight(1f), onClick = { viewModel.restartServer() })
-                    PremiumButton("Clear Logs", modifier = Modifier.weight(1f), onClick = { viewModel.clearLogs() })
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PremiumButton("Backup Config", modifier = Modifier.weight(1f), enabled = false, onClick = {})
-                    PremiumButton("Restore Config", modifier = Modifier.weight(1f), enabled = false, onClick = {})
-                    PremiumButton("Export Logs", modifier = Modifier.weight(1f), enabled = false, onClick = {})
-                }
+                PremiumButton("Clear stored logs",enabled=!working,onClick={confirm="logs"})
+                PremiumButton("Clear temporary media cache",enabled=!working && !running,onClick={confirm="cache"})
+                Text("Stop the server before clearing media cache. Source videos/documents are never deleted.",style=MaterialTheme.typography.bodySmall)
             }
         }
-
+        item { SectionHeader("Backup & export") }
+        item { BackupCard() }
         item { SectionHeader("About") }
         item {
             PremiumCard {
-                InfoRow2("App Version", status.version)
-                InfoRow2("Build", Build.VERSION.INCREMENTAL.ifBlank { "-" })
-                InfoRow2("Android", "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
-                InfoRow2("Device Model", "${Build.MANUFACTURER} ${Build.MODEL}".trim())
-                InfoRow2("CPU", sys?.cpu?.model ?: "-")
-                InfoRow2("RAM", sys?.memory?.let { fmtBytes(it.totalBytes) } ?: "-")
-                InfoRow2("Storage", sys?.storage?.let { fmtBytes(it.totalBytes) } ?: "-")
-                InfoRow2("Architecture", Build.SUPPORTED_ABIS.firstOrNull() ?: "-")
-                InfoRow2("Developer", "LocalHub Team")
+                Text("App ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+                Text("Server protocol ${status.version}")
+                Text("Android ${Build.VERSION.RELEASE} · ${Build.MANUFACTURER} ${Build.MODEL}")
+                Text("ABI ${Build.SUPPORTED_ABIS.firstOrNull() ?: "Unknown"}")
+                Text("Development preview · device acceptance pending",style=MaterialTheme.typography.bodySmall)
+                Text("Native config backup/restore and log export are not available yet.",style=MaterialTheme.typography.bodySmall)
             }
         }
     }
+    if(confirm != null) AlertDialog(onDismissRequest={confirm=null},title={Text("Confirm maintenance")},
+        text={Text(if(confirm=="logs") "Clear stored logs? New activity may create new entries." else "Delete temporary audio/speech cache? Your source files stay untouched.")},
+        confirmButton={TextButton(onClick={if(confirm=="logs") viewModel.clearLogs() else viewModel.clearTemporaryCache();confirm=null}){Text("Clear")}},
+        dismissButton={TextButton(onClick={confirm=null}){Text("Cancel")}})
+    if(showQr) {
+        val bitmap = remember(url) { QrGenerator.png(url)?.let { BitmapFactory.decodeByteArray(it,0,it.size) } }
+        AlertDialog(onDismissRequest={showQr=false},title={Text("Connect on the same network")},
+            text={Column { bitmap?.let { Image(it.asImageBitmap(),"QR for $url",Modifier.size(220.dp)) };Text(url) }},
+            confirmButton={TextButton(onClick={showQr=false}){Text("Done")}})
+    }
 }
 
 @Composable
-private fun LiveStatusStrip(sys: SystemInfo?, status: ServerStatus, now: Long, clientCount: Int) {
-    val c = LocalLocalHubColors.current
-    val uptime = if (status.startedAt > 0) now - status.startedAt else 0L
+private fun BackupCard(viewModel: SettingsViewModel = viewModel()) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+    var feedback by remember { mutableStateOf<String?>(null) }
+    var pending by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
+    // Files are written through SAF so the user chooses where they are saved.
+    val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        val json = pending
+        pending = null
+        if (uri == null) {
+            feedback = "Export cancelled."
+            return@rememberLauncherForActivityResult
+        }
+        val ok = runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { it.write(json.orEmpty().toByteArray()) } ?: return@runCatching false
+            true
+        }.getOrDefault(false)
+        feedback = if (ok) "Backup saved." else "Could not write the backup file."
+    }
+
+    val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        busy = true
+        feedback = null
+        scope.launch {
+            val text = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
+                }.getOrNull()
+            }
+            feedback = viewModel.applySettingsBackup(text.orEmpty())
+            busy = false
+        }
+    }
+
+    fun export(kind: String) {
+        if (busy) return
+        busy = true
+        feedback = null
+        scope.launch {
+            val json = withContext(Dispatchers.IO) {
+                if (kind == "settings") viewModel.buildSettingsBackup() else viewModel.buildLogsBackup()
+            }
+            pending = json
+            val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmm", java.util.Locale.US).format(java.util.Date())
+            saveLauncher.launch("localhub-$kind-$stamp.json")
+            busy = false
+        }
+    }
+
     PremiumCard {
-        Text("Live Status", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Stat("CPU", sys?.cpu?.usagePercent?.let { "${it.toInt()}%" } ?: "-", c.cpu, Modifier.weight(1f))
-            Stat("RAM", sys?.memory?.let { "${it.usagePercent.toInt()}%" } ?: "-", c.memory, Modifier.weight(1f))
-            Stat("Storage", sys?.storage?.let { "${it.usagePercent.toInt()}%" } ?: "-", c.storage, Modifier.weight(1f))
-            Stat("Battery", sys?.battery?.let { "${it.level}%" } ?: "-", c.battery, Modifier.weight(1f))
+        Text("Move settings and logs between devices", style = MaterialTheme.typography.titleSmall)
+        Text(
+            "Settings backups contain only non-secret preferences (port, theme, autostart, server name). " +
+                "Passwords and two-factor secrets are never exported or restored.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            PremiumButton("Export settings", modifier = Modifier.weight(1f).testTag("export-settings"),
+                enabled = !busy, onClick = { export("settings") })
+            PremiumButton("Export logs", modifier = Modifier.weight(1f).testTag("export-logs"),
+                enabled = !busy, onClick = { export("logs") })
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Stat("Temp", sys?.battery?.let { "${it.temperatureCelsius}°" } ?: "-", c.warning, Modifier.weight(1f))
-            Stat("Net", sys?.network?.type ?: "-", c.network, Modifier.weight(1f))
-            Stat("Clients", clientCount.toString(), c.accentBlue, Modifier.weight(1f))
-            Stat("Uptime", fmtDuration(uptime), c.accent, Modifier.weight(1f))
-        }
+        PremiumButton("Import settings", modifier = Modifier.fillMaxWidth().testTag("import-settings"),
+            enabled = !busy, onClick = { openLauncher.launch(arrayOf("application/json")) })
+        feedback?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
     }
 }
-
 @Composable
-private fun Stat(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f))
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-        Text(value, color = color, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-    }
-}
-
-@Composable
-private fun ServerCard(
-    running: Boolean,
-    status: ServerStatus,
-    sys: SystemInfo?,
-    hostname: String,
-    baseUrl: String,
-    viewModel: SettingsViewModel
-) {
-    val c = LocalLocalHubColors.current
-    val dotColor = if (running) c.success else c.danger
-    // Captured in this composable's body for use inside the Copy URL onClick.
+private fun HealthCard() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val app = context.applicationContext as? com.localhub.localhub.LocalHubApplication
     val clipboard = LocalClipboardManager.current
-    PremiumCard {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(
-                Modifier
-                    .clip(CircleShape)
-                    .background(dotColor)
-                    .padding(6.dp)
-            )
-            Column {
-                Text(
-                    if (running) "Online" else "Offline",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = dotColor
-                )
-                Text("LocalHub Server", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+    var state by remember { mutableStateOf<com.localhub.localhub.system.HealthState?>(null) }
+    var feedback by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    suspend fun refresh() {
+        if (app == null) return
+        val next = withContext(Dispatchers.IO) { app.healthStore.read() }
+        state = next
+    }
+    fun run(action: String, block: (com.localhub.localhub.system.CrashReportStore) -> Unit) {
+        if (app == null || busy) return
+        busy = true
+        feedback = null
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching { block(app.healthStore) }.isSuccess
             }
+            busy = false
+            feedback = if (result) "$action done." else "$action failed."
+            refresh()
         }
-        InfoRow2("Server Version", status.version)
-        InfoRow2("IP", status.host.ifEmpty { "-" })
-        InfoRow2("Hostname", hostname)
-        InfoRow2("Port", status.port.toString())
-        InfoRow2("Running Since", if (status.startedAt > 0) fmtDate(status.startedAt) else "-")
-        InfoRow2("Uptime", fmtDuration(if (status.startedAt > 0) System.currentTimeMillis() - status.startedAt else 0))
-        InfoRow2("Android", "${sys?.device?.androidVersion ?: Build.VERSION.RELEASE}")
-        InfoRow2("Device Name", "${sys?.device?.manufacturer ?: Build.MANUFACTURER} ${sys?.device?.model ?: Build.MODEL}".trim())
+    }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PremiumButton(
-                text = "Copy URL",
-                modifier = Modifier.weight(1f),
-                leadingIcon = { Icon(Icons.Default.ContentCopy, null, Modifier.padding(end = 2.dp)) },
-                onClick = { clipboard.setText(AnnotatedString(baseUrl)) }
-            )
-            PremiumButton(
-                text = "Open Browser",
-                modifier = Modifier.weight(1f),
-                accent = LocalLocalHubColors.current.accentBlue,
-                leadingIcon = { Icon(Icons.Default.OpenInBrowser, null, Modifier.padding(end = 2.dp)) },
-                onClick = { viewModel.openBrowser(baseUrl) }
-            )
+    LaunchedEffect(Unit) { refresh() }
+
+    PremiumCard {
+        Text("Crash protection", style = MaterialTheme.typography.titleSmall)
+        if (app == null) {
+            Text("Health information is unavailable in this build.", style = MaterialTheme.typography.bodySmall)
+            return@PremiumCard
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PremiumButton(
-                text = "Generate QR",
-                modifier = Modifier.weight(1f),
-                leadingIcon = { Icon(Icons.Default.QrCode2, null, Modifier.padding(end = 2.dp)) },
-                onClick = { viewModel.openBrowser(baseUrl) }
+        val current = state
+        if (current == null) {
+            Text("Loading health information…", style = MaterialTheme.typography.bodySmall)
+        } else {
+            val summary = remember(current) {
+                app.healthStore.describe(current, System.currentTimeMillis())
+            }
+            Text(summary, style = MaterialTheme.typography.bodySmall)
+            Text(
+                "Crashes are recorded and the app can restart once. After repeated crashes it enters " +
+                    "safe mode and stops auto-starting the server on boot. Recovery cannot prevent every crash.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            PremiumButton(
-                text = "Restart",
-                modifier = Modifier.weight(1f),
-                accent = LocalLocalHubColors.current.accentBlue,
-                onClick = { viewModel.restartServer() }
-            )
-            PremiumButton(
-                text = "Stop",
-                modifier = Modifier.weight(1f),
-                accent = LocalLocalHubColors.current.danger,
-                onClick = { viewModel.stopServer() }
-            )
+            if (current.safeMode) {
+                Text(
+                    "Safe mode is ON. The server will not start automatically on boot. Fix the problem, then exit safe mode.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                PremiumButton(
+                    "Copy details", modifier = Modifier.weight(1f), enabled = !busy,
+                    onClick = {
+                        clipboard.setText(AnnotatedString(app.healthStore.describe(current, System.currentTimeMillis())))
+                        feedback = "Health summary copied."
+                    }
+                )
+                PremiumButton(
+                    if (current.safeMode) "Exit safe mode" else "Safe mode off",
+                    modifier = Modifier.weight(1f), enabled = !busy && current.safeMode,
+                    onClick = { run("Safe mode exit") { it.setSafeMode(false) } }
+                )
+            }
+            PremiumButton("Clear crash log", enabled = !busy && current.crashes.isNotEmpty(),
+                onClick = { run("Crash log clear") { it.clearCrashes() } })
+            feedback?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         }
     }
 }
-
 @Composable
-private fun InfoRow2(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+private fun SettingToggle(title:String,detail:String,checked:Boolean,onChange:(Boolean)->Unit) {
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f)) { Text(title,style=MaterialTheme.typography.bodyMedium);Text(detail,style=MaterialTheme.typography.bodySmall) }
+        PremiumSwitch(checked,onChange)
     }
 }
-
-private fun fmtBytes(b: Long): String {
-    val u = arrayOf("B", "KB", "MB", "GB", "TB")
-    var v = b.toDouble(); var i = 0
-    while (v >= 1024 && i < u.size - 1) { v /= 1024; i++ }
-    return "%.1f %s".format(v, u[i])
-}
-
-private fun fmtDuration(ms: Long): String {
-    if (ms <= 0) return "-"
-    var s = ms / 1000
-    val d = s / 86400; s %= 86400
-    val h = s / 3600; s %= 3600
-    val m = s / 60; s %= 60
-    val parts = mutableListOf<String>()
-    if (d > 0) parts.add("${d}d")
-    if (h > 0) parts.add("${h}h")
-    if (m > 0) parts.add("${m}m")
-    parts.add("${s}s")
-    return parts.joinToString(" ")
-}
-
-private fun fmtDate(ms: Long): String =
-    java.text.SimpleDateFormat("MMM d, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(ms))

@@ -7,7 +7,8 @@ data class ServerStatus(
     val host: String,
     val version: String,
     val startedAt: Long,
-    val uptimeMs: Long
+    val uptimeMs: Long,
+    val protocol: String = "http"
 )
 
 /** A compact, time-series-friendly system snapshot for Room persistence. */

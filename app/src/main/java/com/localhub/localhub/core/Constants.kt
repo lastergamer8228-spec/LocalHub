@@ -11,6 +11,7 @@ object Constants {
     const val NOTIFICATION_ID = 1001
 
     const val ACTION_START = "com.localhub.localhub.action.START"
+    const val ACTION_RESTART = "com.localhub.localhub.action.RESTART"
     const val ACTION_STOP = "com.localhub.localhub.action.STOP"
 
     const val ACTION_APPLY_PORT = "com.localhub.localhub.action.APPLY_PORT"

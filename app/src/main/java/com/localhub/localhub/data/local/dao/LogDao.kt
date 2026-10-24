@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface LogDao {
     @Insert
-    suspend fun insert(entity: LogEntity)
+    suspend fun insert(entity: LogEntity): Long
 
     @Query("SELECT * FROM logs ORDER BY timestamp DESC LIMIT :limit")
     fun recent(limit: Int): Flow<List<LogEntity>>

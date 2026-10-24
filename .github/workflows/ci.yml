@@ -1,0 +1,80 @@
+name: LocalHub CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  web-assets:
+    name: Web assets (Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax-check every shipped web asset
+        run: |
+          set -e
+          fail=0
+          find app/src/main/assets -name '*.js' -print0 | while IFS= read -r -d '' f; do
+            node --check "$f" || fail=1
+          done
+          exit $fail
+      - name: Run JS/Node test suites
+        working-directory: tests
+        run: |
+          set -e
+          fail=0
+          for f in test_*.js; do
+            echo "### $f"
+            node "$f" || fail=1
+          done
+          exit $fail
+
+  android:
+    name: JVM unit tests + debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: JVM unit tests
+        run: ./gradlew --no-daemon testDebugUnitTest
+      - name: Debug APK
+        run: ./gradlew --no-daemon assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: localhub-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  # Release build with R8. Kept separate so a shrinking regression is obvious
+  # instead of silently shipping a stripped build.
+  release-shrink:
+    name: Release build (R8 on)
+    runs-on: ubuntu-latest
+    needs: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: assembleRelease (unsigned, R8 verified)
+        run: ./gradlew --no-daemon assembleRelease
+      - name: Upload unsigned release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: localhub-release-unsigned
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

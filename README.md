@@ -1,195 +1,105 @@
 # LocalHub
 
-**LocalHub** turns an Android phone into a lightweight, self-hosted local server.
-It exposes a RESTful HTTP API, a realtime WebSocket channel, and a modern
-responsive dashboard — all working offline over the local network, with no
-external dependencies or cloud calls.
+Android-hosted LAN server with a native controller, browser dashboard, file
+manager and media player. Requires Android 7+ (API 24); builds use JDK 17 and
+Android SDK 34.
 
-> Built with Kotlin, Jetpack Compose (Material 3), NanoHTTPD / NanoWSD 2.3.1,
-> Room, DataStore, Coroutines and Gson. Min SDK 24 • Target/Compile SDK 34 •
-> Java/Kotlin JVM 17. Clean Architecture + MVVM + Repository pattern.
+**Status: testing preview, not launch-ready.** Build and unit-test results are
+not a substitute for device testing. See the [controller audit](docs/quality/controller-audit.md)
+for current release blockers and the acceptance checklist.
 
----
+## Build
 
-## Features
-
-| Area | Description |
-|------|-------------|
-| **HTTP Server** | Embedded server on port `8080` (configurable). GET/POST, JSON responses, static dashboard hosting. |
-| **REST API** | `/api/status`, `/api/system`, `/api/device`, `/api/network`, `/api/storage`, `/api/battery`, `/api/cpu`, `/api/memory`, `/api/modules`, `/api/logs`, `/api/clients`, `/api/statistics`. |
-| **WebSocket** | Realtime broadcast of system stats, log events and client connect/disconnect over `/ws`. |
-| **Dashboard** | Dark, responsive HTML/CSS/JS dashboard served from app assets and updated live via WebSocket. |
-| **System Monitoring** | CPU, RAM, storage, battery, network, device model/manufacturer/Android version. |
-| **Module System** | Pluggable modules implementing `start() / stop() / handleRequest() / toInfo()`. The Dashboard module ships enabled by default. |
-| **Connected Clients** | Tracks IP, user-agent, connect time, last activity and protocol (WebSocket / HTTP). |
-| **Logging** | Levels DEBUG/INFO/WARNING/ERROR, persisted in Room, streamed over WebSocket. |
-| **Foreground Service** | Keeps the server alive with a persistent notification. |
-| **Media Player** | Professional in-browser player: Range streaming, multiple audio/subtitle tracks (SRT/ASS/SSA/VTT), subtitle & audio settings, video filters (brightness/contrast/saturation/hue/sharpness/zoom/rotate/mirror), playlist (shuffle/repeat/reorder), frame step, Picture-in-Picture, mini player, screenshot, auto-resume, media info panel, and full assistant control via a Media Bridge. |
-| **Animation System** | Centralized, premium micro-interaction language shared across web + Android: ripple, page transitions, card hover/lift, count-up metrics, skeleton/shimmer, typing/thinking indicators, smooth scrolling — all using one set of timing/easing tokens and respecting `prefers-reduced-motion`. |
-| **LocalHub OS** | A personal local-OS layer at `/os`: Universal Search (Spotlight-like), Activity Timeline, Dynamic Home dashboard, a no-code Visual Automation Builder (IF/THEN blocks), personalized Spaces with per-space context, and a **Security & Backup** view (2FA, LAN shares, storage cleanup, full backup/restore). Fully assistant-integrated. |
-| **Security & Tools** | Optional HTTPS (self-signed, opt-in), security audit events (failed logins / permission denials / admin actions), TOTP 2FA for admin, expiring LAN share links, storage cleanup (duplicate + category scanner), PWA offline shell, and full OS backup/restore. |
-| **Persistence** | Room (logs, settings, modules, statistics) + DataStore (port, theme, autostart, server name) + client-side localStorage for OS state (timeline, spaces, search history). |
-
----
-
-## Architecture
-
-```
-LocalHubApplication
-        │
-        ▼
-    AppContainer  (manual DI)
-    ├─ PreferencesManager (DataStore)
-    ├─ AppDatabase (Room) → repositories
-    ├─ AppLogger (Room + SharedFlow)
-    ├─ SystemInfoProvider (telemetry + StateFlow)
-    ├─ ModuleManager (+ DashboardModule)
-    ├─ ClientTracker (live clients StateFlow)
-    └─ LocalHubServer (NanoWSD)
-            ├─ ApiRouter        (/api/*)
-            ├─ AssetServer      (dashboard assets)
-            └─ WebSocketHub → LocalHubWebSocket (realtime)
-                        │
-                LocalHubService (foreground) streams stats & logs
+```sh
+./gradlew testDebugUnitTest assembleDebug -PaacPreview=true
 ```
 
-Every Kotlin file has a single responsibility and lives under a clearly named
-package: `core`, `data.*`, `model`, `system`, `module`, `server`, `service`,
-`ui.*`, `util`.
+The preview is ARM64-only and uses application ID
+`com.localhub.localhub.aacpreview`. Without `-PaacPreview=true`, Gradle builds the
+original `com.localhub.localhub` application for the dependency's supported ABIs.
+APK output: `app/build/outputs/apk/debug/app-debug.apk`.
 
----
+Preview updates require the same signing key. The original GitHub-built app and
+local preview use different package/signing configurations; do not uninstall an
+existing app without preserving its data. Generated APKs, build caches and local
+SDK paths do not belong in the source repository.
 
-## Build & Run
+## Use
 
-1. Open **Android Studio** (Giraffe / Hedgehog or newer).
-2. `File ▸ Open` and select the `LocalHub` folder (this project).
-3. Let Gradle sync (the wrapper is pinned to **Gradle 8.2**).
-4. Connect a device or start an emulator (API 24+).
-5. Run `app` (Shift+F10).
+1. Grant storage access on the host phone.
+2. Open native **Settings → Start server**. Server construction alone does not
+   open a listener; boot startup is a separate preference.
+3. Connect a browser on the same network using the URL or QR shown in Settings.
+4. Sign in. Roles and per-device file restrictions are enforced server-side.
 
-From the terminal:
+Features with implemented switches can be controlled through **Modules**.
+Required and information-only components do not offer decorative on/off switches.
+Turning a module off blocks its owned server routes. Data already downloaded by
+another device cannot be recalled.
 
-```bash
-./gradlew assembleDebug      # build the debug APK
-./gradlew installDebug       # install on a connected device
-```
+Media playback uses the browser's video decoder. Known incompatible audio codecs
+can be adapted automatically into bounded AAC stereo chunks. HEVC/HDR/Dolby
+Vision support still depends on the client browser and hardware.
 
-> Requires the Android SDK (Compile SDK 34) and a JDK 17 toolchain, which
-> Android Studio configures automatically.
+## File uploads
 
----
+Uploads from the browser are streamed to disk with a bounded buffer (never
+buffered whole in memory). The limit is 512 MB per upload; oversized uploads,
+missing lengths and low storage return clean HTTP errors instead of crashing the
+host app. See the upload crash guide for the root cause and fixes.
 
-## Using LocalHub
+## Assistant system checks
 
-1. Open the app and go to **Settings ▸ Server ▸ Start** (or enable *Autostart
-   on boot*). A persistent notification confirms the server is running.
-2. The dashboard is available at `http://<device-ip>:8080` from any browser on
-   the same network. Tap **Open** on the Dashboard screen to launch it.
-3. The Compose UI (Dashboard / Logs / Modules / Clients / Settings) mirrors the
-   same data in realtime.
-
-### Example API calls
-
-```bash
-curl http://<device-ip>:8080/api/status
-curl http://<device-ip>:8080/api/system
-curl http://<device-ip>:8080/api/battery
-curl http://<device-ip>:8080/api/modules
-```
-
-A WebSocket client can connect to `ws://<device-ip>:8080/ws` and will receive
-JSON frames of the form `{"type":"stats","data":{...}}` and
-`{"type":"log","data":{...}}`.
-
----
-
-## Permissions
-
-`INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`,
-`CHANGE_WIFI_MULTICAST_STATE`, `WAKE_LOCK`, `FOREGROUND_SERVICE`,
-`FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS`,
-`RECEIVE_BOOT_COMPLETED`.
-
-The foreground service is declared with type `specialUse` (Android 14+) and
-persists the server while the device is on.
-
----
-
-## Extending with modules
-
-Implement `LocalHub.module.LocalModule`:
-
-```kotlin
-class MyModule : LocalModule {
-    override val id = "my-module"
-    override val name = "My Module"
-    override val description = "Does something useful."
-    override val version = "1.0.0"
-    override var isEnabled = true
-
-    override fun start() { /* spin up */ }
-    override fun stop() { /* tear down */ }
-    override fun handleRequest(session: IHTTPSession, path: String): Response? {
-        return NanoHTTPD.newFixedLengthResponse(Status.OK, "application/json", "{\"ok\":true}")
-    }
-    override fun toInfo() = ModuleInfo(id, name, description, version, isEnabled)
-}
-```
-
-Register it once in `AppContainer`:
-
-```kotlin
-val moduleManager = ModuleManager().apply {
-    register(DashboardModule())
-    register(MyModule())
-}
-```
-
----
-
-## Offline Speech (System TTS)
-
-LocalHub's speech engine uses the **Android built-in system TTS** (Google TTS).
-It is **instant, fully offline, and needs no model download** — ideal for
-low-end devices (e.g. Hot 9). Web UI at `/tts`, API at `/api/tts/*`.
-
-- **No heavy neural model** — the phone's own voice engine does the work.
-- **Any language** supported by the phone's TTS engine works (add a Hindi voice
-  pack in Android Settings → Language & Input → Text-to-speech for Hindi).
-- This replaced the earlier **Pocket TTS (sherpa-onnx)** engine, which ran a
-  ~236MB neural model but was too slow on low-end hardware.
-
-### API
-
-```
-GET  /api/tts/status                        → engine status (always ready)
-POST /api/tts/synthesize  {text, speed?, lang?}   → {ok, url: /api/tts/file?name=...}
-GET  /api/tts/file?name=...                 → serves the generated WAV
-```
-
-> Note: this integration is **code-reviewed** in this repo's build pipeline — the
-> actual APK must be built in Android Studio (Android SDK + JDK 17) to compile and
-> verify on your device.
-
----
+Try `explain system integration`, `check localhub health`, or `repair localhub`.
+The host-aware bridge reads actual feature/permission state and can recheck a
+transient failed read once. It does not edit files, grant permissions, enable
+OFF modules or patch/redeploy the installed APK. See the integration guide for
+scope and outstanding device/repair-engine acceptance gates.
 
 ## Project layout
 
-```
-LocalHub/
-├─ build.gradle / settings.gradle / gradle.properties
-├─ gradle/wrapper/            # Gradle 8.2 wrapper (jar + properties)
-├─ gradlew · gradlew.bat
-├─ app/
-│  ├─ build.gradle · proguard-rules.pro
-│  └─ src/main/
-│     ├─ AndroidManifest.xml
-│     ├─ java/com/localhub/localhub/   # all Kotlin source
-│     ├─ res/                          # strings, theme, icons
-│     └─ assets/dashboard/             # index.html · style.css · app.js
-└─ README.md
+```text
+app/src/main/java/   Android controller, server, persistence and device services
+app/src/main/assets/ Browser UI and offline assistant resources
+app/src/test/        JVM tests
+tests/             Browser fixtures, source-contract and audio regression checks
+docs/              Current guides, audit and refinement notes
+gradle/            Gradle wrapper
+esp32/             Optional hardware remote sketches
 ```
 
----
+## Validation
 
-© LocalHub — your phone, your local server.
+- `./gradlew testDebugUnitTest`: JVM policy/session/catalog tests plus native Compose layout/navigation regressions under Robolectric (not a phone acceptance run).
+- `python3tests/check_controller_contracts.py`: source wiring checks, not runtime tests.
+- `python3tests/check_compatible_audio.py`: audio integration/source checks.
+- `nodetests/test_audio_stream.js`: mocked automatic audio lifecycle.
+- `nodetests/test_module_access.js`: mocked controller-to-player access changes.
+- `python3tests/test_cinema_layout.py`: Chromium layout fixture; requires
+  Playwright and its Chromium installation. It does not play the user's movie.
+- `python3tests/test_audio_conversion.py`: synthetic host-FFmpeg codec checks;
+  requires `imageio-ffmpeg`. Not an Android decoder test.
+
+A successful build does not establish OEM background-service behaviour, real
+permissions, screen capture consent, live audio sync or readiness for release.
+
+## Documentation
+
+- [Assistant + brain development stages](docs/development/assistant-stages.md)
+- [Crash protection & recovery](docs/quality/crash-recovery.md)
+- [Upload crash fix (streaming uploads)](docs/quality/upload-crash.md)
+- [Host-aware Self-Healing integration](docs/quality/system-integration.md)
+- [Reviewed planner/evidence pilot](docs/quality/reviewed-plans.md)
+- [Assistant baseline audit](docs/quality/assistant-baseline.md)
+- [Native layout correction and Compose regression evidence](docs/quality/native-layout.md)
+- [Native controller audit](docs/quality/controller-audit.md)
+- [Automatic audio](docs/guides/audio.md)
+- [Player layout](docs/guides/player.md)
+- [Code refinement](docs/quality/refinement.md)
+
+## Third-party code
+
+AndroidX, NanoHTTPD, Gson, ZXing and FFmpegKit dependencies are declared in Gradle.
+The app uses Android system TTS; no Pocket TTS model files are required. Native
+FFmpegKit sources/build references and applicable license texts are retained under
+`app/src/main/assets/licenses/`. Preserve those notices when redistributing.

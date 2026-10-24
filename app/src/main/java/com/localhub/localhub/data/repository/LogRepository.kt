@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.map
 
 class LogRepository(private val dao: LogDao) {
 
-    suspend fun insert(entry: LogEntry) = dao.insert(entry.toEntity())
+    /** Returns the generated row id, or 0 if Room could not persist the entry. */
+    suspend fun insert(entry: LogEntry): Long = dao.insert(entry.toEntity())
 
     fun recent(limit: Int = 200): Flow<List<LogEntry>> =
         dao.recent(limit).map { it.map { e -> e.toDomain() } }

@@ -1,0 +1,14 @@
+This preview includes FFmpeg / FFmpegKit through:
+com.moizhassan.ffmpeg:ffmpeg-kit-16kb:6.1.1
+Copyright belongs to the FFmpeg, FFmpegKit and fork contributors.
+The Maven package declares LGPL version 3. See included LGPL-3.0.txt and GPL-3.0.txt.
+Corresponding native fork sources and build instructions:
+https://github.com/moizhassankh/ffmpeg-kit-android-16KB
+https://github.com/moizhassankh/ffmpeg-kit-android-16KB/blob/main/android.sh
+FFmpeg upstream sources: https://ffmpeg.org/download.html
+FFmpegKit upstream sources: https://github.com/arthenica/ffmpeg-kit
+Native libraries are used unmodified and dynamically linked. This app does not
+restrict reverse engineering for debugging modifications to these libraries.
+LocalHub source and Gradle dependency coordinates accompany this preview build
+in LocalHub.zip. Replace/rebuild native artifacts using the fork's documented
+Android build process, then rebuild and sign the application using Gradle.

@@ -29,7 +29,7 @@
           "<b>Active routines:</b> " + (s.activeRoutines || []).map(function (r) { return BUI.esc(r.name) + " (" + Math.round((r.confidence || 0) * 100) + "%)"; }).join(", ") + "<br>" +
           "<b>Habits:</b> " + (s.habits || []).slice(0, 3).map(function (h) { return BUI.esc(h.action) + " x" + h.count; }).join(", ") + "<br>" +
           "<b>Capabilities:</b> " + (s.capabilities || []).join(", ") + "<br>" +
-          "<b>Memory:</b> " + (s.memoryEnabled ? "enabled" : "disabled") + " · <b>Confidence:</b> " + BUI.esc(s.confidence) + "<br>" +
+          "<b>Memory:</b> " + (s.memoryEnabled ? "enabled" : "disabled") + " · <b>Heuristic score (not calibrated):</b> " + BUI.esc(s.confidence) + "<br>" +
           "<b>Limitation:</b> " + BUI.esc(s.limitation);
       });
     },

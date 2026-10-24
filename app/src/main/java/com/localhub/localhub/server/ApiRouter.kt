@@ -39,7 +39,10 @@ class ApiRouter(
     private val deviceActions: DeviceActions? = null,
     private val screenMirror: ScreenMirror? = null,
     private val ttsEngine: TtsEngine? = null,
-    private val context: android.content.Context? = null
+    private val context: android.content.Context? = null,
+    private val listenerPort: () -> Int = { 8080 },
+    private val protocol: () -> String = { "http" },
+    private val healthSummary: () -> String = { "" }
 ) {
 
     private fun contextOfRouter(): android.content.Context =
@@ -47,6 +50,12 @@ class ApiRouter(
 
     private val fileManager = FileManager()
     private val fileOps = FileOperations()
+    private val compatibleAudioDelegate = lazy { CompatibleAudio(contextOfRouter()) }
+    private val compatibleAudio get() = compatibleAudioDelegate.value
+    fun cancelMediaWork(wait: Boolean = true): Boolean = !compatibleAudioDelegate.isInitialized() || compatibleAudio.cancelAndWait(wait)
+    /** Bounded read for JSON command bodies (file uploads stream separately). */
+    private val MAX_JSON_BODY_BYTES = 8L * 1024 * 1024
+
     private val totp = Totp
 
     fun handle(session: IHTTPSession): Response {
@@ -56,6 +65,7 @@ class ApiRouter(
         }
         val uri = session.uri ?: "/"
         val path = uri.removePrefix("/api/").trimEnd('/')
+        moduleManager.blocked(uri)?.let { return error(Status.SERVICE_UNAVAILABLE, "Module disabled: $it") }
         return try {
             // Authentication endpoints: login/logout/session are always reachable.
             if (path == "auth/login") return handleLogin(session)
@@ -129,6 +139,12 @@ class ApiRouter(
             return json(mapOf("ok" to false, "error" to "Too many attempts. Try again later."))
         }
 
+        // JSON endpoints must not buffer an arbitrarily large body either.
+        val declaredLength = session.headers?.get("content-length")?.trim()?.toLongOrNull()
+            ?: session.headers?.get("Content-Length")?.trim()?.toLongOrNull()
+        if (declaredLength != null && declaredLength > MAX_JSON_BODY_BYTES) {
+            return error(Status.PAYLOAD_TOO_LARGE, "Request body is larger than the ${MAX_JSON_BODY_BYTES / (1024 * 1024)} MB limit for this endpoint.")
+        }
         val body = readBody(session)
         val p = parseBody(body)
         val username = p["username"] ?: ""
@@ -182,7 +198,7 @@ class ApiRouter(
 
     private fun handleSession(session: IHTTPSession): Response {
         val token = tokenOf(session)
-        val role = sessionManager.role(token)
+        val role = sessionManager.validate(token, session.remoteIpAddress ?: "?")?.role
         return if (role != null) {
             json(mapOf("ok" to true, "authenticated" to true, "role" to role))
         } else {
@@ -332,7 +348,8 @@ class ApiRouter(
     private fun requirePermission(session: IHTTPSession, path: String): Response? {
         val required = permissionFor(path) ?: return null // public
         val token = tokenOf(session)
-        val ok = sessionManager.hasRole(token, required)
+        val validSession = sessionManager.validate(token, session.remoteIpAddress ?: "?")
+        val ok = validSession != null && sessionManager.hasRole(token, required)
         if (!ok) {
             permissionLastPath = path
             permissionLastRequired = required
@@ -349,11 +366,12 @@ class ApiRouter(
         // Any authenticated user: file browsing/media/search, clients, and safe
         // aggregate dashboard data (stats/activity). NOTE: logs are NOT here —
         // access logs are Administrator-only (falls through to "admin" below).
-        if (path == "dashboard" ||
+        if (path == "integration" || path == "dashboard" ||
             path == "files" || path == "clients" ||
             path == "system" || path == "device" || path == "network" ||
             path == "storage" || path == "cpu" || path == "memory" || path == "battery" ||
             path == "fs/read" || path == "fs/list" || path == "fs/info" ||
+            path == "fs/audio-tracks" || path == "fs/audio-chunk" || path == "fs/media-status" ||
             path == "fs/content" || path == "fs/download" || path == "fs/search" ||
             path == "fs/largest" || path == "fs/empty" || path == "fs/usage" ||
             path == "mirror/status" || path == "mirror/frame" ||
@@ -385,9 +403,29 @@ class ApiRouter(
     private var permissionLastPath: String = "?"
     private var permissionLastRequired: String = "?"
 
-    private fun handleGet(session: IHTTPSession, path: String): Response = when (path) {
+    private fun handleGet(session: IHTTPSession, path: String): Response { return when (path) {
+        "integration" -> {
+            val role = sessionManager.validate(tokenOf(session), session.remoteIpAddress ?: "?")?.role
+            if (role == null) unauthorized() else json(hostIntegration(role)).apply { addHeader("Cache-Control", "no-store") }
+        }
+        "fs/media-status" -> json(mapOf("ok" to true))
+        "fs/audio-tracks", "fs/audio-chunk" -> {
+            val source = fileOps.open(session.parms?.get("path") ?: "")
+            val track = session.parms?.get("track")?.toIntOrNull()
+            val start = session.parms?.get("start")?.toLongOrNull()
+            if (source == null) error(Status.BAD_REQUEST, "Invalid source")
+            else if (path == "fs/audio-tracks") json(compatibleAudio.tracks(source))
+            else if (track == null || track !in 0..31 || start == null || start !in 0..604800 || start % 60 != 0L) {
+                error(Status.BAD_REQUEST, "Invalid audio track or segment position")
+            } else {
+                val bytes = compatibleAudio.chunk(source, track, start)
+                moduleManager.blocked("/api/fs/audio-chunk")?.let { return error(Status.SERVICE_UNAVAILABLE, "Module disabled: $it") }
+                NanoHTTPD.newFixedLengthResponse(Status.OK, "audio/mp4", java.io.ByteArrayInputStream(bytes), bytes.size.toLong())
+                    .apply { addCors(); addHeader("Cache-Control", "no-store") }
+            }
+        }
         "status" -> json(statusMap())
-        "system" -> json(systemInfoProvider.lastSnapshot ?: systemInfoProvider.collectSnapshot())
+        "system" -> json(systemInfoProvider.lastSnapshot.value ?: systemInfoProvider.collectSnapshot())
         "device" -> json( systemInfoProvider.lastSnapshot.value?.device ?: systemInfoProvider.collectSnapshot().device)
         "network" -> json( systemInfoProvider.lastSnapshot.value?.network ?: systemInfoProvider.collectSnapshot().network)
         "storage" -> json(systemInfoProvider.lastSnapshot.value?.storage ?: systemInfoProvider.collectSnapshot().storage)
@@ -404,10 +442,10 @@ class ApiRouter(
             val stats = runBlocking { statisticsRepository.recent(60).first() }
             json(mapOf("statistics" to stats))
         }
-        "files" -> json(fileManager.list(session.parms?.get("path")))
+        "files" -> json(fileManager.list(session.parms?.get("path"), listLimit(session)))
+        "fs/list" -> json(fileOps.list(session.parms?.get("path"), listLimit(session)))
         "fs/search" -> json(fileOps.search(session.parms?.get("q") ?: "", session.parms?.get("dir")))
         "fs/read" -> json(fileOps.read(session.parms?.get("path") ?: ""))
-        "fs/list" -> json(fileOps.list(session.parms?.get("path")))
         "fs/info" -> json(fileOps.info(session.parms?.get("path") ?: ""))
         "fs/largest" -> json(fileOps.largestFiles(session.parms?.get("path") ?: "", session.parms?.get("limit")?.toIntOrNull() ?: 20))
         "fs/empty" -> json(fileOps.emptyFolders(session.parms?.get("path") ?: ""))
@@ -450,6 +488,8 @@ class ApiRouter(
         else -> notFound()
     }
 
+    }
+
     /** Serves a previously generated TTS WAV from the app's cache TTS folder. */
     private fun serveTtsFile(session: IHTTPSession): Response {
         val name = session.parms?.get("name")?.takeIf { it.isNotBlank() } ?: return notFound()
@@ -477,6 +517,8 @@ class ApiRouter(
     private fun serveContent(session: IHTTPSession): Response {
         val path = session.parms?.get("path") ?: return notFound()
         val file = fileOps.open(path) ?: return notFound()
+        val isMedia = FileOperations.Mime.categoryFor(file.name.substringAfterLast('.', "")) in listOf("video", "audio")
+        moduleManager.blocked("/api/fs/content", isMedia)?.let { return error(Status.SERVICE_UNAVAILABLE, "Module disabled: $it") }
         val cat = FileOperations.Mime.categoryFor(file.name.substringAfterLast('.', ""))
         if (cat == "video" || cat == "audio") TrafficMonitor.recordMedia()
         else if (cat == "image" || cat == "text" || cat == "pdf") TrafficMonitor.recordFileOpened()
@@ -492,6 +534,8 @@ class ApiRouter(
         val mime = FileOperations.Mime.mimeFor(file.name)
         val length = file.length()
         val disposition = if (mode == "attachment") "attachment" else "inline"
+        val mediaPlayback = disposition == "inline" && FileOperations.Mime.categoryFor(file.name.substringAfterLast('.', "")) in listOf("video", "audio")
+        moduleManager.blocked("/api/fs/content", mediaPlayback)?.let { return error(Status.SERVICE_UNAVAILABLE, "Module disabled: $it") }
         val cd = "$disposition; filename=\"${file.name}\""
 
         if (length == 0L) {
@@ -501,9 +545,9 @@ class ApiRouter(
         }
         val range = rangeHeader ?: ""
         return if (range.startsWith("bytes=")) {
-            serveRange(file, mime, range, length, cd)
+            serveRange(file, mime, range, length, cd, mediaPlayback)
         } else {
-            val stream = java.io.BufferedInputStream(java.io.FileInputStream(file))
+            val stream = guardedStream(java.io.BufferedInputStream(java.io.FileInputStream(file)), mediaPlayback)
             NanoHTTPD.newChunkedResponse(Status.OK, mime, stream).apply {
                 addHeader("Content-Disposition", cd)
                 addHeader("Accept-Ranges", "bytes")
@@ -555,7 +599,11 @@ class ApiRouter(
         }, 60_000L)
     }
 
-    private fun serveRange(file: java.io.File, mime: String, rangeHeader: String, length: Long, cd: String): Response {
+    private fun guardedStream(input: java.io.InputStream, media: Boolean): java.io.InputStream {
+        return moduleManager.guardStream("/api/fs/content", media, input)
+    }
+
+    private fun serveRange(file: java.io.File, mime: String, rangeHeader: String, length: Long, cd: String, mediaPlayback: Boolean): Response {
         val rangeSpec = rangeHeader.removePrefix("bytes=").split("-")
         val start = rangeSpec.getOrNull(0)?.trim()?.toLongOrNull()
         val endReq = rangeSpec.getOrNull(1)?.trim()?.toLongOrNull()
@@ -566,7 +614,7 @@ class ApiRouter(
         }
         val end = (endReq ?: (length - 1)).coerceAtMost(length - 1)
         val chunkLen = (end - start + 1).coerceAtLeast(0)
-        val stream = java.io.BufferedInputStream(java.io.FileInputStream(file))
+        val stream = guardedStream(java.io.BufferedInputStream(java.io.FileInputStream(file)), mediaPlayback)
         var skipped = 0L
         while (skipped < start) {
             val s = stream.skip(start - skipped)
@@ -602,21 +650,7 @@ class ApiRouter(
 
     private fun handlePost(session: IHTTPSession, path: String): Response {
         // Upload sends bytes in the body; handle before consuming as text.
-        if (path == "fs/upload") {
-            val dir = session.parms?.get("dir") ?: ""
-            val overwrite = session.parms?.get("overwrite") != "false"
-            val bytes = readBodyBytes(session)
-            val ct = session.headers?.get("content-type") ?: session.headers?.get("Content-Type") ?: ""
-            val boundary = Regex("boundary=(.+)$").find(ct)?.groupValues?.get(1)?.trim('"', ' ')
-            val uploadResult = if (boundary != null) {
-                json(fileOps.uploadMultipart(bytes, boundary, dir, overwrite))
-            } else {
-                val name = session.parms?.get("name") ?: ""
-                json(fileOps.upload(dir, name, bytes, overwrite))
-            }
-            TrafficMonitor.recordUpload(bytes.size.toLong())
-            return uploadResult
-        }
+        if (path == "fs/upload") return handleUpload(session)
         val body = readBody(session)
         val p = parseBody(body)
         return when (path) {
@@ -757,7 +791,7 @@ class ApiRouter(
                 json(mapOf("ok" to true, "message" to "Sent $nav"))
             }
             "tts/synthesize" -> {
-                // Offline neural text-to-speech (Pocket TTS via sherpa-onnx).
+                // Android system text-to-speech.
                 val te = ttsEngine
                 if (te == null) return json(mapOf("ok" to false, "error" to "TTS engine unavailable"))
                 val text = p["text"] ?: ""
@@ -845,6 +879,7 @@ class ApiRouter(
     /** Static list of documented REST endpoints for the API Explorer. */
     private fun endpointList(): List<Map<String, String>> = listOf(
         mapOf("method" to "GET", "path" to "/api/status", "desc" to "Server status + uptime"),
+        mapOf("method" to "GET", "path" to "/api/integration", "desc" to "Authenticated read-only host integration and permission state"),
         mapOf("method" to "GET", "path" to "/api/system", "desc" to "Full system snapshot"),
         mapOf("method" to "GET", "path" to "/api/dashboard", "desc" to "NAS dashboard aggregate"),
         mapOf("method" to "GET", "path" to "/api/device", "desc" to "Device info"),
@@ -880,11 +915,70 @@ class ApiRouter(
         mapOf("method" to "GET", "path" to "/api/server/export-logs", "desc" to "Export logs"),
         mapOf("method" to "GET", "path" to "/api/server/backup", "desc" to "Backup config"),
         mapOf("method" to "POST", "path" to "/api/server/restore", "desc" to "Restore config"),
-        mapOf("method" to "GET", "path" to "/api/tts/status", "desc" to "Offline neural TTS status"),
+        mapOf("method" to "GET", "path" to "/api/tts/status", "desc" to "System TTS status"),
         mapOf("method" to "POST", "path" to "/api/tts/synthesize", "desc" to "Synthesize speech to WAV"),
         mapOf("method" to "POST", "path" to "/api/tts/clone", "desc" to "Voice-clone from reference WAV (admin)"),
         mapOf("method" to "GET", "path" to "/api/tts/file?name=...", "desc" to "Serve generated TTS WAV")
     )
+
+    /**
+     * Uploads are streamed to disk. The previous version allocated the whole
+     * body (up to 512 MB) in memory before checking the size, which threw
+     * OutOfMemoryError and crashed the host app on large uploads.
+     */
+    private fun handleUpload(session: IHTTPSession): Response {
+        val context = contextOfRouter()
+        val dir = fileOps.directory(session.parms?.get("dir"))
+        val overwrite = session.parms?.get("overwrite") != "false"
+        val contentLength = session.headers?.get("content-length")?.trim()?.toLongOrNull()
+            ?: session.headers?.get("Content-Length")?.trim()?.toLongOrNull()
+        val tempDir = java.io.File(context.cacheDir, "uploads")
+        val contentType = session.headers?.get("content-type")
+            ?: session.headers?.get("Content-Type") ?: ""
+        val boundary = Regex("boundary=(.+)$").find(contentType)?.groupValues?.get(1)?.trim('"', ' ')
+        val result = if (!boundary.isNullOrBlank()) {
+            UploadStreamer.saveMultipart(session.inputStream, contentLength, boundary, dir, overwrite, tempDir)
+        } else {
+            UploadStreamer.saveRaw(
+                session.inputStream, contentLength, dir, session.parms?.get("name") ?: "", overwrite, tempDir
+            )
+        }
+        if (result.isOk) TrafficMonitor.recordUpload(uploadedBytes(result.body))
+        return jsonWithStatus(result.httpStatus, result.body)
+    }
+
+    private fun uploadedBytes(body: Map<String, Any>): Long {
+        (body["size"] as? Number)?.let { return it.toLong() }
+        @Suppress("UNCHECKED_CAST")
+        val results = body["results"] as? List<Map<String, Any>> ?: return 0L
+        return results.sumOf { (it["size"] as? Number)?.toLong() ?: 0L }
+    }
+
+    /** Maps an upload outcome to a real HTTP status instead of always 200. */
+    private fun jsonWithStatus(httpStatus: Int, body: Map<String, Any>): Response {
+        val payload = gson.toJson(body)
+        return NanoHTTPD.newFixedLengthResponse(statusFor(httpStatus), "application/json", payload)
+            .apply { addCors() }
+    }
+
+    private fun statusFor(code: Int): NanoHTTPD.Response.IStatus = when (code) {
+        409 -> Status.CONFLICT
+        411 -> Status.LENGTH_REQUIRED
+        413 -> Status.PAYLOAD_TOO_LARGE
+        507 -> SimpleStatus(507, "Insufficient Storage")
+        in 400..499 -> Status.BAD_REQUEST
+        in 500..599 -> Status.INTERNAL_ERROR
+        else -> Status.OK
+    }
+
+    /** NanoHTTPD lacks some statuses (e.g. 507); IStatus accepts custom codes. */
+    private class SimpleStatus(
+        private val code: Int,
+        private val description: String
+    ) : NanoHTTPD.Response.IStatus {
+        override fun getRequestStatus(): Int = code
+        override fun getDescription(): String = description
+    }
 
     private fun readBody(session: IHTTPSession): String = runCatching {
         val raw = readBodyBytes(session)
@@ -912,9 +1006,34 @@ class ApiRouter(
         raw.mapValues { it.value?.toString() ?: "" }
     }.getOrDefault(emptyMap())
 
+    /** Client hint only; the server always clamps the effective limit. */
+    private fun listLimit(session: IHTTPSession): Int =
+        session.parms?.get("limit")?.toIntOrNull() ?: FileManager.DEFAULT_LIST_LIMIT
+
+    /** Read-only, authenticated descriptor; no logs, tokens or private file names. */
+    private fun hostIntegration(role: String): Map<String, Any> {
+        val ctx = contextOfRouter()
+        fun granted(test: () -> Boolean): String = runCatching { if (test()) "GRANTED" else "MISSING" }.getOrDefault("UNKNOWN")
+        fun runtimePermission(name: String) = androidx.core.content.ContextCompat.checkSelfPermission(ctx, name) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val permissions = mapOf(
+            "storage" to granted { if (android.os.Build.VERSION.SDK_INT >= 30) android.os.Environment.isExternalStorageManager() else runtimePermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) },
+            "camera" to granted { runtimePermission(android.Manifest.permission.CAMERA) },
+            "notifications" to granted { if (android.os.Build.VERSION.SDK_INT >= 33) runtimePermission(android.Manifest.permission.POST_NOTIFICATIONS) && androidx.core.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled() else androidx.core.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled() },
+            "writeSettings" to granted { deviceActions?.canWriteSettings() == true },
+            "notificationPolicy" to granted { deviceActions?.canUseNotificationPolicy() == true },
+            "accessibility" to if (RemoteAccessService.isEnabled) "ACTIVE" else "INACTIVE",
+            "screenCapture" to if (screenMirror?.isRunning == true) "ACTIVE" else "INACTIVE"
+        )
+        return com.localhub.localhub.module.HostIntegration.describe(moduleManager, role, permissions,
+            listenerPort(), protocol(), ServerClock.startedAt, System.currentTimeMillis(),
+            healthSummary()) + mapOf(
+                "app" to mapOf("versionName" to com.localhub.localhub.BuildConfig.VERSION_NAME,
+                    "versionCode" to com.localhub.localhub.BuildConfig.VERSION_CODE, "packageName" to ctx.packageName))
+    }
+
     private fun statusMap(): Map<String, Any> {
         val ip = systemInfoProvider.lastSnapshot.value?.network?.ipAddress ?: "127.0.0.1"
-        val port = runBlocking { preferencesManager.portFlow.first() }
+        val port = listenerPort()
         val name = runBlocking { preferencesManager.serverNameFlow.first() }
         // Hostname is fixed and always advertised as localhub.local (see NsdHelper).
         val hostname = "localhub"
@@ -923,10 +1042,10 @@ class ApiRouter(
             "version" to Constants.SERVER_VERSION,
             "name" to name,
             "hostname" to "$hostname.local",
-            "hostnameUrl" to "http://$hostname:$port",
+            "hostnameUrl" to "${protocol()}://$hostname.local:$port",
             "port" to port,
             "host" to ip,
-            "url" to "http://$ip:$port",
+            "url" to "${protocol()}://$ip:$port",
             "startedAt" to ServerClock.startedAt,
             "uptimeMs" to ServerClock.currentUptimeMs(),
             "restartCount" to ServerClock.restartCount

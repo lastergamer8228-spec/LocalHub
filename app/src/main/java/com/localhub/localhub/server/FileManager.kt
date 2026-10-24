@@ -4,24 +4,21 @@ import java.io.File
 
 /**
  * Lists folders and files on the phone's public storage for the browser file
- * manager. Root view shows only the standard public folders; nested paths list
- * their sub-folders and files.
+ * manager. Hidden folders are omitted; user-created folders remain visible.
  */
 class FileManager(private val rootPath: String = "/storage/emulated/0") {
 
-    private val defaultFolders =
-        listOf("Download", "Documents", "DCIM", "Pictures", "Movies", "Music")
-
-    fun list(rawPath: String?): Map<String, Any> {
+    /** Bounded so a folder with thousands of items cannot stall the browser. */
+    fun list(rawPath: String?, maxEntries: Int = DEFAULT_LIST_LIMIT): Map<String, Any> {
+        val limit = maxEntries.coerceIn(MIN_LIST_LIMIT, MAX_LIST_LIMIT)
         val current = sanitize(rawPath ?: rootPath)
         val dir = File(current)
 
         if (!dir.exists() || !dir.isDirectory) {
-            return emptyResult(current)
+            return emptyResult(current, limit)
         }
 
         val entries = dir.listFiles() ?: emptyArray()
-        val isRoot = dir.absolutePath == rootPath
 
         val folders = entries
             .filter { it.isDirectory && !it.name.startsWith(".") }
@@ -52,21 +49,40 @@ class FileManager(private val rootPath: String = "/storage/emulated/0") {
                 )
             }
 
+        val total = folders.size + files.size
+        // Folders are kept first (navigation stays usable), then files fill the rest.
+        val keptFolders = folders.take(limit)
+        val keptFiles = files.take((limit - keptFolders.size).coerceAtLeast(0))
+        val shown = keptFolders.size + keptFiles.size
         return mapOf(
             "path" to dir.absolutePath,
             "name" to (dir.name.ifBlank { "/" }),
             "parent" to (dir.parentFile?.absolutePath ?: ""),
-            "folders" to folders,
-            "files" to files
+            "folders" to keptFolders,
+            "files" to keptFiles,
+            "truncated" to (shown < total),
+            "shown" to shown,
+            "total" to total,
+            "limit" to limit
         )
     }
 
-    private fun emptyResult(path: String): Map<String, Any> = mapOf(
+    companion object {
+        const val DEFAULT_LIST_LIMIT = 500
+        const val MIN_LIST_LIMIT = 20
+        const val MAX_LIST_LIMIT = 2000
+    }
+
+    private fun emptyResult(path: String, limit: Int = DEFAULT_LIST_LIMIT): Map<String, Any> = mapOf(
         "path" to path,
         "name" to (File(path).name.ifBlank { "/" }),
         "parent" to (File(path).parentFile?.absolutePath ?: ""),
         "folders" to emptyList<Any>(),
-        "files" to emptyList<Any>()
+        "files" to emptyList<Any>(),
+        "truncated" to false,
+        "shown" to 0,
+        "total" to 0,
+        "limit" to limit
     )
 
     /** Normalizes a path, rejects traversal, and forces it under the storage root. */

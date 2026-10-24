@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LocalHub File Manager</title>
   <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/theme-pro.css" />
   <link rel="stylesheet" href="/animations.css" />
   <style>
     :root {
@@ -177,6 +178,8 @@
     }
   </style>
 </head>
+  <!-- Shared top navigation (rendered by /nav.js) -->
+  <div id="lh-nav"></div>
 <body class="lh-page">
   <header class="topbar">
     <div class="brand"><span class="logo">🗂</span><div><h1>LocalHub</h1><p>File Manager</p></div></div>
@@ -313,7 +316,10 @@
         history: [], future: [],
         view: "grid",
         sort: "name",
-        selected: []
+        selected: [],
+        truncated: false,
+        shown: 0,
+        total: 0
       };
 
       function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -366,6 +372,9 @@
           if (pushHistory !== false) { state.history.push(state.path); state.future = []; }
           state.path = d.path; state.parent = d.parent || null;
           state.folders = d.folders || []; state.files = d.files || [];
+          state.truncated = d.truncated === true;
+          state.shown = d.shown != null ? d.shown : ((d.folders || []).length + (d.files || []).length);
+          state.total = d.total != null ? d.total : state.shown;
           state.selected = [];
           render();
           buildTree();
@@ -418,8 +427,16 @@
         if (!items.length) { showEmpty("No items" + (q ? " matching \"" + q + "\"" : "") + "."); return; }
 
         var view = $("view");
+        var notice = state.truncated
+          ? '<div class="lrow" style="opacity:.85;cursor:default" data-note="1">' +
+              '<span class="ico">⚠</span>' +
+              '<span class="nm">Showing ' + state.shown + " of " + state.total + " items — open a subfolder or search for the rest.</span></div>"
+          : "";
         if (state.view === "list") {
           var h = '<div class="lhead"><span class="ico"></span><span class="nm">Name</span>' +
+            '<span class="col hide-sm">Size</span><span class="col hide-sm">Modified</span></div>';
+          h += notice;
+          h += '<div class="lhead"><span class="ico"></span><span class="nm">Name</span>' +
             '<span class="col hide-sm">Size</span><span class="col hide-sm">Modified</span></div>';
           h += items.map(function (it, i) {
             var sel = isSelected(it.path) ? " selected" : "";
@@ -431,7 +448,12 @@
           }).join("");
           view.innerHTML = h;
         } else {
-          view.innerHTML = '<div class="grid">' + items.map(function (it, i) {
+          view.innerHTML = (notice
+            ? '<div class="lrow" style="opacity:.85;cursor:default" data-note="1">' +
+                '<span class="ico">⚠</span>' +
+                '<span class="nm">Showing ' + state.shown + " of " + state.total + " items — open a subfolder or search for the rest.</span></div>"
+            : "");
+          view.innerHTML += '<div class="grid">' + items.map(function (it, i) {
             var sel = isSelected(it.path) ? " selected" : "";
             return '<div class="tile lh-pop' + sel + '" style="animation-delay:' + Math.min(i * 15, 300) + 'ms" data-path="' + esc(it.path) + '" data-dbl="1">' +
               '<span class="ico">' + iconFor(it) + '</span>' +
@@ -439,6 +461,10 @@
               '<span class="meta">' + (it.isDir ? "" : fmtSize(it.size)) + '</span></div>';
           }).join("") + "</div>";
         }
+
+        view.querySelectorAll("[data-note]").forEach(function (el) {
+          if (el && el.removeAttribute) el.removeAttribute("data-path");
+        });
 
         view.querySelectorAll("[data-path]").forEach(function (el) {
           el.addEventListener("click", function (e) {

@@ -35,6 +35,24 @@
     ready: false,
 
     boot: function () {
+      if (this._bootPromise) return this._bootPromise;
+      var self = this;
+      this._bootPromise = Promise.resolve().then(function () {
+        return Memory && Memory.open ? Memory.open() : null;
+      }).then(function (db) {
+        if (db && db.close) db.close();
+        self._bootReady();
+      }).catch(function (error) {
+        self.ready = false;
+        var input = el("chat-input"), send = el("chat-send");
+        if (input) input.disabled = true;
+        if (send) send.disabled = true;
+        Chat.addError("Local history is not ready: " + (error.message || "storage unavailable") + " Reload after resolving this issue.");
+      });
+      return this._bootPromise;
+    },
+
+    _bootReady: function () {
       this.wireTabs();
       this.wireChat();
       this.wireVoice();
@@ -135,7 +153,7 @@
         Brain.ready = true;
         var h = new Date().getHours();
         var greet = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-        Chat.addMessage("assistant", greet + "! LocalHub OS Assistant ready. I control and manage LocalHub — files, media, server, network, logs and devices. Type a command, e.g. 'open downloads', 'show cpu usage', 'restart server', or 'search files named <query>'.");
+        Chat.addMessage("assistant", greet + "! LocalHub assistant ready. I work offline with local commands and reference answers. Try 'server status' or ask about a file. Server changes need confirmation; some older workflows are still under review.");
       });
     },
 
@@ -173,8 +191,8 @@
       // Role-aware quick actions: standard users never see admin-only controls,
       // so there is no surface for them to probe admin features from the UI.
       var items = (role === "admin")
-        ? ["show server status", "show connected devices", "block device 192.168.1.20", "show device policy", "show logs", "restart server"]
-        : ["open file manager", "search files", "play my recent media", "show my recent media", "show server status", "what can i do"];
+        ? ["check localhub health", "explain system integration", "server status", "play newest modified video in downloads", "show logs", "restart server"]
+        : ["check localhub health", "explain system integration", "open file manager", "play newest modified video in downloads", "server status"];
       box.innerHTML = "";
       items.forEach(function (s, i) {
         var c = document.createElement("button");
@@ -274,26 +292,26 @@
       // understand -> contextualize -> remember -> reason -> decide -> act ->
       // verify -> reflect). Falls back to the classic Intent pipeline otherwise.
       var role = (global.LH_AI.Commands && global.LH_AI.Commands.getRole) ? global.LH_AI.Commands.getRole() : "user";
-      var pipeline;
-      if (global.LH_AI.Cognitive && global.LH_AI.Cognitive.process) {
-        pipeline = global.LH_AI.Cognitive.process(text, { role: role });
-      } else if ((Intent && Intent.process)) {
-        pipeline = Intent.process(text);
-      } else {
-        pipeline = this.legacyRun(text);
-      }
+      var self = this;
+      var pipeline = Promise.resolve().then(function () {
+        if (global.LH_AI.AssistantRuntime) return global.LH_AI.AssistantRuntime.process(text, { role: role });
+        if (global.LH_AI.Cognitive && global.LH_AI.Cognitive.process) return global.LH_AI.Cognitive.process(text, { role: role });
+        if (Intent && Intent.process) return Intent.process(text);
+        return self.legacyRun(text);
+      });
       Promise.resolve(pipeline).then(function (res) {
         removeThink();
+        if (!res || typeof res.message !== "string") throw new Error("Assistant response was incomplete.");
         // Polish the reply into natural, human communication (grammar + tone).
         // deepen() (the "Great question — let me explain" template) is ONLY used
         // when the user EXPLICITLY asked for an explanation. Normal conversation,
         // greetings and status replies stay natural and are never essay-wrapped.
         var finalMsg = res.message;
-        if (global.LH_AI.Comm && global.LH_AI.Comm.polish) {
+        if ((!res.execution || res.execution.status === "LEGACY_UNVERIFIED") && global.LH_AI.Comm && global.LH_AI.Comm.polish) {
           var wantExplain = /(explain|define|what is|what are|what's|what does .* mean|meaning of|how does .* work|how does it work|tell me about|what is a|what is the|difference between|why does|how to|in detail|explain in|teach me|describe|what do you mean|elaborate)/i.test(text);
           finalMsg = global.LH_AI.Comm.polish(res.message, { closer: true, explain: wantExplain });
         }
-        var out = (Chat.addTyped) ? Chat.addTyped("assistant", finalMsg) : Chat.addMessage("assistant", finalMsg);
+        var out = (Chat.addTyped) ? Chat.addTyped("assistant", finalMsg, {noType: !!(res.execution && res.execution.intent === "SYSTEM_INTEGRATION")}) : Chat.addMessage("assistant", finalMsg);
         Chat.save({ role: "assistant", text: finalMsg });
         // If speech output is enabled, let the assistant speak its reply aloud.
         if (Brain.ttsAuto && global.LH_AI.Voice && global.LH_AI.Voice.supportedOutput()) {
@@ -314,6 +332,7 @@
         }
         Brain.refreshDiagnostics();
       }).catch(function (e) {
+        removeThink();
         Chat.addError(e.message || String(e));
       });
     },
@@ -362,14 +381,33 @@
       var url = base + "/api/" + action;
 
       // Export/backup return downloadable payloads — open them as a download.
-      if (action === "server/export-logs") { window.open(url, "_blank"); Chat.addAction("Exported logs."); return; }
-      if (action === "server/backup") { window.open(url, "_blank"); Chat.addAction("Configuration exported."); return; }
+      if (action === "server/export-logs") { window.open(url, "_blank"); Chat.addAction("Requested log download; completion is not verified."); return; }
+      if (action === "server/backup") { window.open(url, "_blank"); Chat.addAction("Requested configuration download; completion is not verified."); return; }
 
-      fetch(url, { method: "POST" }).then(function (r) { return r.json().catch(function () { return {}; }); })
-        .then(function (res) {
-          Chat.addAction((res && res.message) || (info || action) + " done.");
-        })
-        .catch(function () { Chat.addError("Failed to run " + action); });
+      var headers = { "Content-Type": "application/json" };
+      try {
+        var t = global.LH_AI.token || new URLSearchParams(location.search).get("token") || sessionStorage.getItem("lhtoken") || localStorage.getItem("lhtoken");
+        if (t) headers.Authorization = "Bearer " + t;
+      } catch (e) {}
+      return fetch(url, { method: "POST", headers: headers, body: "{}" })
+        .then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (res) {
+            if (!r.ok || res.ok !== true) {
+              var message = r.status === 503 ? "Feature disabled or unavailable in the controller." :
+                r.status === 401 || r.status === 403 ? "This action is not permitted for the current session." :
+                res.error || "The server did not acknowledge the action.";
+              Chat.addError(message);
+              return { ok: false, message: message, execution: { status: "FAILED", verified: false } };
+            }
+            var message = "Request accepted by the server; completion has not been verified.";
+            Chat.addAction(message);
+            return { ok: true, message: message, execution: { status: "ACKNOWLEDGED", verified: false } };
+          });
+        }).catch(function () {
+          var message = "No response received. The action may have reached the server; check its state before retrying.";
+          Chat.addError(message);
+          return { ok: false, message: message, execution: { status: "UNVERIFIED", verified: false } };
+        });
     },
 
     openFolder: function (path, folders, files) {

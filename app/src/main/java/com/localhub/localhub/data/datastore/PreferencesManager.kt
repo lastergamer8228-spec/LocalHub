@@ -40,7 +40,7 @@ class PreferencesManager(context: Context) {
     val autostartFlow: Flow<Boolean> = dataStore.data.map { it[PrefKeys.AUTOSTART] ?: false }
     val serverNameFlow: Flow<String> = dataStore.data.map { it[PrefKeys.SERVER_NAME] ?: "LocalHub" }
 
-    suspend fun setPort(port: Int) = dataStore.edit { it[PrefKeys.PORT] = port }
+    suspend fun setPort(port: Int) { require(port in 1024..65535); dataStore.edit { it[PrefKeys.PORT] = port } }
     suspend fun setTheme(theme: String) = dataStore.edit { it[PrefKeys.THEME] = theme }
     suspend fun setAutostart(enabled: Boolean) = dataStore.edit { it[PrefKeys.AUTOSTART] = enabled }
     suspend fun setServerName(name: String) = dataStore.edit { it[PrefKeys.SERVER_NAME] = name }

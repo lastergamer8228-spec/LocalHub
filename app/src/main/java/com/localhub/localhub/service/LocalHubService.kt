@@ -27,7 +27,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 /**
  * Keeps the embedded LocalHub server alive while the device is on, shows a
@@ -37,6 +37,7 @@ import kotlinx.coroutines.runBlocking
 class LocalHubService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val commandMutex = kotlinx.coroutines.sync.Mutex()
     private var collectJob: Job? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var nsdHelper: NsdHelper? = null
@@ -50,98 +51,105 @@ class LocalHubService : Service() {
 
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
         val container = (application as LocalHubApplication).appContainer
-        container.logger.info("Service", "Action = ${intent?.action}")
-
-        if (intent?.action == Constants.ACTION_STOP) {
-            nsdHelper?.unregister()
-            container.server.stopServer()
-            container.isServerRunning.value = false
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
-            return START_NOT_STICKY
+        val action = intent?.action ?: Constants.ACTION_START
+        if (action == Constants.ACTION_START || action == Constants.ACTION_RESTART) {
+            promoteForeground(Constants.DEFAULT_PORT)
         }
-
-        if (intent?.action == Constants.ACTION_APPLY_PORT) {
-            val port = intent.getIntExtra(Constants.EXTRA_PORT, 8080)
-
-            runBlocking {
-                container.preferencesManager.setPort(port)
-            }
-
-            container.restartServer(port)
-            // Re-advertise mDNS on the new port.
-            val name = runBlocking { container.preferencesManager.serverNameFlow.first() }
-            nsdHelper?.register(name, port)
-            return START_STICKY
+        scope.launch {
+            commandMutex.lock()
+            try {
+                when (action) {
+                    Constants.ACTION_STOP -> {
+                        collectJob?.cancel(); collectJob = null
+                        nsdHelper?.unregister()
+                        container.server.stopServer()
+                        container.isServerRunning.value = false
+                        wakeLock?.let { if (it.isHeld) it.release() }
+                        finishService(startId)
+                    }
+                    Constants.ACTION_APPLY_PORT -> {
+                        val port = intent?.getIntExtra(Constants.EXTRA_PORT, Constants.DEFAULT_PORT) ?: Constants.DEFAULT_PORT
+                        require(port in 1024..65535) { "Port must be 1024–65535" }
+                        container.preferencesManager.setPort(port)
+                        val wasRunning = container.isServerRunning.value
+                        container.restartServer(port)
+                        if (wasRunning && container.isServerRunning.value) advertise(port)
+                        else if (wasRunning) failServer(container.server.lastError ?: "Could not bind port $port")
+                        else finishService(startId)
+                    }
+                    Constants.ACTION_SAVE_NAME -> {
+                        val name = intent?.getStringExtra(Constants.EXTRA_NAME)?.trim() ?: "LocalHub"
+                        require(name.isNotBlank() && name.length <= 64)
+                        container.preferencesManager.setServerName(name)
+                        if (container.isServerRunning.value) advertise(container.preferencesManager.portFlow.first())
+                        else finishService(startId)
+                    }
+                    Constants.ACTION_CLEAR_LOGS -> { container.logRepository.clear(); if (!container.isServerRunning.value) finishService(startId) }
+                    Constants.ACTION_RESTART -> {
+                        if (container.isServerRunning.value) {
+                            container.restartServer(container.preferencesManager.portFlow.first())
+                            if (container.isServerRunning.value) startServer()
+                            else failServer(container.server.lastError ?: "Restart failed")
+                        } else finishService(startId)
+                    }
+                    Constants.ACTION_START -> startServer()
+                    else -> throw IllegalArgumentException("Unknown service action")
+                }
+            } catch (e: Exception) {
+                container.serverError.value = e.message ?: "Server command failed"
+                container.logger.error("Service", "Command failed: ${e.message}")
+                if (!container.isServerRunning.value) finishService(startId)
+            } finally { commandMutex.unlock() }
         }
-
-        if (intent?.action == Constants.ACTION_SAVE_NAME) {
-
-            val name = intent.getStringExtra(Constants.EXTRA_NAME) ?: "LocalHub"
-
-            container.logger.info("Service", "Saving name = $name")
-
-            runBlocking {
-                container.preferencesManager.setServerName(name)
-            }
-
-            // Re-advertise mDNS under the new friendly hostname.
-            val port = runBlocking { container.preferencesManager.portFlow.first() }
-            if (container.isServerRunning.value) {
-                nsdHelper?.register(name, port)
-            }
-
-            container.logger.info("Service", "Name saved")
-
-            return START_STICKY
-        }
-
-        if (intent?.action == Constants.ACTION_CLEAR_LOGS) {
-
-            container.logger.info("Service", "Before clear")
-
-            runBlocking {
-                container.logRepository.clear()
-            }
-
-            container.logger.info("Service", "After clear")
-
-            return START_STICKY
-        }
-
-
-
-        startServer()
-        return START_STICKY
-
+        return if (action == Constants.ACTION_STOP) START_NOT_STICKY else START_STICKY
     }
 
-    private fun startServer() {
-        val container = (application as LocalHubApplication).appContainer
-        val port = runBlocking { container.preferencesManager.portFlow.first() }
-
-        container.server.startServer()
-        container.isServerRunning.value = true
-
-        // Advertise a friendly hostname over mDNS (best-effort).
-        if (nsdHelper == null) {
-            nsdHelper = NsdHelper(this, container.logger)
+    /** Called from background coroutines; stops the service on the main thread. */
+    private suspend fun finishService(stopId: Int? = null) {
+        withContext(Dispatchers.Main) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            if (stopId != null) stopSelfResult(stopId) else stopSelf()
         }
-        val name = runBlocking { container.preferencesManager.serverNameFlow.first() }
-        nsdHelper?.register(name, port)
+    }
 
+    private suspend fun failServer(message: String) {
+        val c = (application as LocalHubApplication).appContainer
+        c.serverError.value = message
+        c.isServerRunning.value = false
+        collectJob?.cancel(); collectJob = null
+        nsdHelper?.unregister()
+        wakeLock?.let { if (it.isHeld) it.release() }
+        withContext(Dispatchers.Main) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
+    }
+
+    private fun promoteForeground(port: Int) {
         val notification = buildNotification(port)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(
-                Constants.NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-            )
-        } else {
-            startForeground(Constants.NOTIFICATION_ID, notification)
-        }
+            startForeground(Constants.NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else startForeground(Constants.NOTIFICATION_ID, notification)
+    }
+
+    private suspend fun advertise(port: Int) {
+        val c = (application as LocalHubApplication).appContainer
+        c.serverError.value = null
+        if (nsdHelper == null) nsdHelper = NsdHelper(this, c.logger)
+        nsdHelper?.register(c.preferencesManager.serverNameFlow.first(), port)
+        withContext(Dispatchers.Main) { promoteForeground(port) }
+    }
+
+    private suspend fun startServer() {
+        val container = (application as LocalHubApplication).appContainer
+        val port = container.preferencesManager.portFlow.first()
+
+        val started = if (container.isServerRunning.value) true else container.startManagedServer()
+        container.isServerRunning.value = started
+        if (!started) { failServer(container.server.lastError ?: "Server could not start"); return }
+        container.serverError.value = null
+        advertise(port)
 
         acquireWakeLock()
 
@@ -159,7 +167,7 @@ class LocalHubService : Service() {
                     container.server.pruneClients()
                     val stats = StatisticsSnapshot(
                         timestamp = snap.timestamp,
-                        cpuUsage = snap.cpu.usagePercent,
+                        cpuUsage = if (snap.cpu.available) snap.cpu.usagePercent else -1f,
                         memoryUsed = snap.memory.usedBytes,
                         memoryTotal = snap.memory.totalBytes,
                         batteryLevel = snap.battery.level,

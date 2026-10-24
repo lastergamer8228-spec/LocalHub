@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
@@ -19,10 +20,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,8 +38,6 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.QuestionAnswer
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Assistant
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Category
 import com.localhub.localhub.model.ModuleInfo
@@ -51,10 +54,10 @@ private fun iconFor(category: String): ImageVector = when (category.lowercase())
 
 @Composable
 fun ModuleCard(module: ModuleInfo, onToggle: (ModuleInfo) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable(module.id) { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag("module-card-${module.id}"),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
         )
@@ -76,29 +79,33 @@ fun ModuleCard(module: ModuleInfo, onToggle: (ModuleInfo) -> Unit) {
                         module.name,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        module.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        "v${module.version} • ${module.id} • ${module.category}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        if (module.id in com.localhub.localhub.module.ModulePolicy.controllable) {
+                            if (module.enabled) "On" else "Off"
+                        } else if (module.id == "core.security" || module.id == "core.server") "Required" else "Information only",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Switch(checked = module.enabled, onCheckedChange = { onToggle(module) })
+                if (module.id in com.localhub.localhub.module.ModulePolicy.controllable) {
+                    Switch(checked = module.enabled, onCheckedChange = { onToggle(module) },
+                        modifier = Modifier.testTag("module-switch-${module.id}").semantics { contentDescription = module.name })
+                }
             }
+            Text(module.description, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = if (expanded) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis)
 
             // Expand/collapse for settings detail.
             Row(
-                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { expanded = !expanded }.padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    if (expanded) "Hide settings" else "Show settings",
+                    if (expanded) "Hide details" else "Show details",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -113,6 +120,13 @@ fun ModuleCard(module: ModuleInfo, onToggle: (ModuleInfo) -> Unit) {
 
             if (expanded) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                if (module.id == "core.media") {
+                    SettingsSection("Dependency", "File Manager must also be enabled. Already-buffered video/audio may continue briefly after OFF; new server reads are blocked.")
+                }
+                if (module.id !in com.localhub.localhub.module.ModulePolicy.controllable) {
+                    SettingsSection("Control", "Not an independently switchable feature. No on/off control is claimed.")
+                }
+                SettingsSection("Component", "${module.id} · v${module.version}")
                 SettingsSection("Accessibility", module.accessibility)
                 if (module.capabilities.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))

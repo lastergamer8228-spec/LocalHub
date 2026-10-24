@@ -15,7 +15,9 @@ class LocalHubWebSocket(
     handshake: NanoHTTPD.IHTTPSession,
     private val hub: WebSocketHub,
     private val clientTracker: ClientTracker,
-    private val logger: AppLogger
+    private val logger: AppLogger,
+    val isAdmin: Boolean = false,
+    private val allowed: () -> Boolean = { true }
 ) : NanoWSD.WebSocket(handshake) {
 
     private val clientId = UUID.randomUUID().toString()
@@ -80,6 +82,11 @@ class LocalHubWebSocket(
     }
 
     fun sendSafe(json: String) {
+        if (!allowed()) {
+            runCatching { close(NanoWSD.WebSocketFrame.CloseCode.PolicyViolation, "Session expired or device blocked", false) }
+            detach()
+            return
+        }
         try {
             send(json)
         } catch (e: IOException) {

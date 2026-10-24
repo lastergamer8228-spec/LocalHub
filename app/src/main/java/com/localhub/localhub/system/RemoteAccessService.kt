@@ -35,8 +35,9 @@ class RemoteAccessService : AccessibilityService() {
         data class Command(val kind: String, val text: String, val extra: String)
 
         fun request(kind: String, text: String = "", extra: String = "") {
+            val service = instance ?: return
             queue.add(Command(kind, text, extra))
-            instance?.drainQueue()
+            android.os.Handler(android.os.Looper.getMainLooper()).post { service.drainQueue() }
         }
 
         val isEnabled: Boolean get() = instance != null
@@ -55,11 +56,13 @@ class RemoteAccessService : AccessibilityService() {
 
     override fun onUnbind(intent: android.content.Intent?): Boolean {
         instance = null
+        queue.clear()
         return super.onUnbind(intent)
     }
 
     override fun onDestroy() {
         instance = null
+        queue.clear()
         super.onDestroy()
     }
 

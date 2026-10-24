@@ -37,6 +37,7 @@ class ScreenMirror(private val context: Context) {
     @Volatile private var mediaProjection: MediaProjection? = null
     @Volatile private var virtualDisplay: VirtualDisplay? = null
     @Volatile private var imageReader: ImageReader? = null
+    private var projectionCallback: MediaProjection.Callback? = null
     private var captureThread: HandlerThread? = null
     private var captureHandler: Handler? = null
 
@@ -63,7 +64,9 @@ class ScreenMirror(private val context: Context) {
         if (mediaProjection != null) return true
         return try {
             val mpm = serviceContext.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            val proj = mpm.getMediaProjection(resultCode, resultData!!) ?: return false
+            require(resultCode == android.app.Activity.RESULT_OK && resultData != null) { "Screen capture consent is required" }
+            val proj = mpm.getMediaProjection(resultCode, resultData) ?: return false
+            mediaProjection = proj // retained early so startup errors release it
 
             // Screen metrics (use current window bounds when available)
             val metrics = DisplayMetrics()
@@ -95,6 +98,15 @@ class ScreenMirror(private val context: Context) {
             // Dedicated handler thread for capture callbacks
             captureThread = HandlerThread("mirror-capture").apply { start() }
             captureHandler = Handler(captureThread!!.looper)
+
+            val callback = object : MediaProjection.Callback() {
+                override fun onStop() {
+                    stop()
+                    context.stopService(Intent(context, com.localhub.localhub.service.MirrorService::class.java))
+                }
+            }
+            projectionCallback = callback
+            proj.registerCallback(callback, captureHandler) // required before virtual display on Android 14+
 
             val reader = ImageReader.newInstance(captureWidth, captureHeight, PixelFormat.RGBA_8888, 2)
             reader.setOnImageAvailableListener({ r -> onFrame(r) }, captureHandler)
@@ -164,8 +176,11 @@ class ScreenMirror(private val context: Context) {
         virtualDisplay = null
         try { imageReader?.close() } catch (_: Exception) {}
         imageReader = null
-        try { mediaProjection?.stop() } catch (_: Exception) {}
+        val projection = mediaProjection
         mediaProjection = null
+        try { projectionCallback?.let { projection?.unregisterCallback(it) } } catch (_: Exception) {}
+        projectionCallback = null
+        try { projection?.stop() } catch (_: Exception) {}
         captureThread?.quitSafely()
         captureThread = null
         captureHandler = null

@@ -16,7 +16,7 @@ class DashboardModule : LocalModule {
     override val name: String = "Dashboard"
     override val description: String = "Serves the built-in responsive dashboard over HTTP."
     override val version: String = "1.0.0"
-    override var isEnabled: Boolean = true
+    @Volatile override var isEnabled: Boolean = true
 
     override fun start() {}
     override fun stop() {}

@@ -6,6 +6,11 @@
 (function (global) {
   "use strict";
 
+  // Legacy extension blocks reference Node's `global` outside their IIFEs.
+  // Keep frozen engine sources unchanged while giving browser pages the same
+  // binding as the headless harness. Load this bootstrap before those scripts.
+  if (typeof global.global === "undefined") global.global = global;
+
   // --- Main application object (always defined) ---
   global.LocalHub = global.LocalHub || {};
 

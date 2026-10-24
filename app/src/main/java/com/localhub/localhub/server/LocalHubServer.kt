@@ -55,7 +55,8 @@ class LocalHubServer(
     private val shareTokenManager: ShareTokenManager,
     private val controlServer: (String) -> Unit,
     private val reportStatus: (ServerStatus) -> Unit,
-    private val port: Int
+    private val port: Int,
+    private val healthSummary: () -> String = { "" }
 ) : NanoWSD(port) {
 
     private val hub = WebSocketHub()
@@ -75,14 +76,22 @@ class LocalHubServer(
         deviceActions = deviceActions,
         screenMirror = screenMirror,
         ttsEngine = ttsEngine,
-        context = context
+        context = context,
+        listenerPort = { listeningPort },
+        protocol = { activeProtocol }
     )
+
+    @Volatile private var activeProtocol = "http"
 
     private val assetServer = AssetServer(context)
 
     val clients: StateFlow<List<ConnectedClient>> = clientTracker.clients
 
+    @Volatile var lastError: String? = null
+        private set
+
     fun startServer(): Boolean {
+        if (isAlive) return true
         return try {
             if (wasStarted()) stop()
 
@@ -95,6 +104,7 @@ class LocalHubServer(
 
             start(30_000, false)
 
+            activeProtocol = if (httpsEnabled) "https" else "http"
             ServerClock.markStart()
             val snapshot = systemInfoProvider.collectSnapshot()
             reportStatus(
@@ -104,20 +114,26 @@ class LocalHubServer(
                     host = snapshot.network.ipAddress,
                     version = Constants.SERVER_VERSION,
                     startedAt = System.currentTimeMillis(),
-                    uptimeMs = 0
+                    uptimeMs = 0,
+                    protocol = if (httpsEnabled) "https" else "http"
                 )
             )
 
+            lastError = null
             logger.info(TAG, "Server started on port $listeningPort")
             true
-        } catch (e: IOException) {
+        } catch (e: Exception) {
+            lastError = e.message ?: "Server startup failed"
             logger.error(TAG, "Failed to start server: ${e.message}")
             false
         }
 
     }
 
+    fun cancelMediaWork(): Boolean = apiRouter.cancelMediaWork()
+
     fun stopServer() {
+        apiRouter.cancelMediaWork(wait = false)
         try {
             stop()
         } catch (e: Exception) {
@@ -132,7 +148,7 @@ class LocalHubServer(
 
     /**
      * Wraps the server in TLS using a bundled self-signed PKCS12 keystore
-     * (res/raw/localhub_keystore.p12, password "localhub"). This is an OPT-IN
+     * (the old bundled res/raw/localhub_keystore.p12, since removed). Opt-in
      * feature: local traffic uses plain HTTP by default; enabling HTTPS is for
      * users who want transport encryption on a trusted network.
      *
@@ -140,36 +156,37 @@ class LocalHubServer(
      * expected and acceptable for a local, offline server. See the build note in
      * the project README for regenerating the keystore with keytool.
      */
+    /**
+     * Enables TLS with a per-install key from the Android Keystore.
+     *
+     * The bundled PKCS#12 key was shared by every installation (same private key
+     * shipped in the APK), so it could be extracted to decrypt traffic. We now
+     * fail closed: if no device key is available the server refuses to start
+     * rather than serving plaintext or reusing a shipped key.
+     */
     private fun applyTls() {
         try {
-            val ks = KeyStore.getInstance("PKCS12")
-            val res = context.resources
-            val rawId = com.localhub.localhub.R.raw.localhub_keystore
-            val input: InputStream = res.openRawResource(rawId)
-            ks.load(input, "localhub".toCharArray())
-            input.close()
+            val ks = com.localhub.localhub.system.TlsCertificateManager.keystoreOrNull()
+                ?: throw IllegalStateException("no per-install TLS identity available")
 
             val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
-            kmf.init(ks, "localhub".toCharArray())
+            // Keystore-backed keys are not password protected.
+            kmf.init(ks, null)
 
-            // SSLContext.serverSocketFactory and SSLServerSocketFactory.getDefault()
-            // are both typed as the parent ServerSocketFactory, so cast to the
-            // concrete SSLServerSocketFactory to satisfy makeSecure's parameter.
             val socketFactory: SSLServerSocketFactory =
-                try {
-                    javax.net.ssl.SSLContext.getInstance("TLS").apply {
-                        init(kmf.keyManagers, null, null)
-                    }.serverSocketFactory as SSLServerSocketFactory
-                } catch (e: Exception) {
-                    logger.warn(TAG, "TLS context fallback: ${e.message}")
-                    javax.net.ssl.SSLServerSocketFactory.getDefault() as SSLServerSocketFactory
-                }
+                javax.net.ssl.SSLContext.getInstance("TLS").apply {
+                    init(kmf.keyManagers, null, null)
+                }.serverSocketFactory as SSLServerSocketFactory
 
             // NanoHTTPD: makeSecure(SSLServerSocketFactory, protocols).
             makeSecure(socketFactory, arrayOf("TLSv1.2"))
-            logger.info(TAG, "HTTPS enabled (self-signed). Browsers will warn about the certificate.")
+            logger.info(TAG, "HTTPS enabled with a per-install self-signed certificate. Browsers will warn about the certificate.")
         } catch (e: Exception) {
             logger.error(TAG, "HTTPS setup failed: ${e.message}")
+            throw IllegalStateException(
+                "HTTPS is enabled but no per-install certificate is available on this device. Turn HTTPS off, or check the device keystore.",
+                e
+            )
         }
     }
 
@@ -185,7 +202,12 @@ class LocalHubServer(
                 "WebSocket authentication required"
             )
         }
-        return LocalHubWebSocket(handshake, hub, clientTracker, logger)
+        val ip = handshake.remoteIpAddress ?: "?"
+        if (clientTracker.isBlocked(ip)) throw NanoWSD.WebSocketException(NanoWSD.WebSocketFrame.CloseCode.PolicyViolation, "Device blocked")
+        return LocalHubWebSocket(handshake, hub, clientTracker, logger,
+            sessionManager.validate(token, ip)?.role == "admin") {
+                !clientTracker.isBlocked(ip) && sessionManager.validate(token, ip) != null
+            }
     }
 
     override fun serveHttp(session: IHTTPSession): Response {
@@ -198,6 +220,11 @@ class LocalHubServer(
                 NanoHTTPD.Response.Status.FORBIDDEN, NanoHTTPD.MIME_PLAINTEXT,
                 "403 Device blocked by administrator"
             ).apply { addHeader("Access-Control-Allow-Origin", "*") }
+        }
+        moduleManager.blocked(uri)?.let { disabled ->
+            return NanoHTTPD.newFixedLengthResponse(Status.SERVICE_UNAVAILABLE, NanoHTTPD.MIME_PLAINTEXT,
+                "Module disabled: $disabled. Enable it in the Android controller.")
+                .apply { addHeader("Cache-Control", "no-store") }
         }
         return try {
             clientTracker.httpHit(
@@ -253,10 +280,10 @@ class LocalHubServer(
     fun broadcast(json: String) = hub.broadcast(json)
 
     fun broadcastStats(snapshot: SystemInfo) =
-        hub.broadcast(gson.toJson(mapOf("type" to "stats", "data" to snapshot)))
+        if (moduleManager.getModule("core.monitor")?.isEnabled == true) hub.broadcast(gson.toJson(mapOf("type" to "stats", "data" to snapshot))) else Unit
 
     fun broadcastLog(entry: LogEntry) =
-        hub.broadcast(gson.toJson(mapOf("type" to "log", "data" to entry)))
+        hub.broadcast(gson.toJson(mapOf("type" to "log", "data" to entry)), adminOnly = true)
 
     fun pruneClients() = clientTracker.prune()
 

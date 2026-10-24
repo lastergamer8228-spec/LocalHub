@@ -16,7 +16,7 @@ class FileManagerModule : LocalModule {
     override val name: String = "File Manager"
     override val description: String = "Full browser-based file manager with preview, search, and file operations."
     override val version: String = "1.0.0"
-    override var isEnabled: Boolean = true
+    @Volatile override var isEnabled: Boolean = true
 
     override fun start() {}
     override fun stop() {}

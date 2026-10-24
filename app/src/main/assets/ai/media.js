@@ -21,7 +21,8 @@
         var seq = (parseInt(global.localStorage.getItem(SEQ) || "0", 10) || 0) + 1;
         global.localStorage.setItem(SEQ, String(seq));
         global.localStorage.setItem(CHANNEL, JSON.stringify(payload));
-      } catch (e) { /* storage unavailable */ }
+        payload.dispatched = true;
+      } catch (e) { payload.dispatched = false; }
       return payload;
     },
 
@@ -34,6 +35,7 @@
         var raw = global.localStorage.getItem(CHANNEL);
         if (!raw) return null;
         var p = JSON.parse(raw);
+        if (!Number.isFinite(p.ts) || Date.now() - p.ts > 15000 || p.ts > Date.now()) return null;
         return { cmd: p.cmd, params: p.params || {}, ts: p.ts };
       } catch (e) { return null; }
     },

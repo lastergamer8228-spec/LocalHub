@@ -9,8 +9,9 @@ import fi.iki.elonen.NanoHTTPD.Response
  * A lightweight, metadata-only module representing one of the assistant's
  * subsystems (Mind engine, knowledge base, critical thinking, Guardian, voice,
  * communication, self-dev, deep knowledge...). It contributes no HTTP route —
- * it exists so the Modules screen can show, enable/disable, and explain every
- * assistant capability with its capabilities, limitations, and accessibility.
+ * it exists so the Modules screen can describe each
+ * assistant capability, its limitations and access requirements. Independent
+ * switches are exposed only when ModulePolicy provides server-side enforcement.
  */
 class CapabilityModule(
     override val id: String,
@@ -23,7 +24,7 @@ class CapabilityModule(
     private val accessibility: String,
     initiallyEnabled: Boolean = true
 ) : LocalModule {
-    override var isEnabled: Boolean = initiallyEnabled
+    @Volatile override var isEnabled: Boolean = initiallyEnabled
     override fun start() {}
     override fun stop() {}
     override fun handleRequest(session: IHTTPSession, path: String): Response? = null

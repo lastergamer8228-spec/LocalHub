@@ -15,7 +15,7 @@ class AIAssistantModule : LocalModule {
     override val name: String = "AI Assistant"
     override val description: String = "Built-in offline assistant that controls LocalHub through its internal APIs."
     override val version: String = "1.0.0"
-    override var isEnabled: Boolean = true
+    @Volatile override var isEnabled: Boolean = true
 
     override fun start() {}
     override fun stop() {}

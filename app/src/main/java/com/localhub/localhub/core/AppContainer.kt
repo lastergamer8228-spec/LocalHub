@@ -26,7 +26,14 @@ import com.localhub.localhub.system.DeviceActions
 import com.localhub.localhub.system.ScreenMirror
 import com.localhub.localhub.system.TtsEngine
 import com.localhub.localhub.util.AppLogger
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,14 +77,54 @@ class AppContainer(context: Context) {
         AssistantCapabilities.all().forEach { register(it) }
         // Register core LocalHub feature modules (server, security, media,
         // mirror, device control, shares, monitor, automation, tts, os, esp32).
-        CoreCapabilities.all().forEach { register(it) }
+        CoreCapabilities.all().filter { it.id != "core.files" }.forEach { register(it) }
     }
 
+    private val containerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val modulesRestored = CompletableDeferred<Unit>()
+
     init {
-        // Seed the module registry into Room so the Modules screen can show them.
-        runBlocking {
-            moduleManager.toInfoList().forEach { moduleRepository.upsert(it) }
+        // Room must not be opened on the main thread during app start: the old
+        // synchronous restore could block long enough to show
+        // "App isn't responding". Restore now runs in the background and the
+        // server waits for it before accepting requests.
+        containerScope.launch {
+            runCatching { restoreModuleStates() }
+                .onFailure { logger.error("AppContainer", "Module restore failed: ${it.message}") }
+            modulesRestored.complete(Unit)
         }
+    }
+
+    private suspend fun restoreModuleStates() {
+        val saved = moduleRepository.observe().first().associateBy { it.id }
+        moduleManager.restoreEnabled(saved.mapValues { it.value.enabled })
+        moduleManager.toInfoList().forEach { moduleRepository.upsert(it) }
+        moduleRepository.remove("core.files") // obsolete duplicate File Manager card
+    }
+
+    /** Server start waits briefly so restored switches are applied before serving. */
+    suspend fun awaitModulesRestored(timeoutMs: Long = 5000L) {
+        runCatching { withTimeout(timeoutMs) { modulesRestored.await() } }
+    }
+
+    private val moduleChangeMutex = kotlinx.coroutines.sync.Mutex()
+
+    suspend fun toggleModule(id: String) {
+        moduleChangeMutex.lock()
+        try {
+            val module = requireNotNull(moduleManager.getModule(id))
+            val before = module.isEnabled
+            val enabled = !before
+            require(id in com.localhub.localhub.module.ModulePolicy.controllable)
+            // Persist first: a DB failure must not leave a misleading UI state.
+            moduleRepository.upsert(module.toInfo().copy(enabled = enabled))
+            try { moduleManager.setEnabled(id, enabled) }
+            catch (e: Exception) { moduleRepository.upsert(module.toInfo().copy(enabled = before)); throw e }
+            if (id == "core.mirror" && !enabled) {
+                screenMirror.stop()
+                appContext.stopService(android.content.Intent(appContext, com.localhub.localhub.service.MirrorService::class.java))
+            }
+        } finally { moduleChangeMutex.unlock() }
     }
 
     /** Shared so client state survives server restarts (e.g. port change). */
@@ -96,11 +143,18 @@ class AppContainer(context: Context) {
 
     val connectedClients: StateFlow<List<ConnectedClient>> = clientTracker.clients
     val isServerRunning = MutableStateFlow(false)
+    val serverError = MutableStateFlow<String?>(null)
 
-    var server: LocalHubServer = buildServer(initialPort())
+    /** Crash/health records, owned by the application and shared with the UI. */
+    private val healthStore: com.localhub.localhub.system.CrashReportStore by lazy {
+        (appContext as com.localhub.localhub.LocalHubApplication).healthStore
+    }
+
+    var server: LocalHubServer = buildServer(Constants.DEFAULT_PORT)
         private set
 
-    private fun initialPort(): Int = runBlocking { preferencesManager.portFlow.first() }
+    private suspend fun currentPort(): Int =
+        preferencesManager.portFlow.first().takeIf { it in 1024..65535 } ?: Constants.DEFAULT_PORT
 
     private fun buildServer(port: Int): LocalHubServer = LocalHubServer(
         context = appContext,
@@ -119,7 +173,11 @@ class AppContainer(context: Context) {
         shareTokenManager = shareTokenManager,
         controlServer = { command -> controlServer(command) },
         reportStatus = { _serverStatus.value = it },
-        port = port
+        port = port,
+        healthSummary = {
+            runCatching { healthStore.describe(healthStore.read(), System.currentTimeMillis()) }
+                .getOrDefault("Health information is unavailable.")
+        }
     )
 
     /**
@@ -129,54 +187,55 @@ class AppContainer(context: Context) {
      * managed consistently and the server is rebuilt reliably on restart.
      */
     fun controlServer(command: String) {
+        val action = when (command) {
+            "start" -> Constants.ACTION_START
+            "stop" -> Constants.ACTION_STOP
+            "restart" -> Constants.ACTION_RESTART
+            else -> { logger.warn("Control", "Unknown command: $command"); return }
+        }
+        // Let the current API response finish before stopping its listener.
         Thread {
+            Thread.sleep(250)
             runCatching {
-                when (command) {
-                    "restart" -> {
-                        val p = _serverStatus.value.port.takeIf { it in 1024..65535 } ?: initialPort()
-                        if (isServerRunning.value) runCatching { server.stopServer() }
-                        Thread.sleep(600) // allow the port to be released
-                        server = buildServer(p)
-                        isServerRunning.value = server.startServer()
-                    }
-                    "stop" -> {
-                        server.stopServer()
-                        isServerRunning.value = false
-                    }
-                    "start" -> {
-                        if (!isServerRunning.value) {
-                            isServerRunning.value = server.startServer()
-                        }
-                    }
-                    else -> logger.warn("Control", "Unknown server command: $command")
-                }
-            }.onFailure {
-                logger.error("Control", "controlServer '$command' failed: ${it.message}")
-                isServerRunning.value = false
-            }
+                val intent = android.content.Intent(appContext, com.localhub.localhub.service.LocalHubService::class.java).setAction(action)
+                if (action == Constants.ACTION_STOP) appContext.startService(intent)
+                else androidx.core.content.ContextCompat.startForegroundService(appContext, intent)
+            }.onFailure { serverError.value = it.message; logger.error("Control", "Command failed: ${it.message}") }
         }.start()
     }
 
+    suspend fun startManagedServer(): Boolean {
+        if (isServerRunning.value) return true
+        awaitModulesRestored()
+        val port = currentPort()
+        return withContext(Dispatchers.IO) {
+            server = buildServer(port) // rebuild transport/port after stopped-setting edits
+            val started = server.startServer()
+            isServerRunning.value = started
+            serverError.value = if (started) null else server.lastError
+            started
+        }
+    }
+
     /** Recreate the server on a new port (used after the user changes it). */
-    fun restartServer(port: Int) {
-        val wasRunning = isServerRunning.value
-        if (wasRunning) server.stopServer()
-        server = buildServer(port)
-        if (wasRunning) {
-            isServerRunning.value = server.startServer()
-        } else {
-            isServerRunning.value = false
+    suspend fun restartServer(port: Int) {
+        require(port in 1024..65535)
+        withContext(Dispatchers.IO) {
+            val wasRunning = isServerRunning.value
+            if (wasRunning) server.stopServer()
+            server = buildServer(port)
+            isServerRunning.value = if (wasRunning) server.startServer() else false
+            if (wasRunning) serverError.value = if (isServerRunning.value) null else server.lastError
         }
     }
 
     init {
-        systemInfoProvider.collectSnapshot()
-
-        try {
-            isServerRunning.value = server.startServer()
-        } catch (e: Exception) {
-            logger.error("AppContainer", "Failed to start server: ${e.message}")
-            isServerRunning.value = false
+        // /proc and /sys reads plus DataStore belong off the main thread.
+        // Application construction must NOT silently open a network listener:
+        // explicit Start or the boot receiver owns that lifecycle.
+        containerScope.launch {
+            runCatching { systemInfoProvider.collectSnapshot() }
+            runCatching { logger.auditEnabled = preferencesManager.getAuditEnabled() }
         }
     }
 }

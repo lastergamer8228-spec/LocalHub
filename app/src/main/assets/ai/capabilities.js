@@ -1,10 +1,6 @@
-/* capabilities.js - LocalHub OS Capability Registry.
- *
- * Every LocalHub module registers its capabilities here. The Brain discovers
- * them automatically, so future modules (and plugins) extend the assistant
- * with ZERO changes to brain.js.
- *
- * A capability is: { module, name, desc, params[], permission }
+/* Capability metadata for discovery/UI, not a runtime executor.
+ * Registration alone does not implement, enable or verify a feature. Reviewed
+ * adapters and server-side permission/module checks remain authoritative.
  */
 (function (global) {
   "use strict";
@@ -14,10 +10,8 @@
   var capabilities = [];
   var modules = {}; // module name -> { capabilities: [...] }
 
-  // Deterministic permission model. "public" = allowed for any user; future
-  // roles could add "admin"/"owner" here.
-  var role = "owner";
-
+  // Display/discovery metadata mirrors role requirements; backend checks remain
+  // authoritative. Never assume the browser is an owner account.
   function register(moduleName, list) {
     (list || []).forEach(function (cap) {
       cap.module = cap.module || moduleName;
@@ -36,8 +30,11 @@
   }
 
   function hasPermission(cap) {
-    // All capabilities are "public" in the current owner-only model.
-    return cap && (cap.permission === "public" || cap.permission === role);
+    if (!cap) return false;
+    var role = global.LH_AI.Commands && global.LH_AI.Commands.getRole ? global.LH_AI.Commands.getRole() : null;
+    // Legacy "public" means non-admin capability, not bypassing login.
+    if (cap.permission === "public") return cap.name === "server.status" || role === "user" || role === "admin";
+    return role === "admin" && (cap.permission === "admin" || cap.permission === "owner");
   }
 
   function listByModule() { return modules; }
@@ -72,6 +69,7 @@
       { name: "fm.empty", desc: "Empty folders", params: [], permission: "public" }
     ]);
     register("media", [
+      { name: "media.latestModified", desc: "Request the newest modified video in Downloads (not verified download order)", params: [], permission: "public" },
       { name: "media.play", desc: "Play media", params: ["path"], permission: "public" },
       { name: "media.pause", desc: "Pause media", params: [], permission: "public" },
       { name: "media.next", desc: "Next media", params: [], permission: "public" },
@@ -92,17 +90,17 @@
       { name: "media.fullscreen", desc: "Toggle fullscreen", params: [], permission: "public" }
     ]);
     register("logs", [
-      { name: "logs.show", desc: "Show logs", params: [], permission: "public" },
-      { name: "logs.clear", desc: "Clear logs", params: [], permission: "public" },
-      { name: "logs.export", desc: "Export logs", params: [], permission: "public" }
+      { name: "logs.show", desc: "Show logs", params: [], permission: "admin" },
+      { name: "logs.clear", desc: "Clear logs", params: [], permission: "admin" },
+      { name: "logs.export", desc: "Export logs", params: [], permission: "admin" }
     ]);
     register("clients", [
       { name: "clients.show", desc: "Show connected clients", params: [], permission: "public" }
     ]);
     register("server", [
-      { name: "server.restart", desc: "Restart server", params: [], permission: "public" },
-      { name: "server.stop", desc: "Stop server", params: [], permission: "public" },
-      { name: "server.start", desc: "Start server", params: [], permission: "public" },
+      { name: "server.restart", desc: "Restart server", params: [], permission: "admin" },
+      { name: "server.stop", desc: "Stop server", params: [], permission: "admin" },
+      { name: "server.start", desc: "Start server", params: [], permission: "admin" },
       { name: "server.status", desc: "Server status", params: [], permission: "public" }
     ]);
     register("settings", [
@@ -115,8 +113,8 @@
       { name: "storage.usage", desc: "Storage usage", params: [], permission: "public" }
     ]);
     register("automation", [
-      { name: "automation.rules", desc: "Automation rules", params: [], permission: "public" },
-      { name: "automation.builder", desc: "Visual automation builder", params: [], permission: "public" }
+      { name: "automation.rules", desc: "Automation rules", params: [], permission: "admin" },
+      { name: "automation.builder", desc: "Visual automation builder", params: [], permission: "admin" }
     ]);
     register("os", [
       { name: "os.search", desc: "Universal search", params: ["query"], permission: "public" },
@@ -125,11 +123,16 @@
       { name: "os.recent", desc: "Recent uploads/downloads", params: [], permission: "public" }
     ]);
     register("plugins", [
-      { name: "plugins.install", desc: "Install plugin", params: ["name", "code"], permission: "public" }
+      { name: "plugins.install", desc: "Install plugin", params: ["name", "code"], permission: "admin" }
     ]);
   }
 
   registerDefaults();
+  register("integration", [
+    {name:"system.integration",desc:"Explain current native host/browser integration",params:[],permission:"public"},
+    {name:"system.health",desc:"Observe bounded host/feature health checks",params:[],permission:"public"},
+    {name:"system.readRecovery",desc:"Recheck transient reads once; no automatic system mutation",params:[],permission:"public"}
+  ]);
 
   global.LH_AI.Capabilities = {
     register: register,
