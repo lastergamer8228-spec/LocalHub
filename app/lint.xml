@@ -22,10 +22,6 @@
     <!-- Compose / Room experimental annotations we have opted into knowingly. -->
     <issue id="UnsafeOptInUsageError" severity="warning" />
 
-    <!-- Large heap is required: the server, the media scanner and the assistant
-         libraries all live in one process. -->
-    <issue id="LargeHeap" severity="warning" />
-
     <!-- androidx.startup / manifest warnings that do not affect behaviour. -->
     <issue id="UnusedMaterial3ScaffoldPaddingParameter" severity="warning" />
 </lint>

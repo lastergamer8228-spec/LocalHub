@@ -4,10 +4,10 @@ import re, subprocess
 root = Path(__file__).resolve().parents[1]
 server = root/'app/src/main/java/com/localhub/localhub/server'
 assets = root/'app/src/main/assets/dashboard'
-converter = (server/'CompatibleAudio.kt').read_text()
-router = (server/'ApiRouter.kt').read_text()
-player = (assets/'player.html').read_text()
-ui = (assets/'compatible-audio.js').read_text()
+converter = (server/'CompatibleAudio.kt').read_text(encoding='utf-8')
+router = (server/'ApiRouter.kt').read_text(encoding='utf-8')
+player = (assets/'player.html').read_text(encoding='utf-8')
+ui = (assets/'compatible-audio.js').read_text(encoding='utf-8')
 checks = {
  'audio only (no video copy)': '"-vn"' in converter and '"-c:v"' not in converter,
  'AAC stereo': '"-c:a", "aac", "-ac", "2"' in converter,
@@ -35,5 +35,5 @@ for name, ok in checks.items():
 assert all(checks.values())
 subprocess.run(['node','--check',str(assets/'compatible-audio.js')],check=True)
 inline = '\n'.join(re.findall(r'<script>(.*?)</script>', player, re.S))
-subprocess.run(['node','--check'],input=inline,text=True,check=True)
+subprocess.run(['node','--check'],input=inline,text=True,encoding='utf-8',check=True)
 print('PASS player and compatible-audio JS syntax')

@@ -164,7 +164,7 @@ private fun BackupCard(viewModel: SettingsViewModel = viewModel()) {
         scope.launch {
             val text = withContext(Dispatchers.IO) {
                 runCatching {
-                    context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
+                    context.contentResolver.openInputStream(uri)?.use { it.bufferedReader().readText() }
                 }.getOrNull()
             }
             feedback = viewModel.applySettingsBackup(text.orEmpty())

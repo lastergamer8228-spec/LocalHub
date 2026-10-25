@@ -2,12 +2,12 @@
 from pathlib import Path
 import re
 root=Path(__file__).resolve().parents[1]
-api=(root/'app/src/main/java/com/localhub/localhub/server/ApiRouter.kt').read_text()
-catalog=(root/'app/src/main/java/com/localhub/localhub/module/HostIntegration.kt').read_text()
-bridge=(root/'app/src/main/assets/ai/system_integration.js').read_text()
-runtime=(root/'app/src/main/assets/ai/assistant_runtime.js').read_text()
-index=(root/'app/src/main/assets/ai/index.html').read_text()
-policy=(root/'app/src/main/java/com/localhub/localhub/module/ModulePolicy.kt').read_text()
+api=(root/'app/src/main/java/com/localhub/localhub/server/ApiRouter.kt').read_text(encoding='utf-8')
+catalog=(root/'app/src/main/java/com/localhub/localhub/module/HostIntegration.kt').read_text(encoding='utf-8')
+bridge=(root/'app/src/main/assets/ai/system_integration.js').read_text(encoding='utf-8')
+runtime=(root/'app/src/main/assets/ai/assistant_runtime.js').read_text(encoding='utf-8')
+index=(root/'app/src/main/assets/ai/index.html').read_text(encoding='utf-8')
+policy=(root/'app/src/main/java/com/localhub/localhub/module/ModulePolicy.kt').read_text(encoding='utf-8')
 native_ids=set(re.findall(r'"([a-z.]+)"',re.search(r'val controllable = setOf\((.*?)\)',policy,re.S).group(1)))|{'core.server','core.security'}
 client_ids=set(re.findall(r"'([a-z.]+)'",re.search(r'var IDS=\[(.*?)\]',bridge,re.S).group(1)))
 checks={

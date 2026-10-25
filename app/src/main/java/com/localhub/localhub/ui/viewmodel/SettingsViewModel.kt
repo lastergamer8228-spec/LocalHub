@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SettingsViewModel(app: Application) : LocalHubViewModel(app) {
-    private val ctx = getApplication<Application>().applicationContext
+    private val ctx: Application get() = getApplication()
     val running = container.isServerRunning
     val serverStatus = container.serverStatus
     val serverError = container.serverError

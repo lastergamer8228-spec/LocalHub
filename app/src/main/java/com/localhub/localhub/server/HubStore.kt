@@ -79,7 +79,7 @@ class HubStore {
     fun setClipboard(text: String, author: String = "User"): Map<String, Any> {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return mapOf("ok" to false, "error" to "empty text")
-        val clip = ClipItem(text = trimmed, author = author.ifBlank { "User" })
+        val clip = ClipItem(text = trimmed.take(50_000), author = author.ifBlank { "User" }.take(30))
         currentClip = clip
         clipHistory.add(clip)
         while (clipHistory.size > 30) clipHistory.removeAt(0)
