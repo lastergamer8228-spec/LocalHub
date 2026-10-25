@@ -138,69 +138,108 @@ fun ServerStatusCard(
 
             if (status.running) {
                 val url = "${status.protocol}://${status.host}:${status.port}"
+                val hostUrl = "${status.protocol}://localhub.local:${status.port}"
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        clipboardManager.setText(AnnotatedString(url))
+                                        Toast.makeText(context, "URL copied: $url", Toast.LENGTH_SHORT).show()
+                                    }
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        url,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = colors.accentBlue,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Icon(
+                                        Icons.Filled.ContentCopy,
+                                        contentDescription = "Copy URL",
+                                        tint = colors.accentBlue.copy(alpha = 0.8f),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
+                                Text(
+                                    "$clientCount recent connection(s) • Tap to copy IP",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    val shareText = "LocalHub is active!\nDirect IP: $url\nHostname: $hostUrl"
+                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, shareText)
+                                    }
+                                    context.startActivity(Intent.createChooser(shareIntent, "Share LocalHub URL"))
+                                },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.Share,
+                                    contentDescription = "Share URL",
+                                    tint = colors.accentBlue
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier
-                                .weight(1f)
+                                .fillMaxWidth()
                                 .clickable {
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    clipboardManager.setText(AnnotatedString(url))
-                                    Toast.makeText(context, "URL copied: $url", Toast.LENGTH_SHORT).show()
+                                    clipboardManager.setText(AnnotatedString(hostUrl))
+                                    Toast.makeText(context, "Hostname copied: $hostUrl", Toast.LENGTH_SHORT).show()
                                 }
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
                                 Text(
-                                    url,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = colors.accentBlue,
+                                    "Hostname: $hostUrl",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                Icon(
-                                    Icons.Filled.ContentCopy,
-                                    contentDescription = "Copy URL",
-                                    tint = colors.accentBlue.copy(alpha = 0.8f),
-                                    modifier = Modifier.size(15.dp)
+                                Text(
+                                    "Tap to copy",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = colors.accentBlue,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
-                            Text(
-                                "$clientCount recent connection(s) • Tap to copy",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, url)
-                                }
-                                context.startActivity(Intent.createChooser(shareIntent, "Share LocalHub URL"))
-                            },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                Icons.Filled.Share,
-                                contentDescription = "Share URL",
-                                tint = colors.accentBlue
-                            )
                         }
                     }
                 }
