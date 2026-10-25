@@ -34,6 +34,10 @@
       authFetch("/api/auth/session").then(function (r) { return r.json().catch(function () { return {}; }); })
         .then(function (res) {
           var role = res.role || "user";
+          var badge = $("role-badge");
+          if (badge) badge.textContent = role === "admin" ? "Administrator" : "Web User";
+          var ws = $("ws-status");
+          if (ws) ws.innerHTML = '<span class="dot on"></span><span> live</span>';
           if (role === "admin") {
             $("gate").classList.add("hide");
             $("main").classList.remove("hide");

@@ -2,40 +2,255 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LocalHub — System Core</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>LocalHub — Quantum System Core &amp; Mesh</title>
   <style>
+    :root {
+      --bg: #04070f;
+      --surface: rgba(11, 20, 36, 0.75);
+      --border: rgba(56, 189, 248, 0.22);
+      --accent: #22d3a6;
+      --accent-cyan: #38bdf8;
+      --accent-purple: #a855f7;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: #04070e; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #e5eaf2; }
-    canvas#core { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-    .hud { position: fixed; top: 18px; left: 20px; z-index: 10; pointer-events: none; }
-    .hud .brand { font-size: 13px; letter-spacing: 3px; color: #38bdf8; text-transform: uppercase; }
-    .hud .brand b { color: #22d3a6; }
-    .hud .stat { font-size: 11px; color: #8ea0bd; margin-top: 6px; font-family: monospace; }
-    .corner { position: fixed; right: 20px; top: 18px; z-index: 10; display: flex; gap: 8px; align-items: center; }
-    .corner a, .corner button { background: rgba(15,23,42,.6); border: 1px solid rgba(56,189,248,.4); color: #e5eaf2; border-radius: 8px; padding: 6px 12px; font-size: 12px; text-decoration: none; cursor: pointer; }
-    .corner a:hover, .corner button:hover { border-color: #22d3a6; color: #22d3a6; }
-    .corner .live { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8ea0bd; }
-    .corner .dot { width: 8px; height: 8px; border-radius: 50%; background: #f87171; box-shadow: 0 0 8px #f87171; }
-    .corner .dot.on { background: #34d399; box-shadow: 0 0 8px #34d399; }
-    #hint { position: fixed; bottom: 16px; left: 0; right: 0; text-align: center; color: #5a6b85; font-size: 11px; letter-spacing: 1px; z-index: 10; pointer-events: none; }
-    #msg { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); background: rgba(15,23,42,.9); border: 1px solid rgba(56,189,248,.4); border-radius: 10px; padding: 8px 18px; font-size: 13px; display: none; z-index: 20; }
-    @media (max-width: 600px) { .corner a { display: none; } }
+    html, body { height: 100%; margin: 0; background: var(--bg); overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--text); user-select: none; }
+    
+    canvas#core { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+    
+    /* Top Floating Command Bar */
+    .topbar { position: fixed; top: 16px; left: 20px; right: 20px; z-index: 20; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+    .topbar > * { pointer-events: auto; }
+    .brand-wrap { display: flex; align-items: center; gap: 12px; }
+    .brand-icon { width: 38px; height: 38px; border-radius: 10px; background: rgba(34,211,166,0.15); border: 1px solid rgba(34,211,166,0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent); box-shadow: 0 0 16px rgba(34,211,166,0.25); }
+    .brand-title { font-size: 14px; font-weight: 800; letter-spacing: 2px; color: #fff; text-transform: uppercase; }
+    .brand-title span { color: var(--accent-cyan); }
+    .brand-sub { font-size: 11px; color: var(--muted); font-family: monospace; letter-spacing: 0.5px; }
+
+    /* Central Sync Indicator Pill */
+    .sync-banner { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 999px; padding: 6px 18px; display: flex; align-items: center; gap: 10px; font-size: 11.5px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pulse 1.6s infinite ease-in-out; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.6; } }
+    .sync-text { color: #f8fafc; font-weight: 600; }
+    .sync-sub { color: var(--muted); font-family: monospace; font-size: 10.5px; }
+
+    /* Top Actions */
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-hud { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.3); color: #f1f5f9; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all .16s ease; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-hud:hover { border-color: var(--accent); color: var(--accent); background: rgba(34,211,166,0.12); transform: translateY(-1px); }
+
+    /* Telemetry HUD Stacks (Floating left & right) */
+    .hud-stack-left { position: fixed; left: 20px; top: 76px; bottom: 32px; width: 310px; z-index: 10; display: flex; flex-direction: column; gap: 12px; pointer-events: none; overflow-y: auto; scrollbar-width: none; }
+    .hud-stack-right { position: fixed; right: 20px; top: 76px; bottom: 32px; width: 330px; z-index: 10; display: flex; flex-direction: column; gap: 12px; pointer-events: none; overflow-y: auto; scrollbar-width: none; }
+    .hud-stack-left > *, .hud-stack-right > * { pointer-events: auto; }
+    .hud-stack-left::-webkit-scrollbar, .hud-stack-right::-webkit-scrollbar { display: none; }
+
+    .hud-card { background: var(--surface); backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.45); }
+    .hud-card-head { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+    .hud-card-head .badge { font-size: 9.5px; padding: 2px 7px; border-radius: 4px; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3); color: var(--accent-cyan); font-family: monospace; }
+    
+    .hud-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin: 6px 0; }
+    .hud-label { color: var(--muted); }
+    .hud-val { color: #fff; font-family: monospace; font-weight: 600; }
+
+    /* Metric bar */
+    .hud-bar-wrap { height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin: 4px 0 10px; position: relative; }
+    .hud-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-cyan)); transition: width .4s ease; }
+    .hud-bar-fill.purple { background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple)); }
+    .hud-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+
+    /* CPU Mini-Cores 8-Grid */
+    .cores-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
+    .core-pill { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56,189,248,0.18); border-radius: 6px; padding: 4px; text-align: center; }
+    .core-pill-title { font-size: 9px; color: var(--muted); font-family: monospace; }
+    .core-pill-val { font-size: 11px; font-weight: 700; color: var(--accent); font-family: monospace; }
+
+    /* Clients list */
+    .client-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; max-height: 140px; overflow-y: auto; }
+    .client-item { background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(56,189,248,0.15); border-radius: 8px; padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; }
+    .client-item-ip { font-family: monospace; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .client-item-proto { font-size: 10px; color: var(--accent); padding: 1px 6px; border-radius: 4px; background: rgba(34,211,166,0.12); font-family: monospace; }
+
+    /* Packet Stream Terminal */
+    .stream-feed { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10.5px; color: #94a3b8; max-height: 120px; overflow-y: hidden; line-height: 1.5; display: flex; flex-direction: column-reverse; }
+    .stream-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stream-line .ts { color: #64748b; }
+    .stream-line .tag { color: var(--accent); }
+    .stream-line .data { color: #e2e8f0; }
+
+    /* Bottom Interactive Controls */
+    .bottom-bar { position: fixed; bottom: 16px; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: center; gap: 12px; pointer-events: none; }
+    .control-deck { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 999px; padding: 6px 18px; display: flex; align-items: center; gap: 12px; font-size: 11.5px; pointer-events: auto; box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+    .control-deck button { background: none; border: none; color: #cbd5e1; font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: all .14s; display: inline-flex; align-items: center; gap: 5px; }
+    .control-deck button:hover { color: var(--accent); background: rgba(34,211,166,0.12); }
+    .control-deck button.active { color: var(--accent); }
+    .hint-txt { color: #64748b; font-size: 11px; }
+
+    #msg { position: fixed; left: 50%; top: 72px; transform: translateX(-50%); background: rgba(15,23,42,.95); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 20px; font-size: 13px; font-weight: 600; color: #fff; display: none; z-index: 30; box-shadow: 0 0 20px rgba(34,211,166,0.3); }
+
+    @media (max-width: 900px) {
+      .hud-stack-left { width: 260px; font-size: 11px; }
+      .hud-stack-right { display: none; }
+      .sync-sub { display: none; }
+    }
+    @media (max-width: 640px) {
+      .hud-stack-left { display: none; }
+      .top-actions .hide-sm { display: none; }
+      .brand-sub { display: none; }
+    }
   </style>
 </head>
 <body>
+  <!-- 3D Holographic Rendering Canvas -->
   <canvas id="core"></canvas>
-  <div class="hud">
-    <div class="brand">LOCAL<b>HUB</b> · SYSTEM CORE</div>
-    <div class="stat" id="core-info">booting…</div>
+
+  <!-- Top Floating Command Bar -->
+  <header class="topbar">
+    <div class="brand-wrap">
+      <div class="brand-icon">⬡</div>
+      <div>
+        <div class="brand-title">Local<span>Hub</span> // System Core</div>
+        <div class="brand-sub" id="core-info">QUANTUM MESH MATRIX · 60 FPS</div>
+      </div>
+    </div>
+
+    <!-- Center Synchronization Banner -->
+    <div class="sync-banner">
+      <span class="sync-dot"></span>
+      <span class="sync-text" id="sync-status-txt">REAL-TIME MESH SYNCHRONIZED</span>
+      <span class="sync-sub" id="sync-ip-txt">Subnet 192.168.0.x · Port 8080</span>
+    </div>
+
+    <!-- Top Action Buttons -->
+    <div class="top-actions">
+      <button class="btn-hud hide-sm" id="btn-reset-view">🔄 Reset Orbit</button>
+      <button class="btn-hud" id="fs-btn">⛶ Fullscreen</button>
+      <a class="btn-hud" href="/files">📂 Files</a>
+      <a class="btn-hud" href="/">↩ Dashboard</a>
+    </div>
+  </header>
+
+  <!-- Left Telemetry Deck (The Host Phone Twin) -->
+  <aside class="hud-stack-left">
+    <div class="hud-card">
+      <div class="hud-card-head">
+        <span>📱 Host Hardware Twin</span>
+        <span class="badge" id="hud-model-badge">NOTHING (2A)</span>
+      </div>
+      <div class="hud-row">
+        <span class="hud-label">Device Model</span>
+        <span class="hud-val" id="hud-device-name">Phone (2a)</span>
+      </div>
+      <div class="hud-row">
+        <span class="hud-label">Local Mesh IP</span>
+        <span class="hud-val" id="hud-host-ip">192.168.0.101:8080</span>
+      </div>
+      <div class="hud-row">
+        <span class="hud-label">Battery Level</span>
+        <span class="hud-val" id="hud-battery-txt">85% ⚡ Charging</span>
+      </div>
+      <div class="hud-bar-wrap">
+        <div class="hud-bar-fill" id="hud-battery-bar" style="width: 85%"></div>
+      </div>
+      <div class="hud-row">
+        <span class="hud-label">Thermal Sensor</span>
+        <span class="hud-val" id="hud-temp-txt">31.4°C · Optimal</span>
+      </div>
+      <div class="hud-row">
+        <span class="hud-label">Internal Storage</span>
+        <span class="hud-val" id="hud-storage-txt">112 GB Free</span>
+      </div>
+      <div class="hud-bar-wrap">
+        <div class="hud-bar-fill purple" id="hud-storage-bar" style="width: 55%"></div>
+      </div>
+    </div>
+
+    <div class="hud-card">
+      <div class="hud-card-head">
+        <span>⚡ Compute &amp; Kernel Matrix</span>
+        <span class="badge" id="hud-cores-badge">8 CORES</span>
+      </div>
+      <div class="hud-row">
+        <span class="hud-label">CPU Aggregate Load</span>
+        <span class="hud-val" id="hud-cpu-txt">14.2%</span>
+      </div>
+      <div class="hud-bar-wrap">
+        <div class="hud-bar-fill" id="hud-cpu-bar" style="width: 14%"></div>
+      </div>
+      <div class="cores-grid" id="hud-cores-grid">
+        <div class="core-pill"><div class="core-pill-title">C0</div><div class="core-pill-val" id="cp-0">12%</div></div>
+        <div class="core-pill"><div class="core-pill-title">C1</div><div class="core-pill-val" id="cp-1">18%</div></div>
+        <div class="core-pill"><div class="core-pill-title">C2</div><div class="core-pill-val" id="cp-2">10%</div></div>
+        <div class="core-pill"><div class="core-pill-title">C3</div><div class="core-pill-val" id="cp-3">15%</div></div>
+        <div class="core-pill"><div class="core-pill-title">C4</div><div class="core-pill-val" id="cp-4">11%</div></div>
+        <div class="core-pill"><div class="core-pill-title">C5</div><div class="core-pill-val" id="cp-5">22%</div></div>
+        <div class="core-pill"><div class="core-pill-title">C6</div><div class="core-pill-val" id="cp-6">9%</div></div>
+        <div class="core-pill"><div class="core-pill-title">C7</div><div class="core-pill-val" id="cp-7">14%</div></div>
+      </div>
+      <div class="hud-row" style="margin-top:10px">
+        <span class="hud-label">RAM Allocation</span>
+        <span class="hud-val" id="hud-ram-txt">5.2 GB / 8.0 GB</span>
+      </div>
+      <div class="hud-bar-wrap">
+        <div class="hud-bar-fill purple" id="hud-ram-bar" style="width: 65%"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Synchronization Deck -->
+  <aside class="hud-stack-right">
+    <div class="hud-card">
+      <div class="hud-card-head">
+        <span>🌐 Synchronization Mesh</span>
+        <span class="badge" id="hud-nodes-count">1 HOST + 1 CLIENT</span>
+      </div>
+      <div class="hud-row">
+        <span class="hud-label">Sync Protocol</span>
+        <span class="hud-val">WebSocket Full-Duplex</span>
+      </div>
+      <div class="hud-row">
+        <span class="hud-label">Local Mesh Latency</span>
+        <span class="hud-val" style="color:var(--accent)">&lt; 2 ms (LAN Direct)</span>
+      </div>
+      <div class="hud-row" style="margin-top:8px">
+        <span class="hud-label" style="font-weight:700">Synchronized Peer Nodes:</span>
+      </div>
+      <div class="client-list" id="hud-clients-list">
+        <div class="client-item">
+          <div class="client-item-ip"><span>🖥️</span> 192.168.0.107</div>
+          <div class="client-item-proto">LIVE SYNCED</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-card">
+      <div class="hud-card-head">
+        <span>⚡ Real-Time Mesh Event Stream</span>
+        <span class="badge">BUS FEED</span>
+      </div>
+      <div class="stream-feed" id="hud-stream-feed">
+        <div class="stream-line"><span class="ts">[00:03]</span> <span class="tag">[MESH]</span> <span class="data">Subnet bridge active on 192.168.0.x</span></div>
+        <div class="stream-line"><span class="ts">[00:02]</span> <span class="tag">[SYNC]</span> <span class="data">WebSocket bidirectional channel connected</span></div>
+        <div class="stream-line"><span class="ts">[00:01]</span> <span class="tag">[HOST]</span> <span class="data">Nothing Phone (2a) kernel telemetry online</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Interactive Control Deck (Bottom) -->
+  <div class="bottom-bar">
+    <div class="control-deck">
+      <button id="btn-spin-toggle" class="active">⟳ Auto-Rotate: ON</button>
+      <span style="color:rgba(255,255,255,0.2)">|</span>
+      <button id="btn-grid-toggle" class="active">▦ Cyber Grid: ON</button>
+      <span style="color:rgba(255,255,255,0.2)">|</span>
+      <span class="hint-txt">Drag to rotate 3D Core · Scroll wheel to zoom · Orbiting nodes represent synced devices</span>
+    </div>
   </div>
-  <div class="corner">
-    <span class="live"><span class="dot" id="live-dot"></span><span id="live-txt">connecting</span></span>
-    <button id="fs-btn">⛶ Fullscreen</button>
-    <a href="/">↩ Dashboard</a>
-  </div>
+
   <div id="msg"></div>
-  <div id="hint">◆ LIVE HOLOGRAPHIC CORE — drag to rotate · scroll to zoom · connected clients orbit in real time</div>
+
   <script src="/core.js"></script>
 </body>
 </html>

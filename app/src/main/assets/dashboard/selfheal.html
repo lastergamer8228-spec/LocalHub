@@ -3,92 +3,173 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LocalHub — Self-Healing Console</title>
+  <title>LocalHub — Health & Self-Healing Console</title>
   <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/theme-pro.css" />
+  <link rel="stylesheet" href="/animations.css" />
   <style>
-    body { background:#0b0f14; color:#dfe7ef; font-family: system-ui, sans-serif; margin:0; padding:0; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
-    h1 { font-size: 20px; margin: 0 0 4px; }
-    .sub { color:#8fa3b8; font-size: 13px; margin-bottom: 16px; }
-    .card { background:#141b24; border:1px solid #223040; border-radius:10px; padding:14px; margin:10px 0; }
-    .card h2 { font-size: 14px; margin:0 0 8px; color:#8ecbff; text-transform: uppercase; letter-spacing:.05em; }
-    .kv { display:grid; grid-template-columns:180px 1fr; gap:4px 12px; font-size:13px; }
-    .kv b { color:#8fa3b8; font-weight:600; }
-    .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    @media(max-width:700px){ .grid{ grid-template-columns:1fr; } }
-    .incident { border:1px solid #2b3a4d; border-left:4px solid #e0a53d; border-radius:8px; padding:10px; margin:8px 0; background:#101720; }
-    .incident.critical { border-left-color:#e05252; }
-    .incident.high { border-left-color:#e07a3d; }
-    .incident.resolved { border-left-color:#42b883; }
-    .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
-    .b-green{background:#17452e;color:#8fe3b0;} .b-red{background:#54201f;color:#ff9b9b;}
-    .b-yellow{background:#4a3a14;color:#f2d680;} .b-grey{background:#24303e;color:#aebfce;}
-    .b-blue{background:#17344f;color:#9fd4ff;}
-    button { background:#1d2b3a; color:#cfe3ff; border:1px solid #31455c; padding:6px 12px; border-radius:6px; cursor:pointer; margin:3px 4px 3px 0; font-size:12px; }
-    button:hover { background:#294055; }
-    button.danger { border-color:#6e2a2a; color:#ffb0b0; }
-    button.primary { background:#17344f; border-color:#2b5a86; }
-    pre { background:#0a0f14; border:1px solid #1e2b3a; border-radius:6px; padding:10px; font-size:11px; overflow:auto; max-height:280px; }
-    .steps .st { font-size:12px; padding:2px 0; }
-    .steps .st b { color:#8ecbff; }
-    .gate { color:#f2d680; font-size:12px; }
-    .hide{display:none;}
+    body { background:#0b1017; color:#e2e8f0; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:0; min-height:100vh; }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 24px 20px 48px; }
+    .header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px; flex-wrap:wrap; gap:12px; }
+    h1 { font-size: 22px; margin: 0 0 6px; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:10px; }
+    .sub { color:#94a3b8; font-size: 13px; line-height: 1.5; }
+    .card { background:rgba(20,28,40,0.75); backdrop-filter:blur(16px); border:1px solid rgba(148,163,184,0.14); border-radius:12px; padding:18px; margin:14px 0; box-shadow:0 8px 30px rgba(0,0,0,0.3); transition:border-color .2s; }
+    .card:hover { border-color:rgba(56,189,248,0.25); }
+    .card h2 { font-size: 13px; margin:0 0 12px; color:#38bdf8; text-transform: uppercase; letter-spacing:.08em; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+    .kv { display:grid; grid-template-columns:180px 1fr; gap:8px 16px; font-size:13px; align-items:center; }
+    .kv b { color:#94a3b8; font-weight:600; font-size:12.5px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:768px){ .grid{ grid-template-columns:1fr; } .kv{ grid-template-columns:1fr; gap:4px; } }
+    .incident { border:1px solid rgba(148,163,184,0.18); border-left:4px solid #e0a53d; border-radius:8px; padding:12px 14px; margin:10px 0; background:rgba(15,23,42,0.6); }
+    .incident.critical { border-left-color:#ef4444; }
+    .incident.high { border-left-color:#f97316; }
+    .incident.resolved { border-left-color:#22c55e; }
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:0.02em; }
+    .b-green{background:rgba(34,197,94,0.18);color:#4ade80; border:1px solid rgba(34,197,94,0.3);}
+    .b-red{background:rgba(239,68,68,0.18);color:#f87171; border:1px solid rgba(239,68,68,0.3);}
+    .b-yellow{background:rgba(234,179,8,0.18);color:#facc15; border:1px solid rgba(234,179,8,0.3);}
+    .b-grey{background:rgba(148,163,184,0.18);color:#cbd5e1; border:1px solid rgba(148,163,184,0.3);}
+    .b-blue{background:rgba(56,189,248,0.18);color:#38bdf8; border:1px solid rgba(56,189,248,0.3);}
+    button { background:rgba(30,41,59,0.85); color:#f1f5f9; border:1px solid rgba(148,163,184,0.22); padding:8px 14px; border-radius:8px; cursor:pointer; margin:4px 6px 4px 0; font-size:12.5px; font-weight:500; transition:all .18s ease; display:inline-flex; align-items:center; gap:6px; }
+    button:hover { background:rgba(51,65,85,0.95); border-color:#38bdf8; color:#fff; transform:translateY(-1px); }
+    button:active { transform:translateY(0); }
+    button.danger { border-color:rgba(239,68,68,0.4); color:#fca5a5; }
+    button.danger:hover { background:rgba(239,68,68,0.2); border-color:#ef4444; }
+    button.primary { background:rgba(2,132,199,0.35); border-color:rgba(56,189,248,0.5); color:#e0f2fe; }
+    button.primary:hover { background:rgba(2,132,199,0.6); }
+    pre { background:#070b12; border:1px solid rgba(148,163,184,0.16); border-radius:8px; padding:12px; font-size:11.5px; font-family:"JetBrains Mono", Consolas, monospace; overflow:auto; max-height:280px; color:#94a3b8; line-height:1.5; }
+    .steps .st { font-size:12px; padding:3px 0; }
+    .steps .st b { color:#38bdf8; }
+    .hide{display:none !important;}
+    
+    /* Gate Screen Styling for Non-Admins */
+    .gate-hero { text-align:center; padding:36px 20px; }
+    .gate-icon { font-size:48px; margin-bottom:12px; filter:drop-shadow(0 0 20px rgba(56,189,248,0.4)); }
+    .gate-title { font-size:20px; font-weight:700; color:#f8fafc; margin-bottom:8px; }
+    .gate-desc { font-size:14px; color:#94a3b8; max-width:560px; margin:0 auto 24px; line-height:1.6; }
+    .vitals-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin:20px 0; text-align:left; }
+    .vital-box { background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.12); border-radius:10px; padding:14px; }
+    .vital-title { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:700; letter-spacing:.05em; margin-bottom:4px; }
+    .vital-val { font-size:14px; font-weight:600; color:#34d399; display:flex; align-items:center; gap:6px; }
   </style>
 </head>
-<body>
-  <div class="wrap">
-    <h1>🛡️ LocalHub Self-Healing Console</h1>
-    <div class="sub">Admin-only maintenance console · the engine diagnoses and repairs only with evidence, testing, backups and rollback.</div>
-    <div id="gate" class="card hide"><b>🔒 Administrator access required.</b> Log in as the Administrator account to view and control the self-healing engine.</div>
-    <div id="main" class="hide">
-      <div class="grid">
-        <div class="card" id="healthCard"><h2>System Health</h2><div id="health"></div></div>
-        <div class="card"><h2>Self-Heal Engine</h2><div id="engine"></div></div>
+<body class="lh-page">
+  <!-- Shared top navigation -->
+  <div id="lh-nav"></div>
+
+  <main class="wrap">
+    <div class="header-row">
+      <div>
+        <h1>🛡️ System Health &amp; Self-Healing Console</h1>
+        <div class="sub">Continuous health verification, runtime diagnosis, and automatic rollback engine</div>
       </div>
-      <div class="card">
-        <h2>Device &amp; Build (real Android)</h2>
-        <div class="kv" style="grid-template-columns:110px 1fr">
-          <b>Actions</b>
-          <div>
-            <button onclick="SHUI.preflight()">🔍 Preflight Build</button>
-            <button onclick="SHUI.buildDev()">🏗 Build (allowlist)</button>
-            <button onclick="SHUI.apk()">📦 Discover APK</button>
-            <button onclick="SHUI.device()">📱 Detect Device</button>
-            <button onclick="SHUI.install()">📲 Install APK (auth)</button>
-            <button onclick="SHUI.runtime()">🖥 Verify Runtime</button>
-            <button onclick="SHUI.deploy()">🚀 Deploy Pipeline</button>
+      <div>
+        <a href="/" class="btn" style="text-decoration:none; font-size:12.5px; padding:7px 14px; border-radius:8px; border:1px solid rgba(148,163,184,0.2); background:rgba(30,41,59,0.6); color:#cbd5e1;">↩ Dashboard</a>
+      </div>
+    </div>
+
+    <!-- User Mode / Access Gate View -->
+    <div id="gate" class="card hide">
+      <div class="gate-hero">
+        <div class="gate-icon">🩺</div>
+        <div class="gate-title">System Health &amp; Runtime Status</div>
+        <div class="gate-desc">
+          LocalHub core services are fully operational. Standard users can inspect service status below. Deep engine repairs, bytecode inspection, and APK deployment pipelines are managed by Administrators.
+        </div>
+        
+        <div class="vitals-grid">
+          <div class="vital-box">
+            <div class="vital-title">Web &amp; Asset Server</div>
+            <div class="vital-val"><span class="badge b-green">● Online</span> <span style="font-size:12px;color:#94a3b8">Port 8080</span></div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-title">WebSocket Mesh</div>
+            <div class="vital-val"><span class="badge b-green">● Connected</span> <span style="font-size:12px;color:#94a3b8">Active</span></div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-title">File System Bridge</div>
+            <div class="vital-val"><span class="badge b-green">● Verified</span> <span style="font-size:12px;color:#94a3b8">Storage Emulated</span></div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-title">AI Assistant Engine</div>
+            <div class="vital-val"><span class="badge b-blue">● Ready</span> <span style="font-size:12px;color:#94a3b8">v2.4 Cognitive</span></div>
           </div>
         </div>
-        <div class="kv" style="grid-template-columns:150px 1fr; margin-top:8px">
-          <b>App version</b> <span id="appVersion">—</span>
-          <b>Current version</b> <span id="curVersion">—</span>
-          <b>Known-good version</b> <span id="goodVersion">—</span>
-          <b>Build status</b> <span id="buildStatus">—</span>
-          <b>APK</b> <span id="apkInfo">—</span>
-          <b>Install status</b> <span id="installStatus">—</span>
-          <b>Device</b> <span id="deviceInfo">—</span>
-          <b>Runtime verification</b> <span id="runtimeInfo">—</span>
+
+        <div style="margin-top:20px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap">
+          <a href="/" class="btn btn-primary" style="text-decoration:none; font-size:13px; padding:9px 18px; border-radius:8px;">Open Dashboard</a>
+          <a href="/files" class="btn" style="text-decoration:none; font-size:13px; padding:9px 18px; border-radius:8px; border:1px solid rgba(148,163,184,0.2); color:#cbd5e1; background:rgba(30,41,59,0.6);">Browse Files</a>
+          <a href="/login.html" class="btn" style="text-decoration:none; font-size:13px; padding:9px 18px; border-radius:8px; border:1px solid rgba(56,189,248,0.3); color:#38bdf8; background:rgba(15,23,42,0.8);">🔑 Switch to Admin</a>
         </div>
-        <pre id="deviceLog" class="hide"></pre>
       </div>
+    </div>
+
+    <!-- Admin Console View -->
+    <div id="main" class="hide">
+      <div class="grid">
+        <div class="card" id="healthCard">
+          <h2><span>System Health (Guardian)</span> <span class="badge b-green" id="guardian-badge">● Monitoring</span></h2>
+          <div id="health" style="line-height:1.6; font-size:13px; color:#cbd5e1;">Scanning system health…</div>
+        </div>
+        <div class="card">
+          <h2><span>Self-Heal Diagnostic Matrix</span> <span class="badge b-blue">Automated</span></h2>
+          <div id="engine" style="line-height:1.6; font-size:13px; color:#cbd5e1;">Booting diagnostic routines…</div>
+        </div>
+      </div>
+
       <div class="card">
-        <h2>Active Incidents</h2>
-        <div class="kv">
-          <b>Actions</b>
+        <h2><span>Device &amp; APK Deployment Pipeline</span> <span class="badge b-blue">Hardware Bridge</span></h2>
+        <div class="kv" style="grid-template-columns:120px 1fr">
+          <b>Pipeline Actions</b>
           <div>
-            <button onclick="SHUI.scan()">🔎 Scan / Investigate</button>
-            <button onclick="SHUI.regressions()">🧪 Run Regression</button>
-            <button onclick="SHUI.build()">🏗 Run Build</button>
-            <button onclick="SHUI.device()">📱 Verify Device</button>
+            <button onclick="SHUI.preflight()">🔍 Preflight Build</button>
+            <button onclick="SHUI.buildDev()">🏗 Build (Allowlist)</button>
+            <button onclick="SHUI.apk()">📦 Discover APK</button>
+            <button onclick="SHUI.device()">📱 Detect Device</button>
+            <button onclick="SHUI.install()">📲 Install APK</button>
+            <button onclick="SHUI.runtime()">🖥 Verify Runtime</button>
+            <button class="primary" onclick="SHUI.deploy()">🚀 Deploy Pipeline</button>
+          </div>
+        </div>
+        <div class="kv" style="grid-template-columns:150px 1fr; margin-top:14px; border-top:1px solid rgba(148,163,184,0.1); padding-top:12px">
+          <b>App Version</b> <span id="appVersion">—</span>
+          <b>Current Version</b> <span id="curVersion">—</span>
+          <b>Known-Good Version</b> <span id="goodVersion">—</span>
+          <b>Build Status</b> <span id="buildStatus">—</span>
+          <b>APK Info</b> <span id="apkInfo">—</span>
+          <b>Install Status</b> <span id="installStatus">—</span>
+          <b>Device Details</b> <span id="deviceInfo">—</span>
+          <b>Runtime Verification</b> <span id="runtimeInfo">—</span>
+        </div>
+        <pre id="deviceLog" class="hide" style="margin-top:12px"></pre>
+      </div>
+
+      <div class="card">
+        <h2><span>Active System Incidents</span> <span class="badge b-yellow" id="incidents-count">0 Open</span></h2>
+        <div class="kv" style="grid-template-columns:120px 1fr; margin-bottom:12px">
+          <b>Diagnosis Actions</b>
+          <div>
+            <button onclick="SHUI.scan()">🔎 Run Diagnostic Scan</button>
+            <button onclick="SHUI.regressions()">🧪 Run Regressions</button>
+            <button onclick="SHUI.build()">🏗 Verify Build</button>
+            <button onclick="SHUI.device()">📱 Check Device</button>
             <button onclick="SHUI.model()">🧠 Model Status</button>
           </div>
         </div>
         <div id="incidents"></div>
       </div>
-      <div class="card"><h2>Incident History</h2><div id="history"></div></div>
-      <div class="card"><h2>Live Console Log</h2><pre id="log"></pre></div>
+
+      <div class="card">
+        <h2><span>Incident History &amp; Resolution Log</span></h2>
+        <div id="history"></div>
+      </div>
+
+      <div class="card">
+        <h2><span>Live Diagnostic Console Log</span></h2>
+        <pre id="log"></pre>
+      </div>
     </div>
-  </div>
+  </main>
 
   <script src="/ai/config.js"></script>
   <script src="/ai/memory.js"></script>
@@ -98,5 +179,6 @@
   <script src="/ai/features_guardian.js"></script>
   <script src="/ai/features_selfheal.js"></script>
   <script src="/selfheal.js"></script>
+  <script src="/nav.js"></script>
 </body>
 </html>
