@@ -431,6 +431,64 @@ class FileOperations(private val rootPath: String = "/storage/emulated/0") {
         return mapOf("ok" to true, "categories" to totals, "counts" to counts)
     }
 
+    /**
+     * Fast media catalog scan across standard public storage folders.
+     * Groups files into videos, audio, photos, and documents for the Media Lounge.
+     */
+    fun mediaCatalog(limitPerCategory: Int = 40): Map<String, Any> {
+        val root = File(rootPath)
+        val videos = mutableListOf<Map<String, Any>>()
+        val audio = mutableListOf<Map<String, Any>>()
+        val photos = mutableListOf<Map<String, Any>>()
+        val docs = mutableListOf<Map<String, Any>>()
+
+        if (!root.exists()) return mapOf("ok" to true, "videos" to emptyList<Any>(), "audio" to emptyList<Any>(), "photos" to emptyList<Any>(), "documents" to emptyList<Any>())
+
+        val candidates = listOf("Movies", "Download", "DCIM", "Pictures", "Music", "Documents", "Podcasts")
+            .map { File(root, it) }
+            .filter { it.isDirectory }
+        val scanRoots = if (candidates.isNotEmpty()) candidates else listOf(root)
+
+        for (dir in scanRoots) {
+            fun walk(f: File, depth: Int) {
+                if (depth > 3) return
+                val list = f.listFiles() ?: return
+                for (child in list) {
+                    val name = child.name
+                    if (name.startsWith(".")) continue
+                    if (child.isDirectory) {
+                        walk(child, depth + 1)
+                    } else if (child.isFile) {
+                        val ext = extensionOf(name)
+                        val cat = Mime.categoryFor(ext)
+                        val item = mapOf(
+                            "name" to name,
+                            "path" to child.absolutePath,
+                            "size" to child.length(),
+                            "modified" to child.lastModified(),
+                            "ext" to ext,
+                            "category" to cat
+                        )
+                        when (cat) {
+                            "video" -> if (videos.size < limitPerCategory) videos.add(item)
+                            "audio" -> if (audio.size < limitPerCategory) audio.add(item)
+                            "image" -> if (photos.size < limitPerCategory) photos.add(item)
+                            "document" -> if (docs.size < limitPerCategory) docs.add(item)
+                        }
+                    }
+                }
+            }
+            walk(dir, 0)
+        }
+        return mapOf(
+            "ok" to true,
+            "videos" to videos.sortedByDescending { (it["modified"] as? Long) ?: 0L },
+            "audio" to audio.sortedByDescending { (it["modified"] as? Long) ?: 0L },
+            "photos" to photos.sortedByDescending { (it["modified"] as? Long) ?: 0L },
+            "documents" to docs.sortedByDescending { (it["modified"] as? Long) ?: 0L }
+        )
+    }
+
     private fun extensionOf(name: String): String {
         val i = name.lastIndexOf('.')
         return if (i < 0) "" else name.substring(i + 1).lowercase()

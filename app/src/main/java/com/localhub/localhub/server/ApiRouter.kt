@@ -50,6 +50,7 @@ class ApiRouter(
 
     private val fileManager = FileManager()
     private val fileOps = FileOperations()
+    private val hubStore = HubStore()
     private val compatibleAudioDelegate = lazy { CompatibleAudio(contextOfRouter()) }
     private val compatibleAudio get() = compatibleAudioDelegate.value
     fun cancelMediaWork(wait: Boolean = true): Boolean = !compatibleAudioDelegate.isInitialized() || compatibleAudio.cancelAndWait(wait)
@@ -375,7 +376,8 @@ class ApiRouter(
             path == "fs/content" || path == "fs/download" || path == "fs/search" ||
             path == "fs/largest" || path == "fs/empty" || path == "fs/usage" ||
             path == "mirror/status" || path == "mirror/frame" ||
-            path == "tts/status" || path == "tts/synthesize" || path == "tts/file") return "any"
+            path == "tts/status" || path == "tts/synthesize" || path == "tts/file" ||
+            path == "fs/upload" || path.startsWith("hub/")) return "any"
 
         // Dangerous file operations (delete/rename/move/copy/mkdir/write/zip/upload),
         // server control, logs (view/clear/export), module management, config, and
@@ -485,6 +487,14 @@ class ApiRouter(
         }
         "tts/status" -> json(ttsEngine?.status() ?: mapOf("ok" to false, "available" to false, "error" to "TTS engine unavailable"))
         "tts/file" -> serveTtsFile(session)
+        "hub/clipboard" -> json(hubStore.getClipboard())
+        "hub/chat" -> {
+            val since = session.parms?.get("since")?.toLongOrNull() ?: 0L
+            json(hubStore.getChat(since))
+        }
+        "hub/wall" -> json(hubStore.getWall())
+        "hub/notes" -> json(hubStore.getScratchpad())
+        "hub/media-catalog" -> json(fileOps.mediaCatalog())
         else -> notFound()
     }
 
@@ -818,6 +828,29 @@ class ApiRouter(
                     "error" to "Voice cloning needs a neural model (Pocket TTS), which is too slow on this hardware. The system TTS engine uses the phone's built-in voices only."
                 ))
             }
+            "hub/clipboard" -> {
+                val text = p["text"] ?: ""
+                val author = p["author"] ?: "User"
+                json(hubStore.setClipboard(text, author))
+            }
+            "hub/chat" -> {
+                val text = p["text"] ?: ""
+                val author = p["author"] ?: "Guest"
+                val color = p["color"] ?: "#38bdf8"
+                val ip = session.remoteIpAddress ?: ""
+                json(hubStore.postChatMessage(text, author, color, ip))
+            }
+            "hub/chat/clear" -> json(hubStore.clearChat())
+            "hub/wall" -> {
+                val title = p["title"] ?: ""
+                val content = p["content"] ?: ""
+                val author = p["author"] ?: "User"
+                val color = p["color"] ?: "yellow"
+                val pinned = p["pinned"] == "true"
+                json(hubStore.postWallNote(title, content, author, color, pinned))
+            }
+            "hub/wall/delete" -> json(hubStore.deleteWallNote(p["id"] ?: ""))
+            "hub/notes" -> json(hubStore.setScratchpad(p["content"] ?: ""))
             else -> notFound()
         }
     }

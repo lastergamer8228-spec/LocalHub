@@ -31,16 +31,202 @@
 
     <!-- View Switcher Tabs -->
     <div class="lh-tab-nav" role="tablist">
-      <button class="lh-tab active" id="tab-btn-hub" type="button" role="tab" aria-selected="true" onclick="lhSetTab('hub')">
-        <span class="lh-tab-ico">⚡</span> Hub Portal
+      <button class="lh-tab active" id="tab-btn-lounge" type="button" role="tab" aria-selected="true" onclick="lhSetTab('lounge')">
+        <span class="lh-tab-ico">🍿</span> Media Lounge
       </button>
-      <button class="lh-tab" id="tab-btn-system" type="button" role="tab" aria-selected="false" onclick="lhSetTab('system')">
-        <span class="lh-tab-ico">⚙</span> System &amp; Diagnostics
+      <button class="lh-tab" id="tab-btn-connect" type="button" role="tab" aria-selected="false" onclick="lhSetTab('connect')">
+        <span class="lh-tab-ico">💬</span> Local Connect
+      </button>
+      <button class="lh-tab" id="tab-btn-reader" type="button" role="tab" aria-selected="false" onclick="lhSetTab('reader')">
+        <span class="lh-tab-ico">📖</span> Reader &amp; Notes
+      </button>
+      <button class="lh-tab" id="tab-btn-hub" type="button" role="tab" aria-selected="false" onclick="lhSetTab('hub')">
+        <span class="lh-tab-ico">⚡</span> Quick Drop &amp; Vitals
+      </button>
+      <button class="lh-tab admin-only" id="tab-btn-system" type="button" role="tab" aria-selected="false" onclick="lhSetTab('system')">
+        <span class="lh-tab-ico">⚙</span> System &amp; Admin
       </button>
     </div>
 
-    <!-- ===== TAB 1: HUB PORTAL (Clean, Mobile-Optimized) ===== -->
-    <div class="lh-tab-pane active" id="pane-hub">
+    <!-- ===== TAB 1: MEDIA LOUNGE (Entertainment & Streaming Hub) ===== -->
+    <div class="lh-tab-pane active" id="pane-lounge">
+      <!-- Quick AI Assistant & Search Bar -->
+      <section class="card ai-quick-card">
+        <div class="ai-quick-row">
+          <input type="text" class="ai-quick-input" id="ai-quick-input" placeholder="Ask AI Assistant or search movies, songs, docs… (e.g. 'find videos')" autocomplete="off" />
+          <button class="ai-mic-btn" id="ai-quick-mic" type="button" title="Voice search / command">🎤</button>
+          <button class="btn btn-primary" id="ai-quick-btn" type="button">Ask</button>
+        </div>
+        <div class="ai-prompt-chips">
+          <button class="ai-prompt-chip" type="button">Find videos</button>
+          <button class="ai-prompt-chip" type="button">Play music</button>
+          <button class="ai-prompt-chip" type="button">Battery status</button>
+          <button class="ai-prompt-chip" type="button">Who is connected?</button>
+          <button class="ai-prompt-chip" type="button">Read clipboard</button>
+        </div>
+        <div id="ai-quick-result" style="display:none"></div>
+      </section>
+
+      <!-- 1. Movies & Video Cinema Shelf -->
+      <section class="card">
+        <h2>🎬 Movies &amp; Video Cinema <span class="spacer"></span><a class="hint" href="/player">Full Screen Player ➔</a></h2>
+        <div class="media-grid" id="movies-shelf" style="margin-top:10px">
+          <div class="loading"><div class="spinner"></div>Scanning video library&hellip;</div>
+        </div>
+      </section>
+
+      <!-- 2. Music & Audio Lounge -->
+      <section class="card">
+        <h2>🎵 Music &amp; Audio Lounge <span class="spacer"></span><span class="hint">Background audio playback</span></h2>
+        <!-- Docked audio player card -->
+        <div class="audio-dock" style="margin-top:10px">
+          <div class="audio-dock-head">
+            <div class="audio-dock-art">🎧</div>
+            <div class="audio-dock-meta">
+              <div class="audio-track-title" id="docked-track-title">Select a track to play</div>
+              <div class="audio-dock-time" id="audio-time-txt">0:00 / 0:00</div>
+            </div>
+            <div class="audio-dock-controls">
+              <button class="audio-ctrl-btn" id="audio-btn-prev" type="button" title="Previous track">⏮</button>
+              <button class="audio-ctrl-btn btn-play-hero" id="audio-btn-play" type="button" title="Play / Pause">▶</button>
+              <button class="audio-ctrl-btn" id="audio-btn-next" type="button" title="Next track">⏭</button>
+            </div>
+          </div>
+          <div class="audio-progress-track" id="audio-progress-track">
+            <div class="audio-progress-bar" id="audio-progress-bar"></div>
+          </div>
+          <audio id="docked-audio-tag" preload="metadata" style="display:none"></audio>
+        </div>
+        <!-- Playlist list -->
+        <div class="audio-playlist-box" id="audio-playlist" style="margin-top:10px">
+          <div class="loading"><div class="spinner"></div>Loading music playlist&hellip;</div>
+        </div>
+      </section>
+
+      <!-- 3. Photo Memories Gallery -->
+      <section class="card">
+        <h2>📸 Photo Memories Gallery <span class="spacer"></span><button class="btn btn-micro ghost" id="btn-slideshow-toggle" type="button">▶ Start Slideshow</button></h2>
+        <div class="photos-grid" id="photos-grid" style="margin-top:10px">
+          <div class="loading"><div class="spinner"></div>Loading photo memories&hellip;</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== TAB 2: LOCAL CONNECT (Clipboard, LAN Chat, Sticky Wall) ===== -->
+    <div class="lh-tab-pane" id="pane-connect">
+      <!-- Universal Shared Clipboard -->
+      <section class="card">
+        <h2>📋 Universal Shared Clipboard <span class="spacer"></span><span class="hint">Instant cross-device copy/paste on LAN</span></h2>
+        <div class="clip-live-box" style="margin-top:10px">
+          <div class="clip-live-content" id="clip-live-text">Reading clipboard…</div>
+          <div class="clip-live-footer">
+            <span class="clip-live-meta" id="clip-live-meta">Live sync active</span>
+            <button class="btn btn-primary btn-micro" id="clip-copy-btn" type="button">📋 Copy to My Device</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px;gap:8px">
+          <input class="input" id="clip-input" placeholder="Paste link, OTP, code snippet or text to drop to all devices…" style="flex:1" />
+          <button class="btn btn-primary" id="clip-send-btn" type="button">⚡ Drop to All</button>
+        </div>
+        <div class="clip-history-row" id="clip-history-list"></div>
+      </section>
+
+      <!-- Two column: Live LAN Chat & Sticky Wall -->
+      <div class="lh-cols">
+        <!-- Zero-Data LAN Chat Room -->
+        <section class="card" style="display:flex;flex-direction:column">
+          <h2>💬 LAN Live Chat <span class="spacer"></span><span class="hint">Zero internet · Local Wi-Fi chat</span></h2>
+          <div class="chat-container" style="margin-top:8px">
+            <div class="chat-header">
+              <span>Chatting as: <b id="chat-my-nick" style="color:var(--accent)">Guest</b></span>
+              <input id="chat-nickname-input" placeholder="Change nickname" style="width:120px;height:24px;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:0 6px;color:var(--text)" />
+            </div>
+            <div class="chat-feed" id="chat-messages-feed"></div>
+            <div class="chat-footer">
+              <div class="chat-quick-emojis">
+                <span class="chat-quick-emoji">👋</span>
+                <span class="chat-quick-emoji">👍</span>
+                <span class="chat-quick-emoji">❤️</span>
+                <span class="chat-quick-emoji">🔥</span>
+                <span class="chat-quick-emoji">🚀</span>
+                <span class="chat-quick-emoji">🎬</span>
+                <span class="chat-quick-emoji">📁</span>
+              </div>
+              <div class="row" style="gap:6px">
+                <input class="input" id="chat-message-input" placeholder="Type a message to everyone on Wi-Fi…" style="flex:1" />
+                <button class="btn btn-primary" id="chat-message-send" type="button">Send</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sticky Notice Board / Wall -->
+        <section class="card" style="display:flex;flex-direction:column">
+          <h2>📌 Local Notice Board <span class="spacer"></span><button class="btn btn-micro ghost" id="btn-wall-add" type="button">+ Pin Note</button></h2>
+          <!-- Inline add note form -->
+          <div id="wall-add-form" style="display:none;margin:8px 0;padding:10px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border)">
+            <input class="input" id="note-input-title" placeholder="Notice title (e.g. Wi-Fi info, Goa Trip)" style="width:100%;margin-bottom:6px" />
+            <textarea class="input" id="note-input-content" placeholder="Note message..." style="width:100%;height:60px;margin-bottom:6px"></textarea>
+            <div class="row" style="gap:8px;align-items:center">
+              <select id="note-input-color" style="height:28px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:3px;padding:0 6px">
+                <option value="yellow">Yellow</option>
+                <option value="blue">Blue</option>
+                <option value="green">Green</option>
+                <option value="pink">Pink</option>
+                <option value="purple">Purple</option>
+              </select>
+              <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="note-input-pinned" /> Pin to top</label>
+              <span class="spacer"></span>
+              <button class="btn btn-ghost btn-micro" id="wall-cancel-note" type="button">Cancel</button>
+              <button class="btn btn-primary btn-micro" id="wall-submit-note" type="button">Post Notice</button>
+            </div>
+          </div>
+          <div class="wall-notes-grid" id="wall-notes-grid" style="margin-top:8px">
+            <div class="loading"><div class="spinner"></div>Loading notices&hellip;</div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ===== TAB 3: READER & NOTES (Documents, TTS Audiobook, Scratchpad) ===== -->
+    <div class="lh-tab-pane" id="pane-reader">
+      <div class="reader-container">
+        <!-- Document Library List -->
+        <section class="card" style="flex:1;max-width:320px">
+          <h2>📚 Documents &amp; Books <span class="spacer"></span><a class="hint" href="/files">Browse Files ➔</a></h2>
+          <div class="list" id="reader-doc-list" style="margin-top:8px;max-height:480px;overflow-y:auto">
+            <div class="loading"><div class="spinner"></div>Scanning documents&hellip;</div>
+          </div>
+        </section>
+
+        <!-- Document Viewer & Audiobook Pane -->
+        <section class="reader-viewer-card" id="reader-viewer-pane" style="display:none">
+          <div class="reader-toolbar">
+            <b id="reader-doc-title" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Document Viewer</b>
+            <div class="row" style="gap:6px;align-items:center">
+              <button class="btn btn-micro ghost" id="reader-zoom-out" type="button" title="Smaller font">A-</button>
+              <button class="btn btn-micro ghost" id="reader-zoom-in" type="button" title="Larger font">A+</button>
+              <button class="btn btn-micro" id="reader-btn-tts" type="button">🔊 Read Aloud (TTS)</button>
+              <button class="btn btn-micro ghost" id="reader-btn-close" type="button">✕ Close</button>
+            </div>
+          </div>
+          <audio id="reader-tts-audio" style="width:100%;margin-bottom:8px" controls></audio>
+          <div id="reader-doc-body"></div>
+        </section>
+      </div>
+
+      <!-- Shared Scratchpad -->
+      <section class="card" style="margin-top:12px">
+        <h2>📝 Shared Scratchpad &amp; Code Notes <span class="spacer"></span><span class="hint" id="scratchpad-meta">Synced on server</span></h2>
+        <textarea class="scratchpad-area" id="scratchpad-textarea" placeholder="Write quick notes, draft messages, or paste code snippets here. Saved directly on LocalHub server!"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button class="btn btn-primary" id="scratchpad-save" type="button">💾 Save to Server</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== TAB 4: HUB OVERVIEW (Quick Drop & Telemetry) ===== -->
+    <div class="lh-tab-pane" id="pane-hub">
       <!-- 1. State at a glance: four numbers -->
       <section class="status-banner lh-metrics" id="status-banner">
         <div class="sb-item"><span>Server</span><b id="online-text"><span class="dot off" id="online-dot"></span> Offline</b></div>
@@ -260,27 +446,41 @@
     </div>
   </main>
 
+  <!-- Lightbox Modal for Photo Gallery -->
+  <div class="lightbox-modal" id="lightbox-modal" role="dialog" aria-label="Photo Lightbox">
+    <button class="lightbox-close-btn" id="lightbox-close" type="button" title="Close (Esc)">✕</button>
+    <button class="lightbox-nav-btn prev" id="lightbox-prev" type="button" title="Previous photo (Left arrow)">‹</button>
+    <div class="lightbox-content-box">
+      <img id="lightbox-img" src="" alt="Photo preview" />
+    </div>
+    <button class="lightbox-nav-btn next" id="lightbox-next" type="button" title="Next photo (Right arrow)">›</button>
+    <div class="lightbox-toolbar">
+      <span class="lightbox-caption" id="lightbox-caption"></span>
+    </div>
+  </div>
+
   <script>
     function lhSetTab(name) {
-      var isHub = name === 'hub';
-      var pHub = document.getElementById('pane-hub');
-      var pSys = document.getElementById('pane-system');
-      var bHub = document.getElementById('tab-btn-hub');
-      var bSys = document.getElementById('tab-btn-system');
-      if (pHub && pSys) {
-        pHub.classList.toggle('active', isHub);
-        pSys.classList.toggle('active', !isHub);
-      }
-      if (bHub && bSys) {
-        bHub.classList.toggle('active', isHub);
-        bSys.classList.toggle('active', !isHub);
-        bHub.setAttribute('aria-selected', isHub ? 'true' : 'false');
-        bSys.setAttribute('aria-selected', !isHub ? 'true' : 'false');
-      }
+      var tabs = ['lounge', 'connect', 'reader', 'hub', 'system'];
+      tabs.forEach(function (t) {
+        var p = document.getElementById('pane-' + t);
+        var b = document.getElementById('tab-btn-' + t);
+        var active = (t === name);
+        if (p) p.classList.toggle('active', active);
+        if (b) {
+          b.classList.toggle('active', active);
+          b.setAttribute('aria-selected', active ? 'true' : 'false');
+        }
+      });
       try { sessionStorage.setItem('lh_active_tab', name); } catch (e) {}
     }
-    if (location.hash === '#system' || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('lh_active_tab') === 'system')) {
+    var savedTab = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('lh_active_tab'));
+    if (location.hash === '#system' || savedTab === 'system') {
       lhSetTab('system');
+    } else if (savedTab && ['lounge', 'connect', 'reader', 'hub'].indexOf(savedTab) >= 0) {
+      lhSetTab(savedTab);
+    } else {
+      lhSetTab('lounge');
     }
   </script>
 
@@ -289,6 +489,7 @@
   <script src="/visuals.js"></script>
   <script src="/core.js"></script>
   <script src="/app.js"></script>
+  <script src="/hub-features.js"></script>
   <script src="/ai/float.js"></script>
   <script>
     // PWA: register the offline shell service worker (safe to fail silently).
