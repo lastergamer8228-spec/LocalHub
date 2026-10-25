@@ -368,7 +368,7 @@ class ApiRouter(
         // aggregate dashboard data (stats/activity). NOTE: logs are NOT here —
         // access logs are Administrator-only (falls through to "admin" below).
         if (path == "integration" || path == "dashboard" ||
-            path == "files" || path == "clients" ||
+            path == "files" || path == "clients" || path == "modules" ||
             path == "system" || path == "device" || path == "network" ||
             path == "storage" || path == "cpu" || path == "memory" || path == "battery" ||
             path == "fs/read" || path == "fs/list" || path == "fs/info" ||
@@ -386,7 +386,7 @@ class ApiRouter(
         if (path.startsWith("fs/")) return "admin"
         if (path.startsWith("server/")) return "admin"
         if (path.startsWith("device/")) return "admin"
-        if (path.startsWith("modules")) return "admin"
+        if (path.startsWith("modules/")) return "admin"
         if (path == "statistics" || path == "endpoints") return "any"
 
         // Admin only by default (safe default for any new endpoint).

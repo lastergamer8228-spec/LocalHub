@@ -233,10 +233,9 @@
       }
       checkSetup();
 
-      // Role-aware landing: Admin → dashboard, Web User → files.
+      // All users land on the rich Dashboard (Media Lounge, Local Connect, Reader & Notes, Quick Drop).
       function landing(role, token) {
-        if (role === "admin") return "/?token=" + encodeURIComponent(token);
-        return "/files?token=" + encodeURIComponent(token);
+        return "/?token=" + encodeURIComponent(token);
       }
 
       document.getElementById("login-form").addEventListener("submit", function (e) {

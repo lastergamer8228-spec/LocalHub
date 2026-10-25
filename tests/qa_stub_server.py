@@ -6,7 +6,7 @@ payloads. It is a TEST HARNESS ONLY - it never runs on the phone.
 """
 import json
 import re
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, unquote
 
@@ -18,9 +18,21 @@ ROUTES = {
     "/index.html": "dashboard/index.html",
     "/login.html": "dashboard/login.html",
     "/files": "dashboard/files.html",
+    "/files.html": "dashboard/files.html",
     "/player": "dashboard/player.html",
+    "/player.html": "dashboard/player.html",
     "/core": "dashboard/core.html",
+    "/core.html": "dashboard/core.html",
+    "/selfheal": "dashboard/selfheal.html",
     "/selfheal.html": "dashboard/selfheal.html",
+    "/mirror": "dashboard/mirror.html",
+    "/mirror.html": "dashboard/mirror.html",
+    "/brain": "dashboard/brain.html",
+    "/brain.html": "dashboard/brain.html",
+    "/tts": "dashboard/tts.html",
+    "/tts.html": "dashboard/tts.html",
+    "/ai": "ai/index.html",
+    "/ai/": "ai/index.html",
     "/style.css": "dashboard/style.css",
     "/app.js": "dashboard/app.js",
     "/visuals.js": "dashboard/visuals.js",
@@ -141,6 +153,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Connection", "close")
         self.end_headers()
         self.wfile.write(body)
 
@@ -162,8 +176,10 @@ class Handler(BaseHTTPRequestHandler):
             target = "console/index.html" if path in ("/console", "/console/") else "console/" + path[9:]
         elif path.startswith("/dashboard/"):
             target = "dashboard/" + path[len("/dashboard/"):]
-        elif re.match(r"^/[A-Za-z0-9._-]+\.(css|js|png|json|webmanifest)$", path):
-            target = "dashboard/" + path[1:]
+        elif (ROOT / "dashboard" / path.lstrip("/")).exists():
+            target = "dashboard/" + path.lstrip("/")
+        elif (ROOT / path.lstrip("/")).exists():
+            target = path.lstrip("/")
 
         if not target:
             return self._send(b"not found", "text/plain", 404)
@@ -180,4 +196,4 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    HTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
