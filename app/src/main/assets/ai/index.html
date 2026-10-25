@@ -65,27 +65,6 @@
           <span class="tab-label">Settings</span>
         </button>
       </nav>
-
-      <div class="sidebar-divider"></div>
-      <div class="sidebar-section-title">SYSTEM TOOLS</div>
-      <nav class="tabs dev-tabs">
-        <button class="ai-tab" data-target="console-panel">
-          <span class="tab-icon">⌨️</span>
-          <span class="tab-label">Console</span>
-        </button>
-        <button class="ai-tab" data-target="log-panel">
-          <span class="tab-icon">📜</span>
-          <span class="tab-label">Logs</span>
-        </button>
-        <button class="ai-tab" data-target="dash-panel">
-          <span class="tab-icon">📊</span>
-          <span class="tab-label">Overview</span>
-        </button>
-        <button class="ai-tab" data-target="diag-panel">
-          <span class="tab-icon">🧬</span>
-          <span class="tab-label">Diagnostics</span>
-        </button>
-      </nav>
     </aside>
 
     <main class="content">
@@ -251,49 +230,25 @@
         </div>
       </section>
 
-      <!-- CONSOLE -->
-      <section id="console-panel" class="ai-panel">
-        <div class="panel-header">
-          <h2>⌨️ Neural Console</h2>
-          <p class="panel-sub">Internal assistant event dispatcher stream.</p>
-        </div>
-        <div id="console" class="console"></div>
-      </section>
-
-      <!-- LOGS -->
-      <section id="log-panel" class="ai-panel">
-        <div class="panel-header">
-          <h2>📜 Server Logs</h2>
-          <p class="panel-sub">Recent HTTP and daemon audit entries.</p>
-        </div>
-        <div id="log-list" class="list"></div>
-      </section>
-
-      <!-- DASHBOARD -->
-      <section id="dash-panel" class="ai-panel">
-        <div class="panel-header">
-          <h2>📊 System Overview</h2>
-          <p class="panel-sub">Live resource consumption and client connections.</p>
-        </div>
-        <div class="card-glass">
+      <!-- Legacy Internal Components (Hidden from display, kept for script safety) -->
+      <div style="display:none;" aria-hidden="true">
+        <section id="console-panel" class="ai-panel">
+          <div id="console" class="console"></div>
+        </section>
+        <section id="log-panel" class="ai-panel">
+          <div id="log-list" class="list"></div>
+        </section>
+        <section id="dash-panel" class="ai-panel">
           <div id="dash-sys"></div>
-          <div class="kv"><span>Connected clients</span><b id="dash-clients">—</b></div>
-          <div class="kv"><span>Modules</span><b id="dash-modules">—</b></div>
-        </div>
-      </section>
-
-      <!-- DIAGNOSTICS (Developer Mode) -->
-      <section id="diag-panel" class="ai-panel">
-        <div class="panel-header">
-          <h2>🧬 Brain Diagnostics</h2>
-          <p class="panel-sub">Cognitive graph and state-machine inspections.</p>
-        </div>
-        <div class="inline-form" style="margin-bottom:12px">
-          <button id="diag-refresh" class="primary">Refresh State</button>
-        </div>
-        <div id="diag-panel-body" class="props" style="display:none"></div>
-        <div id="diag-log" class="list"></div>
-      </section>
+          <b id="dash-clients">—</b>
+          <b id="dash-modules">—</b>
+        </section>
+        <section id="diag-panel" class="ai-panel">
+          <button id="diag-refresh" class="primary">Refresh</button>
+          <div id="diag-panel-body" class="props"></div>
+          <div id="diag-log" class="list"></div>
+        </section>
+      </div>
     </main>
   </div>
 
