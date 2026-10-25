@@ -50,3 +50,11 @@ verification/*.png
 # LocalHub
 deliverables/
 .kotlin/
+
+# EXCEPTION: the shared DEBUG signing key is committed on purpose.
+#
+# Without it every machine and CI runner generates a different debug keystore, so
+# each build gets a different signature and Android refuses to install one build
+# over another. This file is a *debug* key only (alias androiddebugkey, password
+# android) - it is not a release key and must never be used to sign a release APK.
+!localhub-debug.keystore
