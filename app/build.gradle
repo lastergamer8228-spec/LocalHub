@@ -23,6 +23,25 @@ android {
 
     }
 
+    // One shared DEBUG signing key, committed on purpose.
+    //
+    // Without this, every machine (and every GitHub Actions runner) generates a
+    // fresh debug keystore, so each build gets a DIFFERENT signature and Android
+    // refuses to update one build over another - users had to uninstall every
+    // single time. With this config every build, local or CI, is signed with the
+    // same key and updates install cleanly.
+    //
+    // This is a DEBUG key only ("android" / androiddebugkey). Release builds must
+    // use a separate, private keystore that is never committed.
+    signingConfigs {
+        debug {
+            storeFile file("../localhub-debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
     buildTypes {
         release {
             // R8 is on for release builds. Every reflective/JSON/native surface
