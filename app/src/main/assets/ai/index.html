@@ -10,175 +10,286 @@
 <body class="lh-page">
   <header class="topbar">
     <div class="brand">
-      <span class="logo">🧠</span>
-      <div>
+      <div class="logo-badge">🧠</div>
+      <div class="brand-info">
         <h1>LocalHub Assistant</h1>
-        <p>local AI · offline</p>
+        <div class="brand-status">
+          <span class="status-dot"></span>
+          <span>Local Neural Engine · 100% Offline &amp; Private</span>
+        </div>
       </div>
     </div>
     <div class="actions">
-      <button class="iconbtn" id="voice-btn" title="Voice input">🎤</button>
-      <button class="iconbtn" id="tts-btn" title="Speak last reply (tap again to stop)">🔊</button>
-      <button class="iconbtn" id="voice-switch" title="Toggle speech output">🔊</button>
-      <button class="iconbtn" id="chat-clear" title="Clear chat">🗑</button>
-      <a class="back" href="/">Dashboard</a>
+      <button class="iconbtn" id="voice-btn" title="Voice input" aria-label="Voice input">🎤</button>
+      <button class="iconbtn" id="tts-btn" title="Speak last reply" aria-label="Speak reply">🔊</button>
+      <button class="iconbtn" id="voice-switch" title="Toggle speech output" aria-label="Toggle speech">🔊</button>
+      <button class="iconbtn" id="chat-clear" title="Clear chat" aria-label="Clear chat">🗑️</button>
+      <a class="back-btn" href="/">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        <span>Dashboard</span>
+      </a>
     </div>
   </header>
 
   <div class="layout">
-    <nav class="tabs">
-      <button class="ai-tab active" data-target="chat-panel">💬 Chat</button>
-      <button class="ai-tab" data-target="memory-panel">🧠 Memory</button>
-      <button class="ai-tab" data-target="task-panel">✅ Tasks</button>
-      <button class="ai-tab" data-target="knowledge-panel">📚 Knowledge</button>
-      <button class="ai-tab" data-target="automation-panel">⚙ Automation</button>
-      <button class="ai-tab" data-target="plugin-panel">🧩 Plugins</button>
-      <button class="ai-tab" data-target="settings-panel">🛠 Settings</button>
-      <button class="ai-tab" data-target="console-panel">⌨ Console</button>
-      <button class="ai-tab" data-target="log-panel">📜 Logs</button>
-      <button class="ai-tab" data-target="dash-panel">📊 Dashboard</button>
-      <button class="ai-tab" data-target="diag-panel">🧬 Diagnostics</button>
-    </nav>
+    <!-- Clean modern sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section-title">ASSISTANT</div>
+      <nav class="tabs">
+        <button class="ai-tab active" data-target="chat-panel">
+          <span class="tab-icon">💬</span>
+          <span class="tab-label">Conversation</span>
+        </button>
+        <button class="ai-tab" data-target="memory-panel">
+          <span class="tab-icon">🧠</span>
+          <span class="tab-label">Memory</span>
+        </button>
+        <button class="ai-tab" data-target="task-panel">
+          <span class="tab-icon">✅</span>
+          <span class="tab-label">Tasks</span>
+        </button>
+        <button class="ai-tab" data-target="knowledge-panel">
+          <span class="tab-icon">📚</span>
+          <span class="tab-label">Knowledge</span>
+        </button>
+        <button class="ai-tab" data-target="automation-panel">
+          <span class="tab-icon">⚡</span>
+          <span class="tab-label">Automation</span>
+        </button>
+        <button class="ai-tab" data-target="plugin-panel">
+          <span class="tab-icon">🧩</span>
+          <span class="tab-label">Plugins</span>
+        </button>
+        <button class="ai-tab" data-target="settings-panel">
+          <span class="tab-icon">⚙️</span>
+          <span class="tab-label">Settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-title">SYSTEM TOOLS</div>
+      <nav class="tabs dev-tabs">
+        <button class="ai-tab" data-target="console-panel">
+          <span class="tab-icon">⌨️</span>
+          <span class="tab-label">Console</span>
+        </button>
+        <button class="ai-tab" data-target="log-panel">
+          <span class="tab-icon">📜</span>
+          <span class="tab-label">Logs</span>
+        </button>
+        <button class="ai-tab" data-target="dash-panel">
+          <span class="tab-icon">📊</span>
+          <span class="tab-label">Overview</span>
+        </button>
+        <button class="ai-tab" data-target="diag-panel">
+          <span class="tab-icon">🧬</span>
+          <span class="tab-label">Diagnostics</span>
+        </button>
+      </nav>
+    </aside>
 
     <main class="content">
       <!-- CHAT (brain environment) -->
-      <section id="chat-panel" class="ai-panel" style="display:block;max-width:1000px">
+      <section id="chat-panel" class="ai-panel active-panel" style="display:flex;">
         <canvas id="waveform" width="400" height="60" class="waveform" style="display:none"></canvas>
         <!-- Inline media player (transparent glass) -->
-        <div id="inline-player" class="inline-player glass" style="display:none;margin:8px 0;border-radius:12px;overflow:hidden">
-          <video id="inline-video" controls playsinline style="width:100%;max-height:260px;display:block"></video>
-          <div id="inline-player-bar" style="display:flex;align-items:center;gap:8px;padding:6px 10px;color:#9fe;font-size:12px">
+        <div id="inline-player" class="inline-player glass" style="display:none;">
+          <video id="inline-video" controls playsinline style="width:100%;max-height:280px;display:block;border-radius:10px 10px 0 0;"></video>
+          <div id="inline-player-bar" style="display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px">
             <span id="inline-title" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Now playing</span>
-            <button id="inline-stop" class="hbtn" style="color:#ffb0b0">⏹ Close</button>
+            <button id="inline-stop" class="hbtn" style="color:#ff8e8e">⏹ Close</button>
           </div>
         </div>
 
-        <!-- CONVERSATION -->
-        <div class="holo-chatframe">
-          <div class="holo-chatframe-corners"><i></i><i></i><i></i><i></i></div>
-          <div class="holo-chatframe-scan"></div>
-          <div class="holo-chatframe-hd">
+        <!-- Chat messages view -->
+        <div class="chat-container">
+          <div class="chat-frame-hd">
             <span class="hd-dot"></span>
-            <span class="hd-txt">CONVERSATION STREAM</span>
+            <span class="hd-txt">CONVERSATION STREAM · LOCAL NEURAL ENGINE</span>
             <span class="hd-status" id="hd-status">● LIVE</span>
           </div>
           <div id="chat-log" class="chat-log holo-chat"></div>
         </div>
+
         <div id="suggest-box" class="suggest-box glass"></div>
-        <div class="chat-input-row glass">
-          <input id="chat-input" type="text" placeholder="Type a command… (LocalHub OS)" autocomplete="off" />
-          <button id="chat-send" class="primary">Run</button>
+
+        <!-- Floating prompt input row -->
+        <div class="chat-footer">
+          <div class="chips" id="quick-chips"></div>
+          <div class="chat-input-row glass">
+            <input id="chat-input" type="text" placeholder="Type a command or ask a question… (e.g. 'server status', 'organize downloads')" autocomplete="off" />
+            <button id="chat-send" class="primary">
+              <span>Run</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="chips" id="quick-chips"></div>
       </section>
-
-
 
       <!-- MEMORY -->
       <section id="memory-panel" class="ai-panel">
-        <h2>Memory</h2>
-        <div class="inline-form">
-          <input id="memory-input" type="text" placeholder="What should I remember?" />
-          <button id="memory-add" class="primary">Remember</button>
+        <div class="panel-header">
+          <h2>🧠 Persistent Memory</h2>
+          <p class="panel-sub">Context and preferences remembered by LocalHub AI across conversations.</p>
+        </div>
+        <div class="card-glass">
+          <div class="inline-form">
+            <input id="memory-input" type="text" placeholder="What should I remember? (e.g. 'My preferred music folder is /Music')" />
+            <button id="memory-add" class="primary">Remember</button>
+          </div>
         </div>
         <div id="memory-list" class="list"></div>
       </section>
 
       <!-- TASKS -->
       <section id="task-panel" class="ai-panel">
-        <h2>Tasks</h2>
+        <div class="panel-header">
+          <h2>✅ Active Tasks</h2>
+          <p class="panel-sub">Scheduled operations, background jobs, and pending actions.</p>
+        </div>
         <div id="task-list" class="list"></div>
       </section>
 
       <!-- KNOWLEDGE -->
       <section id="knowledge-panel" class="ai-panel">
-        <h2>Knowledge Base</h2>
-        <div class="inline-form">
-          <input id="knowledge-title" type="text" placeholder="Title" />
-          <input id="knowledge-content" type="text" placeholder="Content" />
-          <button id="knowledge-add" class="primary">Add</button>
+        <div class="panel-header">
+          <h2>📚 Knowledge Base</h2>
+          <p class="panel-sub">Searchable offline reference notes, guides, and documentation.</p>
         </div>
-        <div class="inline-form">
-          <input id="knowledge-search" type="text" placeholder="Search knowledge…" />
-          <button id="knowledge-search-btn" class="primary">Search</button>
+        <div class="card-glass">
+          <div class="inline-form">
+            <input id="knowledge-title" type="text" placeholder="Topic or Document Title" />
+            <input id="knowledge-content" type="text" placeholder="Summary or note content..." />
+            <button id="knowledge-add" class="primary">Add Entry</button>
+          </div>
+          <div class="inline-form" style="margin-top:10px">
+            <input id="knowledge-search" type="text" placeholder="Search knowledge base…" />
+            <button id="knowledge-search-btn" class="primary secondary-btn">Search</button>
+          </div>
         </div>
         <div id="knowledge-list" class="list"></div>
       </section>
 
       <!-- AUTOMATION -->
       <section id="automation-panel" class="ai-panel">
-        <h2>Automation Workflows</h2>
+        <div class="panel-header">
+          <h2>⚡ Automations &amp; Rules</h2>
+          <p class="panel-sub">Self-healing trigger rules and automated system workflows.</p>
+        </div>
         <div id="automation-catalog" class="chips"></div>
         <div id="automation-list" class="list"></div>
-        <h2 style="margin-top:16px">IF / THEN Rules</h2>
-        <div class="inline-form">
-          <select id="rule-condition" class="rule-cond">
-            <option value="battery_below">Battery below %</option>
-            <option value="wifi_connected">WiFi connected</option>
-            <option value="wifi_disconnected">WiFi disconnected</option>
-            <option value="cpu_above">CPU above %</option>
-          </select>
-          <input id="rule-value" type="number" placeholder="value" style="width:80px" />
-          <select id="rule-action">
-            <option value="server/stop">Stop server</option>
-            <option value="server/start">Start server</option>
-            <option value="server/restart">Restart server</option>
-            <option value="server/clear-cache">Clear cache</option>
-            <option value="server/clear-logs">Clear logs</option>
-          </select>
-          <button id="rule-add" class="primary">Add Rule</button>
+        <div class="card-glass" style="margin-top:20px">
+          <h3 style="margin:0 0 12px;font-size:14px;color:var(--text)">Create IF / THEN Rule</h3>
+          <div class="inline-form">
+            <select id="rule-condition" class="rule-cond">
+              <option value="battery_below">Battery below %</option>
+              <option value="wifi_connected">WiFi connected</option>
+              <option value="wifi_disconnected">WiFi disconnected</option>
+              <option value="cpu_above">CPU above %</option>
+            </select>
+            <input id="rule-value" type="number" placeholder="value" style="width:90px" />
+            <select id="rule-action">
+              <option value="server/stop">Stop server</option>
+              <option value="server/start">Start server</option>
+              <option value="server/restart">Restart server</option>
+              <option value="server/clear-cache">Clear cache</option>
+              <option value="server/clear-logs">Clear logs</option>
+            </select>
+            <button id="rule-add" class="primary">Add Rule</button>
+          </div>
         </div>
         <div id="rule-list" class="list"></div>
       </section>
 
       <!-- PLUGINS -->
       <section id="plugin-panel" class="ai-panel">
-        <h2>Plugins</h2>
-        <div class="inline-form">
-          <input id="plugin-name" type="text" placeholder="Plugin name" />
-          <button id="plugin-install" class="primary">Install</button>
+        <div class="panel-header">
+          <h2>🧩 Extensible Plugins</h2>
+          <p class="panel-sub">Custom assistant skills and event bridges.</p>
         </div>
-        <textarea id="plugin-code" rows="3" placeholder="Plugin code (JS function body: brain, args, FS, Memory)"></textarea>
+        <div class="card-glass">
+          <div class="inline-form">
+            <input id="plugin-name" type="text" placeholder="Plugin identifier" />
+            <button id="plugin-install" class="primary">Install</button>
+          </div>
+          <textarea id="plugin-code" rows="4" placeholder="// JavaScript plugin function body (brain, args, FS, Memory)"></textarea>
+        </div>
         <div id="plugin-list" class="list"></div>
       </section>
 
       <!-- SETTINGS -->
       <section id="settings-panel" class="ai-panel">
-        <h2>Settings</h2>
-        <div class="row"><div class="row-main"><span>Voice input</span></div>
-          <input type="checkbox" id="setting-voice" /></div>
-        <div class="row"><div class="row-main"><span>Speech output</span></div>
-          <input type="checkbox" id="setting-tts" /></div>
-        <div class="row"><div class="row-main"><span>Assistant name</span></div>
-          <input type="text" id="setting-name" placeholder="Assistant" /></div>
-        <button id="settings-save" class="primary">Save settings</button>
+        <div class="panel-header">
+          <h2>⚙️ Assistant Settings</h2>
+          <p class="panel-sub">Preferences for speech synthesis, voice recognition, and assistant name.</p>
+        </div>
+        <div class="card-glass settings-card">
+          <div class="row">
+            <div class="row-main">
+              <span>Voice Input</span>
+              <span class="sub">Enable microphone listening when mic button is tapped</span>
+            </div>
+            <input type="checkbox" id="setting-voice" class="lh-toggle" />
+          </div>
+          <div class="row">
+            <div class="row-main">
+              <span>Speech Output (TTS)</span>
+              <span class="sub">Speak assistant responses aloud automatically</span>
+            </div>
+            <input type="checkbox" id="setting-tts" class="lh-toggle" />
+          </div>
+          <div class="row">
+            <div class="row-main">
+              <span>Assistant Name</span>
+              <span class="sub">Custom name used in greeting and system notifications</span>
+            </div>
+            <input type="text" id="setting-name" placeholder="Assistant" style="max-width:180px" />
+          </div>
+          <div style="margin-top:14px;display:flex;justify-content:flex-end">
+            <button id="settings-save" class="primary">Save Settings</button>
+          </div>
+        </div>
       </section>
 
       <!-- CONSOLE -->
       <section id="console-panel" class="ai-panel">
-        <h2>Console</h2>
+        <div class="panel-header">
+          <h2>⌨️ Neural Console</h2>
+          <p class="panel-sub">Internal assistant event dispatcher stream.</p>
+        </div>
         <div id="console" class="console"></div>
       </section>
 
       <!-- LOGS -->
       <section id="log-panel" class="ai-panel">
-        <h2>LocalHub Logs</h2>
+        <div class="panel-header">
+          <h2>📜 Server Logs</h2>
+          <p class="panel-sub">Recent HTTP and daemon audit entries.</p>
+        </div>
         <div id="log-list" class="list"></div>
       </section>
 
       <!-- DASHBOARD -->
       <section id="dash-panel" class="ai-panel">
-        <h2>System Overview</h2>
-        <div id="dash-sys"></div>
-        <div class="kv"><span>Connected clients</span><b id="dash-clients">—</b></div>
-        <div class="kv"><span>Modules</span><b id="dash-modules">—</b></div>
+        <div class="panel-header">
+          <h2>📊 System Overview</h2>
+          <p class="panel-sub">Live resource consumption and client connections.</p>
+        </div>
+        <div class="card-glass">
+          <div id="dash-sys"></div>
+          <div class="kv"><span>Connected clients</span><b id="dash-clients">—</b></div>
+          <div class="kv"><span>Modules</span><b id="dash-modules">—</b></div>
+        </div>
       </section>
 
       <!-- DIAGNOSTICS (Developer Mode) -->
       <section id="diag-panel" class="ai-panel">
-        <h2>Brain Diagnostics</h2>
-        <div class="inline-form">
-          <button id="diag-refresh" class="primary">Refresh</button>
+        <div class="panel-header">
+          <h2>🧬 Brain Diagnostics</h2>
+          <p class="panel-sub">Cognitive graph and state-machine inspections.</p>
+        </div>
+        <div class="inline-form" style="margin-bottom:12px">
+          <button id="diag-refresh" class="primary">Refresh State</button>
         </div>
         <div id="diag-panel-body" class="props" style="display:none"></div>
         <div id="diag-log" class="list"></div>
@@ -215,7 +326,7 @@
   <script src="/ai/features_guardian.js"></script>
   <script src="/ai/context.js"></script>
   <script src="/ai/capabilities.js"></script>
-    <script src="/ai/action_evidence.js"></script>
+  <script src="/ai/action_evidence.js"></script>
   <script src="/ai/taskplanner.js"></script>
   <script src="/ai/reviewed_workflows.js"></script>
   <script src="/ai/action_routing.js"></script>
@@ -227,7 +338,7 @@
   <script src="/ai/features_routines.js"></script>
   <script src="/ai/chat.js"></script>
   <script src="/ai/assistant.js"></script>
-    <script src="/ai/system_integration.js"></script>
+  <script src="/ai/system_integration.js"></script>
   <script src="/ai/assistant_runtime.js"></script>
   <script src="/ai/brain.js"></script>
   <script>window.LH_AI.Brain.boot();</script>
