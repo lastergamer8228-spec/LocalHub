@@ -41,63 +41,8 @@
   function setRole(role) { currentRole = role; }
   function getRole() { return currentRole; }
 
-  // ---- deferred library slots ---------------------------------------------
-  // A very large answer library (features_jarvis.js and friends) can be loaded
-  // AFTER the page paints instead of blocking it. Deferring must never change
-  // WHICH command answers a phrase, so a slot remembers the exact position the
-  // library would have had and re-inserts its commands there once they arrive.
-  //
-  //   index.html :  <script>LH_AI.Commands.openLibrary("jarvis")</script>
-  //   loader     :  beginLibrary("jarvis") -> load the file -> endLibrary()
-  //
-  // Slots are inserted back in the order they were opened, so interleaving with
-  // blocking scripts (features_critical.js sits between two of them) is kept
-  // byte-for-byte identical to the old synchronous <script> tags.
-  var librarySlots = [];   // [{ id, position }] in the order the slots were opened
-  var stagedLibrary = {};  // id -> commands registered while that slot was open
-  var activeLibrary = null;
-  var insertedLibraries = 0; // commands already spliced back by earlier slots
-
-  function openLibrary(id) {
-    for (var i = 0; i < librarySlots.length; i++) {
-      if (librarySlots[i].id === id) return; // already declared, keep position
-    }
-    librarySlots.push({ id: id, position: commands.length });
-  }
-
-  function beginLibrary(id) {
-    openLibrary(id);
-    activeLibrary = id;
-    stagedLibrary[id] = stagedLibrary[id] || [];
-  }
-
-  function endLibrary() {
-    var id = activeLibrary;
-    activeLibrary = null;
-    if (!id) return 0;
-    var staged = stagedLibrary[id] || [];
-    var position = -1;
-    for (var i = 0; i < librarySlots.length; i++) {
-      if (librarySlots[i].id === id) { position = librarySlots[i].position; break; }
-    }
-    if (position < 0) return 0;
-    var at = Math.min(position + insertedLibraries, commands.length);
-    for (var k = 0; k < staged.length; k++) commands.splice(at + k, 0, staged[k]);
-    insertedLibraries += staged.length;
-    delete stagedLibrary[id];
-    return staged.length;
-  }
-
-  /** A library that failed to load must not leave a hole: drop its staging. */
-  function cancelLibrary() {
-    var id = activeLibrary;
-    activeLibrary = null;
-    if (!id) return;
-    delete stagedLibrary[id];
-  }
-
   function registerCommand(spec) {
-    var command = {
+    commands.push({
       module: spec.module || "core",
       category: spec.category || "general",
       name: spec.name,
@@ -105,13 +50,7 @@
       admin: !!spec.admin, // true = only Administrator may run
       deep: !!spec.deep,   // true = a more detailed/adult-level explanation
       run: spec.run
-    };
-    if (activeLibrary) {
-      stagedLibrary[activeLibrary].push(command);
-      return command;
-    }
-    commands.push(command);
-    return command;
+    });
   }
 
   // ---- navigation helper (opens File Manager / page) ----
@@ -1488,7 +1427,7 @@
       "open downloads", "open pictures", "open dcim", "open movies", "open music",
       "open documents", "open file manager", "open dashboard", "open media player",
       "show server status", "restart server", "stop server", "start server",
-      "play newest modified video in downloads", "check localhub health", "repair localhub", "explain system integration", "show connected clients", "show access logs", "show cpu usage", "show ram usage",
+      "show connected clients", "show access logs", "show cpu usage", "show ram usage",
       "show storage usage", "show battery", "show temperature", "show uptime",
       "show current ip", "copy server address", "generate qr code",
       "backup configuration", "export logs", "clear logs", "clear cache",
@@ -1524,12 +1463,6 @@
     list: listCommands,
     suggestions: suggestions,
     setRole: setRole,
-    getRole: getRole,
-    // Deferred-library slot API (see "deferred library slots" above).
-    openLibrary: openLibrary,
-    beginLibrary: beginLibrary,
-    endLibrary: endLibrary,
-    cancelLibrary: cancelLibrary,
-    librarySlots: function () { return librarySlots.map(function (s) { return { id: s.id, position: s.position }; }); }
+    getRole: getRole
   };
 })(window);

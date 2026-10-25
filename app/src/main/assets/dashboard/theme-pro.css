@@ -94,6 +94,7 @@ h2 { font-size: 13px; }
 }
 
 .lh-nav-brand {
+  min-height: 32px;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -157,7 +158,7 @@ h2 { font-size: 13px; }
   border-radius: 999px; padding: 2px 8px;
 }
 .lh-nav-btn {
-  height: 28px; padding: 0 10px;
+  min-height: 32px; height: auto; padding: 6px 10px;
   background: transparent; color: var(--muted);
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   font-size: 12px; cursor: pointer; font-family: inherit;
@@ -165,9 +166,14 @@ h2 { font-size: 13px; }
 .lh-nav-btn:hover { color: var(--text); border-color: var(--border); background: var(--surface-2); }
 
 @media (max-width: 720px) {
-  .lh-nav { gap: 10px; padding: 0 10px; }
+  .lh-nav { gap: 10px; padding: 6px 10px; height: auto; min-height: 48px; flex-wrap: wrap; }
   .lh-nav-brand span.lh-nav-name { display: none; }
   .lh-nav-link { padding: 0 8px; }
+  /* The right group (host badge + links + sign out) measured 291px and pushed
+     the whole page into a ~52px horizontal scroll on a 360px phone. */
+  .lh-nav-right { width: 100%; margin-left: 0; justify-content: flex-start; gap: 8px; flex-wrap: wrap; }
+  .lh-nav-status { font-size: 11px; }
+  .lh-nav-btn { min-height: 32px; }
 }
 
 /* ---------- page shell ---------------------------------------------------- */

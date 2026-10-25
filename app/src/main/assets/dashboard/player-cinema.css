@@ -106,3 +106,47 @@ body.cinema {
   font-size:11px; line-height:1.5; text-align:left !important;
   border-radius:8px !important; backdrop-filter:blur(10px);
 }
+
+
+/* ---------------------------------------------------------------------------
+   Phone fixes measured with tests/qa_browser_check.py at 360px.
+   Before: the toast covered every control button, the seek bar was a 3px hair
+   line, and the topbar subtitle rendered at 8px.
+   --------------------------------------------------------------------------- */
+@media(max-width:700px) {
+  /* keep the toast well above the control bar instead of on top of it */
+  .cinema #toast { bottom:104px; font-size:12px; padding:8px 12px; }
+  /* 3px was impossible to hit with a thumb */
+  .cinema input[type=range].seekbar { height:6px; }
+  .cinema input[type=range].seekbar::-webkit-slider-thumb { width:18px; height:18px; }
+  .cinema input[type=range].seekbar::-moz-range-thumb { width:18px; height:18px; }
+  .cinema input[type=range].seekbar::-webkit-slider-runnable-track { height:6px; border-radius:999px; }
+  .cinema .cb-seek { margin-bottom:10px; }
+  /* 8px text is not readable on a phone */
+  .cinema .topbar .sub { font-size:10px; letter-spacing:.4px; }
+  .cinema .cb-time { font-size:12px; }
+  /* stop any row from pushing past the viewport edge */
+  .cinema .cb-row { flex-wrap:wrap; justify-content:center; }
+}
+
+/* ---------------------------------------------------------------------------
+   Phone portrait — measured at 360x740 before this change:
+     video-wrap 344x664, so a 16:9 file rendered as a 344x193 strip with about
+     235px of black above and below it, and the control bar floated in the
+     middle of that emptiness. That is the "weird format".
+   Now the wrap keeps the picture's own shape and sits at the top, and the
+   overlay's dead space is trimmed so the controls hug the video.
+   Landscape and tablets keep the full-bleed cinema layout.
+   --------------------------------------------------------------------------- */
+@media(max-width:700px) and (orientation:portrait) {
+  .cinema .stage { align-items:center; padding:8px 8px 12px; }
+  /* player-shell fills the stage, so the picture is centred in there */
+  .cinema .player-shell { display:flex; align-items:center; justify-content:center; height:auto; min-height:0; flex:1; }
+  .cinema .video-wrap { width:100%; height:auto; aspect-ratio:16/9; max-height:52vh; }
+  .cinema video#media { height:100%; }
+  .cinema .controlbar { padding:22px 8px max(8px,env(safe-area-inset-bottom)); }
+  .cinema .cb-time { bottom:34px; }
+  .cinema .cb-row { gap:2px; }
+  .cinema .cbtn { width:38px; min-width:38px; height:38px; padding:8px; }
+  .cinema .cbtn.big { width:44px; min-width:44px; height:44px; }
+}

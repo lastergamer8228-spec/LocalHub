@@ -136,21 +136,37 @@ it('keeps the element IDs app.js writes to (ws-status, role-badge, logout-btn)',
   assert.ok(find(nodes, (n) => n.id === 'logout-btn'), 'logout button must survive onclick binding');
 });
 
-it('every page loads the shared theme, and only app pages load the nav', () => {
-  const pages = ['index.html', 'files.html', 'player.html', 'login.html'];
+it('every dashboard page loads the shared theme; login has no nav', () => {
+  const pages = ['index.html', 'files.html', 'login.html'];
   pages.forEach((f) => {
     const html = fs.readFileSync(path.join(DASH, f), 'utf8');
     assert.ok(html.includes('theme-pro.css'), f + ' is missing theme-pro.css');
   });
-  ['index.html', 'files.html', 'player.html'].forEach((f) => {
+  ['index.html', 'files.html'].forEach((f) => {
     const html = fs.readFileSync(path.join(DASH, f), 'utf8');
     assert.ok(html.includes('/nav.js'), f + ' is missing nav.js');
     assert.ok(html.includes('id="lh-nav"'), f + ' is missing the nav mount point');
+    // The mount point must sit inside <body>: an earlier injection put it
+    // between </head> and <body>, which broke the DOM of every page that got it.
+    assert.ok(
+      html.indexOf('<body') < html.indexOf('id="lh-nav"'),
+      f + ': nav mount point is outside <body>'
+    );
   });
   const login = fs.readFileSync(path.join(DASH, 'login.html'), 'utf8');
   assert.ok(!login.includes('/nav.js'), 'the login page must not show the nav');
-  const ai = fs.readFileSync(path.join(AI, 'index.html'), 'utf8');
-  assert.ok(ai.includes('theme-pro.css') && ai.includes('/nav.js'), '/ai must use the shared shell');
+});
+
+it('/player and /ai stay standalone (injecting the nav broke them)', () => {
+  // Both are full-screen views with their own top bar. The shared nav mount
+  // used to be injected into them outside <body>, which broke their DOM - the
+  // assistant stopped working and the player controls became unhittable.
+  [path.join(DASH, 'player.html'), path.join(AI, 'index.html')].forEach((file) => {
+    const html = fs.readFileSync(file, 'utf8');
+    assert.ok(!html.includes('theme-pro.css'), path.basename(file) + ' should not load the dashboard theme');
+    assert.ok(!html.includes('/nav.js'), path.basename(file) + ' should not load the shared nav');
+    assert.ok(!html.includes('id="lh-nav"'), path.basename(file) + ' should not have a nav mount point');
+  });
 });
 
 it('nav.js loads before app.js on the dashboard', () => {

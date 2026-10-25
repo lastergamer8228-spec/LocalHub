@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>LocalHub Media Player</title>
   <link rel="stylesheet" href="/style.css" />
-  <link rel="stylesheet" href="/theme-pro.css" />
   <link rel="stylesheet" href="/animations.css" />
   <style>
     :root {
@@ -200,9 +199,15 @@
     .plist li .pn { color:var(--muted); font-size:11px; min-width:20px; }
 
     /* toast */
+    /* A toast is informational only. It used to sit on top of the control bar on
+       phones (z-index 80, bottom 22px) and swallowed every tap for 2.6s, which
+       looked like the player buttons had vanished. It now never eats pointer
+       events, wraps instead of overflowing, and is lifted clear of the controls
+       on small screens (see player-cinema.css). */
     #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:#0f1a2e;
       border:1px solid var(--border); color:var(--text); border-radius:8px; padding:9px 16px; font-size:13px;
-      display:none; z-index:80; box-shadow:var(--shadow); white-space:nowrap; }
+      display:none; z-index:80; box-shadow:var(--shadow);
+      pointer-events:none; max-width:min(90vw,420px); white-space:normal; text-align:center; }
 
     /* mini player */
     .player-shell.mini .video-wrap { position:fixed; right:18px; bottom:18px; width:320px; height:auto; border-radius:12px;
@@ -257,8 +262,6 @@
   </style>
   <link rel="stylesheet" href="/dashboard/player-cinema.css" />
 </head>
-  <!-- Shared top navigation (rendered by /nav.js) -->
-  <div id="lh-nav"></div>
 <body class="lh-page cinema">
   <header class="topbar">
     <div class="brand">

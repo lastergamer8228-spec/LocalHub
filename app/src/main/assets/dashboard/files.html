@@ -196,9 +196,12 @@
       .toolbar {
         padding: 6px 10px;
         gap: 6px;
-        overflow-x: auto;
-        white-space: nowrap;
-        flex-wrap: nowrap;
+        /* Was overflow-x:auto + flex-wrap:nowrap: 610px of controls crammed
+           into a 360px screen hid the last five buttons (new folder, upload,
+           upload folder, select all, view toggle). They now wrap. */
+        overflow-x: visible;
+        white-space: normal;
+        flex-wrap: wrap;
         scrollbar-width: none;
       }
       .toolbar::-webkit-scrollbar { display: none; }
@@ -219,9 +222,11 @@
     }
   </style>
 </head>
-  <!-- Shared top navigation (rendered by /nav.js) -->
-  <div id="lh-nav"></div>
 <body class="lh-page">
+  <!-- Shared top navigation (rendered by /nav.js) - MUST be inside <body>:
+       outside it the browser relocates the node and the page's own DOM
+       lookups break (this is what broke /ai earlier). -->
+  <div id="lh-nav"></div>
   <header class="topbar">
     <div class="brand"><span class="logo">🗂</span><div><h1>LocalHub</h1><p>File Manager</p></div></div>
     <div class="actions">

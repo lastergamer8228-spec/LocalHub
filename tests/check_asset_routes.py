@@ -94,3 +94,27 @@ if problems:
     raise SystemExit(f"{len(problems)} asset route problem(s) found")
 
 print(f"PASS all {len(refs)} referenced assets resolve to files that exist")
+
+# --- structural guards -------------------------------------------------------
+# A nav mount point placed between </head> and <body> is relocated by the
+# browser and breaks the page's own DOM lookups. It broke /ai (assistant dead)
+# and the file manager before it was caught.
+for page in [
+    "app/src/main/assets/dashboard/index.html",
+    "app/src/main/assets/dashboard/files.html",
+]:
+    html = (ROOT / page).read_text(encoding="utf-8", errors="replace")
+    if 'id="lh-nav"' in html:
+        assert html.index("<body") < html.index('id="lh-nav"'), (
+            page + ": nav mount point is outside <body>"
+        )
+print("PASS nav mount points sit inside <body>")
+
+# Entry-point URLs must resolve. "/ai/" used to fall through to the startsWith
+# rule and became the directory "ai/", so every Assistant link 404'd.
+ENTRY_URLS = ["/", "/index.html", "/files", "/player", "/ai", "/ai/", "/ai/index.html"]
+for url in ENTRY_URLS:
+    target = resolve(url)
+    assert target, "entry URL has no route: " + url
+    assert (ASSETS / target).exists(), "entry URL %s -> missing %s" % (url, target)
+print("PASS %d entry-point URLs resolve" % len(ENTRY_URLS))

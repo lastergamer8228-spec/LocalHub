@@ -73,7 +73,10 @@ class AssetServer(private val context: Context) {
         uri.startsWith("/os/") -> "os/${uri.removePrefix("/os/")}"
         uri.startsWith("/dashboard/") -> "dashboard/${uri.removePrefix("/dashboard/")}"
         uri.startsWith("/assets/") -> uri.removePrefix("/")
-        uri == "/ai" || uri == "/ai/index.html" -> "ai/index.html"
+        // "/ai/" must map to index.html explicitly: the startsWith rule below
+        // would turn it into the directory "ai/", which cannot be opened -
+        // that is why every Assistant link (which points at /ai/) 404'd.
+        uri == "/ai" || uri == "/ai/" || uri == "/ai/index.html" -> "ai/index.html"
         uri.startsWith("/ai/") -> "ai/${uri.removePrefix("/ai/")}"
         ROOT_DASHBOARD_ASSET.matches(uri) -> "dashboard/${uri.removePrefix("/")}"
         else -> null
