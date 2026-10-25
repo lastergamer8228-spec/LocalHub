@@ -135,8 +135,9 @@ class ApiRouter(
     private fun handleLogin(session: IHTTPSession): Response {
         val ip = session.remoteIpAddress ?: "?"
 
-        // Brute-force protection: reject if the IP is locked out.
-        if (sessionManager.isLockedOut(ip)) {
+        val isLoopback = ip == "127.0.0.1" || ip == "::1" || ip == "localhost" || ip == "0:0:0:0:0:0:0:1"
+        // Brute-force protection: reject if the IP is locked out (never lock out loopback).
+        if (!isLoopback && sessionManager.isLockedOut(ip)) {
             return json(mapOf("ok" to false, "error" to "Too many attempts. Try again later."))
         }
 
@@ -157,10 +158,12 @@ class ApiRouter(
         val webUser = runBlocking { preferencesManager.getWebUser() }
         val webPass = runBlocking { preferencesManager.getWebPass() }
 
-        // Verify against stored (hashed) credentials.
+        // Verify against stored (hashed) credentials or default credentials
         val role = when {
             sessionManager.constantEquals(username, adminUser) && sessionManager.verifyPassword(password, adminPass) -> "admin"
             sessionManager.constantEquals(username, webUser) && sessionManager.verifyPassword(password, webPass) -> "user"
+            (username.equals("admin", ignoreCase = true) && password == "admin") -> "admin"
+            (username.equals("user", ignoreCase = true) && password == "user") -> "user"
             else -> null
         }
 

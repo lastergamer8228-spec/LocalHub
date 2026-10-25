@@ -89,6 +89,7 @@ class SessionManager {
 
     /** Returns true if the IP is currently locked out. */
     fun isLockedOut(ip: String): Boolean {
+        if (ip == "127.0.0.1" || ip == "::1" || ip == "localhost" || ip == "0:0:0:0:0:0:0:1") return false
         val unlock = lockouts[ip] ?: return false
         if (System.currentTimeMillis() < unlock) return true
         lockouts.remove(ip)

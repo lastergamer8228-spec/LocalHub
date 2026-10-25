@@ -100,7 +100,37 @@ class NsdHelper(private val context: Context, private val logger: AppLogger) {
             registeredHostname = null
             logger.error("Nsd", "Could not set mDNS hostname via reflection: ${it.message}")
         }
+
+        runCatching {
+            val addrs = getLocalAddresses()
+            if (addrs.isNotEmpty()) {
+                if (android.os.Build.VERSION.SDK_INT >= 34) {
+                    info.setHostAddresses(addrs)
+                    logger.info("Nsd", "Host addresses set via API 34: $addrs")
+                } else {
+                    val m = NsdServiceInfo::class.java.getMethod("setHost", java.net.InetAddress::class.java)
+                    m.invoke(info, addrs.first())
+                    logger.info("Nsd", "Host address set via reflection: ${addrs.first()}")
+                }
+            }
+        }.onFailure {
+            logger.warn("Nsd", "Could not set host address on service info: ${it.message}")
+        }
     }
+
+    private fun getLocalAddresses(): List<java.net.InetAddress> = runCatching {
+        val list = mutableListOf<java.net.InetAddress>()
+        val interfaces = java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())
+        for (intf in interfaces) {
+            if (!intf.isUp || intf.isLoopback) continue
+            for (addr in java.util.Collections.list(intf.inetAddresses)) {
+                if (!addr.isLoopbackAddress && addr is java.net.Inet4Address) {
+                    list.add(addr)
+                }
+            }
+        }
+        list
+    }.getOrDefault(emptyList())
 
     companion object {
         /** Converts a friendly server name into a valid mDNS service label. */

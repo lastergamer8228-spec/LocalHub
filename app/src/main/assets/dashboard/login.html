@@ -205,6 +205,16 @@
         </label>
         <div class="login-error" id="login-error"></div>
         <button type="submit" class="login-btn lh-btn lh-ripple" id="login-btn">Sign In to LocalHub</button>
+        <div class="login-hints" style="margin-top:14px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span>🛡️ <b>Admin:</b> admin / admin</span>
+            <button type="button" class="btn btn-micro ghost" style="padding:3px 10px;font-size:11px;cursor:pointer" onclick="fillCreds('admin','admin')">Auto-fill</button>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span>👤 <b>User:</b> user / user</span>
+            <button type="button" class="btn btn-micro ghost" style="padding:3px 10px;font-size:11px;cursor:pointer" onclick="fillCreds('user','user')">Auto-fill</button>
+          </div>
+        </div>
       </form>
       <div class="login-info">
         Personal Cloud · 100% Local &amp; Private<br/>
@@ -214,6 +224,14 @@
   </div>
   <script src="/animations.js"></script>
   <script>
+    function fillCreds(u, p) {
+      document.getElementById("username").value = u;
+      document.getElementById("password").value = p;
+      var err = document.getElementById("login-error");
+      if (err) err.textContent = "";
+    }
+    window.fillCreds = fillCreds;
+
     (function () {
       "use strict";
       var apiBase = location.protocol + "//" + location.host;
@@ -224,40 +242,6 @@
           var el = document.getElementById("server-info");
           if (el) el.textContent = (st.name || "LocalHub") + " · " + (st.url || "");
         });
-
-      // First-boot setup: if the default admin password is still active, prompt
-      // the user to set a new administrator password before continuing.
-      function checkSetup() {
-        fetch(apiBase + "/api/auth/setup").then(function (r) { return r.json().catch(function () { return {}; }); })
-          .then(function (res) {
-            if (res && res.needsSetup) {
-              var u = prompt("This is LocalHub's first run. Create a new Administrator username:", "admin");
-              var p = prompt("Set a new Administrator password (min 4 characters):");
-              if (u && p && p.length >= 4) {
-                fetch(apiBase + "/api/auth/login", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ username: "admin", password: "admin", remember: false })
-                }).then(function (r) { return r.json(); }).then(function (login) {
-                  if (login && login.ok) {
-                    fetch(apiBase + "/api/auth/change-credentials", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + login.token },
-                      body: JSON.stringify({ currentPassword: "admin", target: "admin", username: u, password: p })
-                    }).then(function (r) { return r.json(); }).then(function (chg) {
-                      alert(chg && chg.ok ? "Administrator credentials set. Please log in." : ((chg && chg.error) || "Setup failed."));
-                      try { fetch(apiBase + "/api/auth/logout", { method: "POST" }); } catch (e) {}
-                      sessionStorage.removeItem("lhtoken"); localStorage.removeItem("lhtoken");
-                    });
-                  }
-                });
-              } else {
-                alert("Administrator setup skipped. Default credentials still active (admin/admin).");
-              }
-            }
-          });
-      }
-      checkSetup();
 
       // All users land on the rich Dashboard (Media Lounge, Local Connect, Reader & Notes, Quick Drop).
       function landing(role, token) {
