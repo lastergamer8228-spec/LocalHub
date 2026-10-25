@@ -205,16 +205,6 @@
         </label>
         <div class="login-error" id="login-error"></div>
         <button type="submit" class="login-btn lh-btn lh-ripple" id="login-btn">Sign In to LocalHub</button>
-        <div class="login-hints" style="margin-top:14px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span>🛡️ <b>Admin:</b> admin / admin</span>
-            <button type="button" class="btn btn-micro ghost" style="padding:3px 10px;font-size:11px;cursor:pointer" onclick="fillCreds('admin','admin')">Auto-fill</button>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span>👤 <b>User:</b> user / user</span>
-            <button type="button" class="btn btn-micro ghost" style="padding:3px 10px;font-size:11px;cursor:pointer" onclick="fillCreds('user','user')">Auto-fill</button>
-          </div>
-        </div>
       </form>
       <div class="login-info">
         Personal Cloud · 100% Local &amp; Private<br/>
@@ -224,14 +214,6 @@
   </div>
   <script src="/animations.js"></script>
   <script>
-    function fillCreds(u, p) {
-      document.getElementById("username").value = u;
-      document.getElementById("password").value = p;
-      var err = document.getElementById("login-error");
-      if (err) err.textContent = "";
-    }
-    window.fillCreds = fillCreds;
-
     (function () {
       "use strict";
       var apiBase = location.protocol + "//" + location.host;

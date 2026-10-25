@@ -1,13 +1,15 @@
 @echo off
-:: Checks and prompts for Administrator privileges if not already elevated
+setlocal EnableDelayedExpansion
+
+:: Check Administrator privileges
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo Requesting Administrator privileges...
-    powershell -NoProfile -Command "Start-Process '%~f0' -Verb RunAs"
+    echo [LocalHub] Administrator privileges required. Requesting elevation...
+    powershell -NoProfile -Command "Start-Process cmd -ArgumentList '/k \"\"%~f0\"\"' -Verb RunAs"
     exit /b
 )
 
-title LocalHub Hostname Setup for Windows
+title LocalHub Hostname Setup
 color 0b
 echo ========================================================
 echo         LocalHub PC Hostname Configuration
@@ -15,25 +17,28 @@ echo ========================================================
 echo.
 
 set TARGET_IP=192.168.0.101
-echo Using Phone IP: %TARGET_IP%
-echo.
+echo Mapping localhub.local and localhub to %TARGET_IP%...
 
-:: Remove any old localhub entries and add clean one
-powershell -NoProfile -Command "(Get-Content 'C:\Windows\System32\drivers\etc\hosts') | Where-Object { $_ -notmatch 'localhub' } | Set-Content 'C:\Windows\System32\drivers\etc\hosts'"
-powershell -NoProfile -Command "Add-Content -Path 'C:\Windows\System32\drivers\etc\hosts' -Value ('%TARGET_IP%`tlocalhub.local`tlocalhub')"
+:: Native append to Windows hosts file
+echo.>> C:\Windows\System32\drivers\etc\hosts
+echo %TARGET_IP% localhub.local localhub >> C:\Windows\System32\drivers\etc\hosts
 
-:: Flush DNS
+:: Flush Windows DNS Cache
+echo Flushing DNS cache...
 ipconfig /flushdns >nul 2>&1
 
 echo.
 echo ========================================================
-echo [SUCCESS] Windows hosts configured!
+echo [SUCCESS] Windows hosts file configured successfully!
 echo.
-echo You can now access LocalHub in Chrome/Edge via:
+echo Testing connection:
+ping -n 1 localhub.local
+echo.
+echo You can now open LocalHub in your browser using:
 echo   http://localhub.local:8080
 echo   http://localhub:8080
 echo ========================================================
 echo.
-
-timeout /t 5
+echo Press any key to open http://localhub.local:8080 in Chrome...
+pause >nul
 start http://localhub.local:8080

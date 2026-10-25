@@ -158,12 +158,10 @@ class ApiRouter(
         val webUser = runBlocking { preferencesManager.getWebUser() }
         val webPass = runBlocking { preferencesManager.getWebPass() }
 
-        // Verify against stored (hashed) credentials or default credentials
+        // Verify against stored (hashed) credentials.
         val role = when {
             sessionManager.constantEquals(username, adminUser) && sessionManager.verifyPassword(password, adminPass) -> "admin"
             sessionManager.constantEquals(username, webUser) && sessionManager.verifyPassword(password, webPass) -> "user"
-            (username.equals("admin", ignoreCase = true) && password == "admin") -> "admin"
-            (username.equals("user", ignoreCase = true) && password == "user") -> "user"
             else -> null
         }
 
