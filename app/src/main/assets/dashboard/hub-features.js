@@ -493,6 +493,7 @@
     var histHost = $("clip-history-list");
 
     function fetchClip() {
+      if (document.hidden) return;
       authFetch("/api/hub/clipboard")
         .then(function (r) { return r.json(); })
         .then(function (res) {
@@ -604,6 +605,7 @@
     if (nickDisplay) nickDisplay.textContent = currentNickname;
 
     function pollChat() {
+      if (document.hidden) return;
       authFetch("/api/hub/chat?since=" + lastChatTimestamp)
         .then(function (r) { return r.json(); })
         .then(function (res) {
@@ -694,7 +696,7 @@
           wallGrid.innerHTML = notes.map(function (note) {
             var colorClass = "note-" + (note.color || "yellow");
             var timeStr = note.time ? new Date(note.time).toLocaleDateString() : "";
-            return '<div class="sticky-note " ' + colorClass + ' ' + (note.pinned ? "note-pinned" : "") + '" data-id="' + note.id + '">' +
+            return '<div class="sticky-note ' + colorClass + ' ' + (note.pinned ? "note-pinned" : "") + '" data-id="' + note.id + '">' +
               '<div class="note-head">' +
                 '<span class="note-pin">' + (note.pinned ? "📌 " : "") + '<b>' + escapeHtml(note.title || "Note") + '</b></span>' +
                 '<button class="note-del-btn" title="Delete note">✕</button>' +
@@ -1010,12 +1012,16 @@
           executeQuery();
         }
       };
-      // Live search filter across media shelves
+      // Live search filter across media shelves (debounced to avoid layout thrashing)
+      var searchDebounceTimer = null;
       input.oninput = function () {
-        activeSearchQuery = input.value.trim();
-        renderMoviesShelf();
-        renderAudioLounge();
-        renderPhotosGallery();
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(function () {
+          activeSearchQuery = input.value.trim();
+          renderMoviesShelf();
+          renderAudioLounge();
+          renderPhotosGallery();
+        }, 140);
       };
     }
 

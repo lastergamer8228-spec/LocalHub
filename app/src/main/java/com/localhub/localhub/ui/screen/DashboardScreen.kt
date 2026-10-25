@@ -52,13 +52,14 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(), onManageServer:
     val clients by viewModel.clients.collectAsStateWithLifecycle()
     val logs by viewModel.logs.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val colors = LocalLocalHubColors.current
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("home-screen"),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
+        item(key = "hero-header", contentType = "hero") {
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
@@ -83,7 +84,6 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(), onManageServer:
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    val colors = LocalLocalHubColors.current
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = if (status.running) colors.success.copy(alpha = 0.15f)
@@ -102,8 +102,8 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(), onManageServer:
                 }
             }
         }
-        item { SectionHeader("Server") }
-        item {
+        item(key = "server-header", contentType = "header") { SectionHeader("Server") }
+        item(key = "server-status", contentType = "server") {
             ServerStatusCard(
                 status = status,
                 clientCount = clients.size,
@@ -111,61 +111,70 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(), onManageServer:
                 onManageServer = onManageServer
             )
         }
-        item { SectionHeader("System") }
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                systemInfo?.let { info ->
-                    val colors = LocalLocalHubColors.current
-                    StatCard(
-                        title = "CPU",
-                        value = if (info.cpu.available) "%.1f%%".format(info.cpu.usagePercent) else "Unavailable",
-                        subtitle = "${info.cpu.cores} cores • ${info.cpu.model}",
-                        progress = if (info.cpu.available) info.cpu.usagePercent / 100f else null,
-                        accent = colors.cpu,
-                        icon = Icons.Filled.DeveloperBoard
-                    )
-                    StatCard(
-                        title = "Memory",
-                        value = formatBytes(info.memory.usedBytes),
-                        subtitle = "of ${formatBytes(info.memory.totalBytes)}",
-                        progress = info.memory.usagePercent / 100f,
-                        accent = colors.memory,
-                        icon = Icons.Filled.Memory
-                    )
-                    StatCard(
-                        title = "Storage",
-                        value = formatBytes(info.storage.usedBytes),
-                        subtitle = "of ${formatBytes(info.storage.totalBytes)}",
-                        progress = info.storage.usagePercent / 100f,
-                        accent = colors.storage,
-                        icon = Icons.Filled.Storage
-                    )
-                    StatCard(
-                        title = "Battery",
-                        value = "${info.battery.level}%",
-                        subtitle = if (info.battery.isCharging) "Charging" else "Discharging",
-                        progress = info.battery.level / 100f,
-                        accent = colors.battery,
-                        icon = Icons.Filled.BatteryFull
-                    )
-                    StatCard(
-                        title = "Network",
-                        value = info.network.type,
-                        subtitle = "${info.network.ipAddress}${
-                            if (info.network.ssid.isNotBlank()) " • ${info.network.ssid}" else ""
-                        }",
-                        accent = colors.network,
-                        icon = Icons.Filled.Wifi
-                    )
-                } ?: Text(
-                    "Collecting system information…",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        item(key = "system-header", contentType = "header") { SectionHeader("System") }
+
+        systemInfo?.let { info ->
+            item(key = "stat-cpu", contentType = "stat") {
+                StatCard(
+                    title = "CPU",
+                    value = if (info.cpu.available) "%.1f%%".format(info.cpu.usagePercent) else "Unavailable",
+                    subtitle = "${info.cpu.cores} cores • ${info.cpu.model}",
+                    progress = if (info.cpu.available) info.cpu.usagePercent / 100f else null,
+                    accent = colors.cpu,
+                    icon = Icons.Filled.DeveloperBoard
                 )
             }
+            item(key = "stat-memory", contentType = "stat") {
+                StatCard(
+                    title = "Memory",
+                    value = formatBytes(info.memory.usedBytes),
+                    subtitle = "of ${formatBytes(info.memory.totalBytes)}",
+                    progress = info.memory.usagePercent / 100f,
+                    accent = colors.memory,
+                    icon = Icons.Filled.Memory
+                )
+            }
+            item(key = "stat-storage", contentType = "stat") {
+                StatCard(
+                    title = "Storage",
+                    value = formatBytes(info.storage.usedBytes),
+                    subtitle = "of ${formatBytes(info.storage.totalBytes)}",
+                    progress = info.storage.usagePercent / 100f,
+                    accent = colors.storage,
+                    icon = Icons.Filled.Storage
+                )
+            }
+            item(key = "stat-battery", contentType = "stat") {
+                StatCard(
+                    title = "Battery",
+                    value = "${info.battery.level}%",
+                    subtitle = if (info.battery.isCharging) "Charging" else "Discharging",
+                    progress = info.battery.level / 100f,
+                    accent = colors.battery,
+                    icon = Icons.Filled.BatteryFull
+                )
+            }
+            item(key = "stat-network", contentType = "stat") {
+                StatCard(
+                    title = "Network",
+                    value = info.network.type,
+                    subtitle = "${info.network.ipAddress}${
+                        if (info.network.ssid.isNotBlank()) " • ${info.network.ssid}" else ""
+                    }",
+                    accent = colors.network,
+                    icon = Icons.Filled.Wifi
+                )
+            }
+        } ?: item(key = "system-loading", contentType = "loading") {
+            Text(
+                "Collecting system information…",
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
         }
-        item { SectionHeader("Recent activity") }
+
+        item(key = "activity-header", contentType = "header") { SectionHeader("Recent activity") }
         if (logs.isEmpty()) {
-            item {
+            item(key = "activity-empty", contentType = "empty") {
                 Text(
                     "No activity captured in this app session yet. The Activity tab shows stored history.",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),

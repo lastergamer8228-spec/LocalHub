@@ -17,9 +17,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +43,12 @@ fun StatCard(
     accent: Color,
     icon: ImageVector? = null
 ) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = (progress ?: 0f).coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "statProgressAnim"
+    )
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -114,7 +124,7 @@ fun StatCard(
             if (progress != null) {
                 Spacer(Modifier.height(12.dp))
                 LinearProgressIndicator(
-                    progress = { progress.coerceIn(0f, 1f) },
+                    progress = { animatedProgress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(7.dp)

@@ -1868,3 +1868,52 @@ body.cinema {
   border-radius: var(--radius-sm);
   padding: 16px;
 }
+
+/* ============================================================================
+   UI & Rendering Performance Optimizations
+   ========================================================================= */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* GPU hardware acceleration for animated & floating layers */
+.media-card,
+.docked-audio-card,
+.lh-bottom-player,
+.lightbox-modal,
+.lh-toast,
+.sticky-note {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Off-screen list virtualization hint for long media shelves */
+.movies-shelf,
+.audio-playlist,
+.photos-grid,
+.docs-list,
+.wall-notes-grid {
+  content-visibility: auto;
+  contain-intrinsic-size: 140px;
+}
+
+/* Smooth touch momentum scrolling on mobile */
+.audio-playlist,
+.chat-messages-feed,
+.docs-list,
+.reader-viewport {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Safe area insets for notched mobile devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .lh-bottom-player {
+    bottom: max(14px, env(safe-area-inset-bottom));
+  }
+  .app-frame, .console-frame {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+

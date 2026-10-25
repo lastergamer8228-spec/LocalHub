@@ -49,16 +49,18 @@ fun ServerStatusCard(
     val clipboardManager = LocalClipboardManager.current
     val haptics = LocalHapticFeedback.current
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pulseTransition")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.95f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1400, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
+    val pulseAlpha = if (status.running) {
+        val infiniteTransition = rememberInfiniteTransition(label = "pulseTransition")
+        infiniteTransition.animateFloat(
+            initialValue = 0.35f,
+            targetValue = 0.95f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1400, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulseAlpha"
+        ).value
+    } else 0f
 
     Card(
         modifier = Modifier.fillMaxWidth(),
