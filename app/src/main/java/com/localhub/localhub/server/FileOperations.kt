@@ -298,6 +298,7 @@ class FileOperations(private val rootPath: String = "/storage/emulated/0") {
                 freed += f.length(); f.delete(); count++
             }
         }
+        invalidateCatalogCache()
         mapOf("ok" to true, "deleted" to count, "freedBytes" to freed)
     }.getOrElse { mapOf("ok" to false, "error" to (it.message ?: "clear cache failed")) }
 
@@ -332,6 +333,15 @@ class FileOperations(private val rootPath: String = "/storage/emulated/0") {
     companion object {
         /** Optional upload size cap (bytes). 512 MB. */
         const val MAX_UPLOAD_BYTES = 512L * 1024 * 1024
+
+        @Volatile private var cachedCatalog: Map<String, Any>? = null
+        @Volatile private var cachedCatalogTime: Long = 0L
+        private const val CATALOG_CACHE_TTL_MS = 25_000L
+
+        fun invalidateCatalogCache() {
+            cachedCatalog = null
+            cachedCatalogTime = 0L
+        }
     }
 
     // ---- Analysis helpers --------------------------------------------------
@@ -434,8 +444,15 @@ class FileOperations(private val rootPath: String = "/storage/emulated/0") {
     /**
      * Fast media catalog scan across standard public storage folders.
      * Groups files into videos, audio, photos, and documents for the Media Lounge.
+     * Caches in memory with a 25-second TTL to avoid redundant flash storage reads.
      */
     fun mediaCatalog(limitPerCategory: Int = 40): Map<String, Any> {
+        val now = System.currentTimeMillis()
+        val cached = cachedCatalog
+        if (cached != null && (now - cachedCatalogTime) < CATALOG_CACHE_TTL_MS) {
+            return cached
+        }
+
         val root = File(rootPath)
         val videos = mutableListOf<Map<String, Any>>()
         val audio = mutableListOf<Map<String, Any>>()
@@ -480,13 +497,16 @@ class FileOperations(private val rootPath: String = "/storage/emulated/0") {
             }
             walk(dir, 0)
         }
-        return mapOf(
+        val res = mapOf(
             "ok" to true,
             "videos" to videos.sortedByDescending { (it["modified"] as? Long) ?: 0L },
             "audio" to audio.sortedByDescending { (it["modified"] as? Long) ?: 0L },
             "photos" to photos.sortedByDescending { (it["modified"] as? Long) ?: 0L },
             "documents" to docs.sortedByDescending { (it["modified"] as? Long) ?: 0L }
         )
+        cachedCatalog = res
+        cachedCatalogTime = now
+        return res
     }
 
     private fun extensionOf(name: String): String {

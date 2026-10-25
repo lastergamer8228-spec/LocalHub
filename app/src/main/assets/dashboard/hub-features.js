@@ -1,9 +1,9 @@
 /**
- * LocalHub Pro Features Suite (v2.0)
+ * LocalHub Pro Features Suite (v2.1 Polish Edition)
  * ----------------------------------------------------------------------------
- * 1. 🍿 Media Lounge (Movies Cinema stream, Docked Audio Player, Photo Gallery & Slideshow)
- * 2. 💬 Local Connect (Universal Shared Clipboard, Zero-Data LAN Chat Room, Sticky Notice Wall)
- * 3. 📖 Reader & Notes (In-Browser Document & PDF Viewer, TTS Read Aloud Audiobook, Scratchpad)
+ * 1. 🍿 Media Lounge (Movies Cinema stream, Docked & Persistent Audio Player, Photo Gallery, Touch Lightbox & Slideshow)
+ * 2. 💬 Local Connect (Universal Shared Clipboard with Haptics, Zero-Data LAN Chat Room with Audio Chime, Sticky Notice Wall)
+ * 3. 📖 Reader & Notes (In-Browser Document & PDF Viewer, Multi-Theme Reading, Speed-Adjustable TTS Audiobook, Scratchpad)
  * 4. 🧠 Quick AI Assistant & Voice Navigator
  */
 (function () {
@@ -61,10 +61,32 @@
     }, 3200);
   }
 
+  // Soft Web Audio API notification chime (no external audio files needed)
+  function playSoftChime() {
+    try {
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      var ctx = new AudioCtx();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(520, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.16);
+    } catch (e) {}
+  }
+
   // --------------------------------------------------------------------------
   // 1. 🍿 MEDIA LOUNGE (Movies, Music Lounge, Photo Gallery)
   // --------------------------------------------------------------------------
   var mediaCatalog = { videos: [], audio: [], photos: [], documents: [] };
+  var activeCategory = "all";
+  var activeSearchQuery = "";
   var currentPlaylist = [];
   var currentTrackIdx = -1;
   var audioPlayer = null;
@@ -73,21 +95,15 @@
   var activePhotoIdx = 0;
 
   function loadMediaCatalog() {
-    var statusEl = $("lounge-status");
-    if (statusEl) statusEl.textContent = "Scanning media library…";
     authFetch("/api/hub/media-catalog")
       .then(function (r) { return r.json(); })
       .then(function (res) {
         if (!res || !res.ok) throw new Error("Catalog unavailable");
         mediaCatalog = res;
+        updateCatalogCounts();
         renderMediaLounge();
-        if (statusEl) statusEl.textContent = "Library up to date (" +
-          ((res.videos || []).length) + " videos, " +
-          ((res.audio || []).length) + " tracks, " +
-          ((res.photos || []).length) + " photos)";
       })
       .catch(function () {
-        // Fallback: search root for common media
         fallbackMediaCatalog();
       });
   }
@@ -103,8 +119,43 @@
           photos: files.filter(function (f) { return (f.category === "image" || /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name)); }),
           documents: files.filter(function (f) { return (f.category === "document" || /\.(pdf|txt|md|json|log)$/i.test(f.name)); })
         };
+        updateCatalogCounts();
         renderMediaLounge();
       }).catch(function () {});
+  }
+
+  function updateCatalogCounts() {
+    var vCount = (mediaCatalog.videos || []).length;
+    var aCount = (mediaCatalog.audio || []).length;
+    var pCount = (mediaCatalog.photos || []).length;
+    var dCount = (mediaCatalog.documents || []).length;
+    if ($("count-videos")) $("count-videos").textContent = vCount;
+    if ($("count-audio")) $("count-audio").textContent = aCount;
+    if ($("count-photos")) $("count-photos").textContent = pCount;
+    if ($("count-docs")) $("count-docs").textContent = dCount;
+  }
+
+  function wireCategoryFilters() {
+    document.querySelectorAll(".lf-cat").forEach(function (btn) {
+      btn.onclick = function () {
+        document.querySelectorAll(".lf-cat").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        activeCategory = btn.getAttribute("data-cat") || "all";
+        applyCategoryVisibility();
+      };
+    });
+  }
+
+  function applyCategoryVisibility() {
+    var sVideos = $("shelf-section-videos");
+    var sAudio = $("shelf-section-audio");
+    var sPhotos = $("shelf-section-photos");
+    if (sVideos) sVideos.style.display = (activeCategory === "all" || activeCategory === "videos") ? "" : "none";
+    if (sAudio) sAudio.style.display = (activeCategory === "all" || activeCategory === "audio") ? "" : "none";
+    if (sPhotos) sPhotos.style.display = (activeCategory === "all" || activeCategory === "photos") ? "" : "none";
+    if (activeCategory === "docs" && window.lhSetTab) {
+      window.lhSetTab("reader");
+    }
   }
 
   function renderMediaLounge() {
@@ -118,13 +169,16 @@
     var host = $("movies-shelf");
     if (!host) return;
     var list = mediaCatalog.videos || [];
+    if (activeSearchQuery) {
+      var q = activeSearchQuery.toLowerCase();
+      list = list.filter(function (m) { return m.name.toLowerCase().indexOf(q) >= 0; });
+    }
     if (!list.length) {
-      host.innerHTML = '<div class="empty-hint">🎬 No video files detected yet. Upload videos via Quick Drop or place them in Movies / Download folder!</div>';
+      host.innerHTML = '<div class="empty-hint">🎬 No video files found. Drop videos wirelessly via Quick Drop or save them in Movies folder!</div>';
       return;
     }
     host.innerHTML = list.slice(0, 24).map(function (m) {
-      var name = m.name;
-      var cleanTitle = name.replace(/\.[^/.]+$/, "").replace(/[._-]/g, " ");
+      var cleanTitle = m.name.replace(/\.[^/.]+$/, "").replace(/[._-]/g, " ");
       var pathEnc = encodeURIComponent(m.path);
       return '<div class="media-card">' +
         '<div class="media-poster-box">' +
@@ -135,11 +189,11 @@
           '<span class="media-badge">' + (m.ext || "video").toUpperCase() + '</span>' +
         '</div>' +
         '<div class="media-info">' +
-          '<div class="media-title" title="' + escapeHtml(name) + '">' + escapeHtml(cleanTitle) + '</div>' +
+          '<div class="media-title" title="' + escapeHtml(m.name) + '">' + escapeHtml(cleanTitle) + '</div>' +
           '<div class="media-meta">' + fmtBytes(m.size) + '</div>' +
           '<div class="media-card-actions">' +
             '<a class="btn-micro" href="/player?file=' + pathEnc + '">▶ Play</a>' +
-            '<a class="btn-micro ghost" href="/api/fs/download?path=' + pathEnc + '" download>⬇ Download</a>' +
+            '<a class="btn-micro ghost" href="/api/fs/download?path=' + pathEnc + '" download>⬇ Save</a>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -150,14 +204,19 @@
     var host = $("audio-playlist");
     if (!host) return;
     currentPlaylist = mediaCatalog.audio || [];
+    if (activeSearchQuery) {
+      var q = activeSearchQuery.toLowerCase();
+      currentPlaylist = currentPlaylist.filter(function (t) { return t.name.toLowerCase().indexOf(q) >= 0; });
+    }
     if (!currentPlaylist.length) {
-      host.innerHTML = '<div class="empty-hint">🎵 No audio tracks found yet. Add songs to your Music or Download folder!</div>';
+      host.innerHTML = '<div class="empty-hint">🎵 No audio tracks found yet. Add music to your Music folder!</div>';
       return;
     }
     host.innerHTML = currentPlaylist.slice(0, 30).map(function (track, idx) {
       var cleanTitle = track.name.replace(/\.[^/.]+$/, "").replace(/[._-]/g, " ");
-      return '<div class="audio-track-row ' + (currentTrackIdx === idx ? 'playing' : '') + '" data-idx="' + idx + '">' +
-        '<button class="track-play-btn" type="button">' + (currentTrackIdx === idx ? '⏸' : '▶') + '</button>' +
+      var isPlaying = (currentTrackIdx === idx);
+      return '<div class="audio-track-row ' + (isPlaying ? 'playing' : '') + '" data-idx="' + idx + '">' +
+        '<button class="track-play-btn" type="button">' + (isPlaying ? '⏸' : '▶') + '</button>' +
         '<div class="track-details">' +
           '<div class="track-name">' + escapeHtml(cleanTitle) + '</div>' +
           '<div class="track-sub">' + fmtBytes(track.size) + '</div>' +
@@ -166,7 +225,6 @@
       '</div>';
     }).join("");
 
-    // Wire clicks
     host.querySelectorAll(".audio-track-row").forEach(function (row) {
       row.onclick = function (e) {
         if (e.target.tagName === "A") return;
@@ -186,33 +244,47 @@
     var bar = $("audio-progress-bar");
     var timeTxt = $("audio-time-txt");
 
-    if (btnPlay) {
-      btnPlay.onclick = function () {
-        if (!audioPlayer.src) {
-          if (currentPlaylist.length) playTrackAt(0);
-          return;
-        }
-        if (audioPlayer.paused) {
-          audioPlayer.play();
-          btnPlay.textContent = "⏸";
-        } else {
-          audioPlayer.pause();
-          btnPlay.textContent = "▶";
-        }
-      };
+    // Mini bottom player elements
+    var miniPlayer = $("lh-bottom-player");
+    var miniPlayBtn = $("mini-player-play");
+    var miniNextBtn = $("mini-player-next");
+    var miniPrevBtn = $("mini-player-prev");
+    var miniCloseBtn = $("mini-player-close");
+
+    function togglePlay() {
+      if (!audioPlayer.src) {
+        if (currentPlaylist.length) playTrackAt(0);
+        return;
+      }
+      if (audioPlayer.paused) {
+        audioPlayer.play();
+        syncPlayState(true);
+      } else {
+        audioPlayer.pause();
+        syncPlayState(false);
+      }
     }
-    if (btnNext) {
-      btnNext.onclick = function () {
-        if (!currentPlaylist.length) return;
-        var next = (currentTrackIdx + 1) % currentPlaylist.length;
-        playTrackAt(next);
-      };
+
+    function syncPlayState(isPlaying) {
+      var sym = isPlaying ? "⏸" : "▶";
+      if (btnPlay) btnPlay.textContent = sym;
+      if (miniPlayBtn) miniPlayBtn.textContent = sym;
     }
-    if (btnPrev) {
-      btnPrev.onclick = function () {
-        if (!currentPlaylist.length) return;
-        var prev = (currentTrackIdx - 1 + currentPlaylist.length) % currentPlaylist.length;
-        playTrackAt(prev);
+
+    if (btnPlay) btnPlay.onclick = togglePlay;
+    if (miniPlayBtn) miniPlayBtn.onclick = togglePlay;
+
+    if (btnNext) btnNext.onclick = function () { playRelativeTrack(1); };
+    if (miniNextBtn) miniNextBtn.onclick = function () { playRelativeTrack(1); };
+    if (btnPrev) btnPrev.onclick = function () { playRelativeTrack(-1); };
+    if (miniPrevBtn) miniPrevBtn.onclick = function () { playRelativeTrack(-1); };
+
+    if (miniCloseBtn && miniPlayer) {
+      miniCloseBtn.onclick = function (e) {
+        e.stopPropagation();
+        audioPlayer.pause();
+        syncPlayState(false);
+        miniPlayer.style.display = "none";
       };
     }
 
@@ -221,17 +293,12 @@
       var pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
       if (bar) bar.style.width = pct + "%";
       if (timeTxt) {
-        var cur = formatTime(audioPlayer.currentTime);
-        var dur = formatTime(audioPlayer.duration);
-        timeTxt.textContent = cur + " / " + dur;
+        timeTxt.textContent = formatTime(audioPlayer.currentTime) + " / " + formatTime(audioPlayer.duration);
       }
     };
 
     audioPlayer.onended = function () {
-      if (currentPlaylist.length) {
-        var next = (currentTrackIdx + 1) % currentPlaylist.length;
-        playTrackAt(next);
-      }
+      playRelativeTrack(1);
     };
 
     var seekTrack = $("audio-progress-track");
@@ -246,6 +313,12 @@
     }
   }
 
+  function playRelativeTrack(delta) {
+    if (!currentPlaylist.length) return;
+    var next = (currentTrackIdx + delta + currentPlaylist.length) % currentPlaylist.length;
+    playTrackAt(next);
+  }
+
   function playTrackAt(idx) {
     if (!audioPlayer || idx < 0 || idx >= currentPlaylist.length) return;
     currentTrackIdx = idx;
@@ -253,11 +326,23 @@
     audioPlayer.src = "/api/fs/content?path=" + encodeURIComponent(track.path);
     audioPlayer.play().catch(function () {});
 
+    var cleanTitle = track.name.replace(/\.[^/.]+$/, "").replace(/[._-]/g, " ");
+
     var btnPlay = $("audio-btn-play");
     if (btnPlay) btnPlay.textContent = "⏸";
 
     var titleEl = $("docked-track-title");
-    if (titleEl) titleEl.textContent = track.name.replace(/\.[^/.]+$/, "").replace(/[._-]/g, " ");
+    if (titleEl) titleEl.textContent = cleanTitle;
+
+    // Show persistent bottom mini player
+    var miniPlayer = $("lh-bottom-player");
+    var miniTitle = $("mini-player-title");
+    var miniPlayBtn = $("mini-player-play");
+    if (miniPlayer) {
+      miniPlayer.style.display = "flex";
+      if (miniTitle) miniTitle.textContent = cleanTitle;
+      if (miniPlayBtn) miniPlayBtn.textContent = "⏸";
+    }
 
     renderAudioLounge();
     showToast("▶ Playing: " + track.name, true);
@@ -274,8 +359,12 @@
     var host = $("photos-grid");
     if (!host) return;
     activePhotoList = mediaCatalog.photos || [];
+    if (activeSearchQuery) {
+      var q = activeSearchQuery.toLowerCase();
+      activePhotoList = activePhotoList.filter(function (p) { return p.name.toLowerCase().indexOf(q) >= 0; });
+    }
     if (!activePhotoList.length) {
-      host.innerHTML = '<div class="empty-hint">📸 No photos found yet. Place photos in DCIM / Pictures / Download!</div>';
+      host.innerHTML = '<div class="empty-hint">📸 No photos found yet. Place photos in DCIM or Pictures folder!</div>';
       return;
     }
     host.innerHTML = activePhotoList.slice(0, 48).map(function (photo, idx) {
@@ -300,11 +389,13 @@
     var modal = $("lightbox-modal");
     var img = $("lightbox-img");
     var caption = $("lightbox-caption");
+    var dl = $("lightbox-dl");
     if (!modal || !img) return;
 
     var photo = activePhotoList[idx];
     img.src = "/api/fs/content?path=" + encodeURIComponent(photo.path);
     if (caption) caption.textContent = (idx + 1) + " / " + activePhotoList.length + " — " + photo.name;
+    if (dl) dl.href = "/api/fs/download?path=" + encodeURIComponent(photo.path);
     modal.classList.add("active");
   }
 
@@ -363,6 +454,19 @@
     };
     if (ssBtn) ssBtn.onclick = toggleSlideshow;
 
+    // Mobile touch swipe gestures
+    var touchStartX = 0;
+    modal.addEventListener("touchstart", function (e) {
+      if (e.touches && e.touches.length) touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    modal.addEventListener("touchend", function (e) {
+      if (!e.changedTouches || !e.changedTouches.length) return;
+      var diffX = e.changedTouches[0].clientX - touchStartX;
+      if (diffX > 50 && prevBtn) prevBtn.click();
+      else if (diffX < -50 && nextBtn) nextBtn.click();
+    }, { passive: true });
+
     modal.onclick = function (e) {
       if (e.target === modal) closeLightbox();
     };
@@ -400,12 +504,13 @@
           var metaEl = $("clip-live-meta");
           if (metaEl) {
             var timeAgo = res.updatedAt ? new Date(res.updatedAt).toLocaleTimeString() : "";
-            metaEl.textContent = "Synced at " + timeAgo + " by " + (res.author || "User");
+            var charCount = (res.text || "").length;
+            metaEl.textContent = "Synced at " + timeAgo + " by " + (res.author || "User") + " · " + charCount + " chars";
           }
           if (histHost && res.history) {
             histHost.innerHTML = res.history.map(function (item) {
               return '<button class="clip-history-chip" type="button" title="' + escapeHtml(item.text) + '">' +
-                '<span class="chip-text">' + escapeHtml(item.text.slice(0, 40)) + (item.text.length > 40 ? "…" : "") + '</span>' +
+                '<span class="chip-text">' + escapeHtml(item.text.slice(0, 42)) + (item.text.length > 42 ? "…" : "") + '</span>' +
               '</button>';
             }).join("");
             histHost.querySelectorAll(".clip-history-chip").forEach(function (btn, i) {
@@ -437,8 +542,11 @@
       copyBtn.onclick = function () {
         var raw = (txtEl && txtEl.getAttribute("data-raw")) || (txtEl ? txtEl.textContent : "");
         if (!raw) return;
+        if (navigator.vibrate) navigator.vibrate([25, 15, 25]);
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(raw).then(function () {
+            copyBtn.textContent = "✓ Copied!";
+            setTimeout(function () { copyBtn.textContent = "📋 Copy to My Device"; }, 2000);
             showToast("✓ Copied to your device clipboard!", true);
           }).catch(function () {
             fallbackCopy(raw);
@@ -463,9 +571,7 @@
       document.body.removeChild(ta);
     }
 
-    if (sendBtn) {
-      sendBtn.onclick = function () { sendClipboard(); };
-    }
+    if (sendBtn) sendBtn.onclick = function () { sendClipboard(); };
     if (inputEl) {
       inputEl.onkeydown = function (e) {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -504,11 +610,14 @@
           if (!res || !res.ok || !res.messages) return;
           var newMsgs = res.messages;
           if (newMsgs.length) {
+            var hasOther = false;
             newMsgs.forEach(function (m) {
               if (m.time > lastChatTimestamp) lastChatTimestamp = m.time;
+              if (m.author !== currentNickname) hasOther = true;
               appendChatMessage(m);
             });
             if (feed) feed.scrollTop = feed.scrollHeight;
+            if (hasOther) playSoftChime();
           }
         }).catch(function () {});
     }
@@ -544,9 +653,7 @@
       }).catch(function () {});
     }
 
-    if (btnSend) {
-      btnSend.onclick = function () { sendMessage(); };
-    }
+    if (btnSend) btnSend.onclick = function () { sendMessage(); };
     if (input) {
       input.onkeydown = function (e) {
         if (e.key === "Enter") {
@@ -587,7 +694,7 @@
           wallGrid.innerHTML = notes.map(function (note) {
             var colorClass = "note-" + (note.color || "yellow");
             var timeStr = note.time ? new Date(note.time).toLocaleDateString() : "";
-            return '<div class="sticky-note ' + colorClass + ' ' + (note.pinned ? "note-pinned" : "") + '" data-id="' + note.id + '">' +
+            return '<div class="sticky-note " ' + colorClass + ' ' + (note.pinned ? "note-pinned" : "") + '" data-id="' + note.id + '">' +
               '<div class="note-head">' +
                 '<span class="note-pin">' + (note.pinned ? "📌 " : "") + '<b>' + escapeHtml(note.title || "Note") + '</b></span>' +
                 '<button class="note-del-btn" title="Delete note">✕</button>' +
@@ -659,6 +766,8 @@
   var currentReaderPath = "";
   var currentReaderText = "";
   var readerAudioTag = null;
+  var readerThemeIdx = 0;
+  var readerThemes = ["theme-dark", "theme-sepia", "theme-light"];
 
   function renderDocumentsLibrary() {
     var host = $("reader-doc-list");
@@ -719,7 +828,10 @@
           return;
         }
         currentReaderText = res.content;
-        bodyEl.innerHTML = '<pre class="reader-text-content">' + escapeHtml(res.content) + '</pre>';
+        var words = (res.content || "").trim().split(/\s+/).length;
+        var estMin = Math.max(1, Math.ceil(words / 200));
+        bodyEl.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">' + words + ' words · ~' + estMin + ' min read</div>' +
+          '<pre class="reader-text-content ' + readerThemes[readerThemeIdx] + '">' + escapeHtml(res.content) + '</pre>';
       }).catch(function () {
         bodyEl.innerHTML = '<div class="empty-hint">Failed to load document content.</div>';
       });
@@ -731,6 +843,8 @@
     var closeBtn = $("reader-btn-close");
     var zoomIn = $("reader-zoom-in");
     var zoomOut = $("reader-zoom-out");
+    var themeToggle = $("reader-theme-toggle");
+    var speedSelect = $("reader-speed-select");
     var bodyEl = $("reader-doc-body");
     var currentFontSize = 14;
 
@@ -755,6 +869,18 @@
       };
     }
 
+    if (themeToggle) {
+      themeToggle.onclick = function () {
+        readerThemeIdx = (readerThemeIdx + 1) % readerThemes.length;
+        var pre = bodyEl ? bodyEl.querySelector(".reader-text-content") : null;
+        if (pre) {
+          readerThemes.forEach(function (c) { pre.classList.remove(c); });
+          pre.classList.add(readerThemes[readerThemeIdx]);
+        }
+        showToast("Theme: " + readerThemes[readerThemeIdx].replace("theme-", "").toUpperCase(), true);
+      };
+    }
+
     if (ttsBtn) {
       ttsBtn.onclick = function () {
         if (!currentReaderText || !currentReaderText.trim()) {
@@ -762,8 +888,9 @@
           return;
         }
         var snippet = currentReaderText.slice(0, 3000);
+        var speed = speedSelect ? parseFloat(speedSelect.value) || 1.0 : 1.0;
         ttsBtn.textContent = "🔊 Generating speech…";
-        postJson("/api/tts/synthesize", { text: snippet, speed: 1.0, lang: "en-US" })
+        postJson("/api/tts/synthesize", { text: snippet, speed: speed, lang: "en-US" })
           .then(function (res) {
             ttsBtn.textContent = "🔊 Read Aloud (TTS)";
             if (res && res.ok && res.url) {
@@ -883,6 +1010,13 @@
           executeQuery();
         }
       };
+      // Live search filter across media shelves
+      input.oninput = function () {
+        activeSearchQuery = input.value.trim();
+        renderMoviesShelf();
+        renderAudioLounge();
+        renderPhotosGallery();
+      };
     }
 
     // Voice recognition
@@ -931,6 +1065,7 @@
   // --------------------------------------------------------------------------
   document.addEventListener("DOMContentLoaded", function () {
     loadMediaCatalog();
+    wireCategoryFilters();
     initAudioPlayer();
     wireLightboxControls();
     initUniversalClipboard();

@@ -67,8 +67,17 @@
         <div id="ai-quick-result" style="display:none"></div>
       </section>
 
+      <!-- Media Category Filter Pills -->
+      <div class="logtoolbar lounge-filter-bar" id="lounge-filter-bar" style="margin:4px 0 2px">
+        <button class="chip active lf-cat" data-cat="all">All Media</button>
+        <button class="chip lf-cat" data-cat="videos">🎬 Movies &amp; Videos (<span id="count-videos">0</span>)</button>
+        <button class="chip lf-cat" data-cat="audio">🎵 Music &amp; Audio (<span id="count-audio">0</span>)</button>
+        <button class="chip lf-cat" data-cat="photos">📸 Photos (<span id="count-photos">0</span>)</button>
+        <button class="chip lf-cat" data-cat="docs">📚 Documents (<span id="count-docs">0</span>)</button>
+      </div>
+
       <!-- 1. Movies & Video Cinema Shelf -->
-      <section class="card">
+      <section class="card" id="shelf-section-videos">
         <h2>🎬 Movies &amp; Video Cinema <span class="spacer"></span><a class="hint" href="/player">Full Screen Player ➔</a></h2>
         <div class="media-grid" id="movies-shelf" style="margin-top:10px">
           <div class="loading"><div class="spinner"></div>Scanning video library&hellip;</div>
@@ -76,7 +85,7 @@
       </section>
 
       <!-- 2. Music & Audio Lounge -->
-      <section class="card">
+      <section class="card" id="shelf-section-audio">
         <h2>🎵 Music &amp; Audio Lounge <span class="spacer"></span><span class="hint">Background audio playback</span></h2>
         <!-- Docked audio player card -->
         <div class="audio-dock" style="margin-top:10px">
@@ -104,7 +113,7 @@
       </section>
 
       <!-- 3. Photo Memories Gallery -->
-      <section class="card">
+      <section class="card" id="shelf-section-photos">
         <h2>📸 Photo Memories Gallery <span class="spacer"></span><button class="btn btn-micro ghost" id="btn-slideshow-toggle" type="button">▶ Start Slideshow</button></h2>
         <div class="photos-grid" id="photos-grid" style="margin-top:10px">
           <div class="loading"><div class="spinner"></div>Loading photo memories&hellip;</div>
@@ -203,7 +212,14 @@
         <section class="reader-viewer-card" id="reader-viewer-pane" style="display:none">
           <div class="reader-toolbar">
             <b id="reader-doc-title" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Document Viewer</b>
-            <div class="row" style="gap:6px;align-items:center">
+            <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap">
+              <select id="reader-speed-select" class="chip" style="height:26px;padding:0 6px" title="TTS Speed">
+                <option value="0.85">0.85x</option>
+                <option value="1.0" selected>1.0x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+              </select>
+              <button class="btn btn-micro ghost" id="reader-theme-toggle" type="button" title="Toggle Sepia / Dark / Light theme">🎨 Theme</button>
               <button class="btn btn-micro ghost" id="reader-zoom-out" type="button" title="Smaller font">A-</button>
               <button class="btn btn-micro ghost" id="reader-zoom-in" type="button" title="Larger font">A+</button>
               <button class="btn btn-micro" id="reader-btn-tts" type="button">🔊 Read Aloud (TTS)</button>
@@ -456,6 +472,24 @@
     <button class="lightbox-nav-btn next" id="lightbox-next" type="button" title="Next photo (Right arrow)">›</button>
     <div class="lightbox-toolbar">
       <span class="lightbox-caption" id="lightbox-caption"></span>
+      <a class="btn btn-micro ghost" id="lightbox-dl" href="#" download title="Download photo">⬇ Save</a>
+    </div>
+  </div>
+
+  <!-- Persistent Bottom Floating Mini Player -->
+  <div class="lh-bottom-player" id="lh-bottom-player" style="display:none">
+    <div class="mini-player-content" onclick="lhSetTab('lounge')">
+      <span class="mini-player-icon">🎵</span>
+      <div class="mini-player-text">
+        <b id="mini-player-title">Track Name</b>
+        <span id="mini-player-sub">Tap to open player</span>
+      </div>
+    </div>
+    <div class="mini-player-actions">
+      <button class="mini-player-btn" id="mini-player-prev" type="button" title="Previous track">⏮</button>
+      <button class="mini-player-btn play" id="mini-player-play" type="button" title="Play / Pause">⏸</button>
+      <button class="mini-player-btn" id="mini-player-next" type="button" title="Next track">⏭</button>
+      <button class="mini-player-btn close" id="mini-player-close" type="button" title="Dismiss player">✕</button>
     </div>
   </div>
 

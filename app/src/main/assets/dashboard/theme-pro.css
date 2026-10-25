@@ -1766,3 +1766,105 @@ body.cinema {
   border-color: var(--accent);
   color: var(--text);
 }
+
+/* Persistent Bottom Mini Player */
+.lh-bottom-player {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 560px);
+  background: rgba(19, 26, 35, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--accent);
+  border-radius: 30px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75);
+  z-index: 9998;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(40px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+.mini-player-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.mini-player-icon {
+  font-size: 20px;
+}
+.mini-player-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mini-player-text b {
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mini-player-text span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.mini-player-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mini-player-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.mini-player-btn.play {
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+}
+.mini-player-btn.close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+}
+.mini-player-btn.close:hover {
+  color: var(--danger);
+}
+
+/* Reader Reading Themes */
+.reader-text-content.theme-sepia {
+  background: #fcf6e5 !important;
+  color: #382717 !important;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+.reader-text-content.theme-light {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
