@@ -76,8 +76,8 @@ fun ServerStatusCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Header Row: Pulsing Indicator + Status text + Protocol badge
             Row(
@@ -148,8 +148,8 @@ fun ServerStatusCard(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
