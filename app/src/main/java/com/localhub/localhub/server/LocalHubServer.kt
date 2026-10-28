@@ -102,7 +102,7 @@ class LocalHubServer(
                 applyTls()
             }
 
-            start(30_000, false)
+            start(60_000, false)
 
             activeProtocol = if (httpsEnabled) "https" else "http"
             ServerClock.markStart()

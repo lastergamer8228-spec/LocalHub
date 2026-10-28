@@ -966,7 +966,7 @@ class ApiRouter(
         val overwrite = session.parms?.get("overwrite") != "false"
         val contentLength = session.headers?.get("content-length")?.trim()?.toLongOrNull()
             ?: session.headers?.get("Content-Length")?.trim()?.toLongOrNull()
-        val tempDir = java.io.File(context.cacheDir, "uploads")
+        val tempDir = resolveUploadTempDir(dir, context)
         val contentType = session.headers?.get("content-type")
             ?: session.headers?.get("Content-Type") ?: ""
         val boundary = Regex("boundary=(.+)$").find(contentType)?.groupValues?.get(1)?.trim('"', ' ')
@@ -987,6 +987,16 @@ class ApiRouter(
         val results = body["results"] as? List<Map<String, Any>> ?: return 0L
         return results.sumOf { (it["size"] as? Number)?.toLong() ?: 0L }
     }
+
+    /**
+     * Resolves the staging folder for file uploads. Staging inside the destination directory
+     * enables atomic same-filesystem renames instead of expensive multi-GB cross-volume copies.
+     */
+    private fun resolveUploadTempDir(destDir: java.io.File, context: android.content.Context): java.io.File = runCatching {
+        val staging = java.io.File(destDir, ".lh_upload_tmp")
+        if ((staging.exists() || staging.mkdirs()) && staging.canWrite()) staging
+        else java.io.File(context.cacheDir, "uploads")
+    }.getOrDefault(java.io.File(context.cacheDir, "uploads"))
 
     /** Maps an upload outcome to a real HTTP status instead of always 200. */
     private fun jsonWithStatus(httpStatus: Int, body: Map<String, Any>): Response {

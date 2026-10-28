@@ -75,10 +75,17 @@ class UploadStreamerTest {
     @Test fun rejectsOversizeUploadsWithoutBufferingThem() {
         val body = ByteArray(0)
         val result = UploadStreamer.saveRaw(
-            ByteArrayInputStream(body), 900L * 1024 * 1024, dest, "big.mkv", true, temp
+            ByteArrayInputStream(body), 900L * 1024 * 1024, dest, "big.mkv", true, temp, maxBytes = 500L * 1024 * 1024
         )
         assertEquals(413, result.httpStatus)
         assertFalse(File(dest, "big.mkv").exists())
+    }
+
+    @Test fun permitsLargeMultiGigabyteUploadsWithinStorageBounds() {
+        val result = UploadStreamer.saveRaw(
+            ByteArrayInputStream(ByteArray(0)), 4L * 1024 * 1024 * 1024L, dest, "movie.mkv", true, temp
+        )
+        assertNotEquals("4 GB must not trigger 413 Payload Too Large", 413, result.httpStatus)
     }
 
     @Test fun missingContentLengthIsRejectedInsteadOfWritingAnEmptyFile() {

@@ -16,8 +16,9 @@ import java.nio.charset.StandardCharsets
  * Android-free so the streaming/parsing rules are unit-testable on the JVM.
  */
 object UploadStreamer {
-    const val MAX_UPLOAD_BYTES = 512L * 1024 * 1024
-    private const val BUFFER_SIZE = 64 * 1024
+    const val MAX_UPLOAD_BYTES = 500L * 1024 * 1024 * 1024L // 500 GB limit; practically bounded only by storage
+    const val MIN_STORAGE_HEADROOM = 150L * 1024 * 1024 // 150 MB safety margin to prevent Android low-space lockouts
+    private const val BUFFER_SIZE = 128 * 1024
     /** Bytes kept back so a boundary split across reads is still recognised. */
     private const val CARRY_PAD = 4
 
@@ -76,7 +77,7 @@ object UploadStreamer {
         if (name.isBlank()) return fail(400, "A valid file name is required.")
         val dest = File(destDir, name)
         if (dest.exists() && !overwrite) return fail(409, "$name already exists.")
-        if (destDir.usableSpace < contentLength) return fail(507, "Not enough free storage for this upload.")
+        if (destDir.usableSpace < contentLength + MIN_STORAGE_HEADROOM) return fail(507, "Not enough free storage for this upload.")
 
         val temp = newTempFile(tempDir) ?: return fail(500, "Could not create a temporary file.")
         return try {
@@ -110,9 +111,10 @@ object UploadStreamer {
         if (contentLength == null || contentLength < 0) {
             return fail(411, "Content-Length is required for upload.")
         }
+        if (contentLength > maxBytes) return tooLarge(maxBytes)
         if (boundary.isBlank()) return fail(400, "Upload is missing its multipart boundary.")
         if (!ensureDir(destDir)) return fail(400, "Destination folder is not available.")
-        if (destDir.usableSpace < contentLength) return fail(507, "Not enough free storage for this upload.")
+        if (destDir.usableSpace < contentLength + MIN_STORAGE_HEADROOM) return fail(507, "Not enough free storage for this upload.")
 
         val delimiter = ("--$boundary").toByteArray(StandardCharsets.US_ASCII)
         val limiter = BodyLimiter(input, minOf(contentLength, maxBytes))
@@ -148,9 +150,14 @@ object UploadStreamer {
                 results.add(mapOf("name" to safeName, "ok" to true, "path" to dest.absolutePath, "size" to part.size))
             }
             return UploadResult(200, mapOf("ok" to (saved > 0), "saved" to saved, "results" to results))
+        } catch (e: Exception) {
+            return fail(500, "Upload interrupted: ${e.message ?: "network error"}")
         } finally {
             // Nothing temporary should survive the request.
-            tempDir.listFiles()?.forEach { if (it.name.startsWith("ul_")) it.delete() }
+            tempDir.listFiles()?.forEach { if (it.name.startsWith("ul_") || it.name.endsWith(".part")) it.delete() }
+            if (tempDir.name == ".lh_upload_tmp" && tempDir.listFiles()?.isEmpty() == true) {
+                runCatching { tempDir.delete() }
+            }
         }
     }
 
@@ -163,7 +170,7 @@ object UploadStreamer {
     private fun copyBounded(input: InputStream, dest: File, expected: Long, maxBytes: Long): Copy {
         val buffer = ByteArray(BUFFER_SIZE)
         var total = 0L
-        FileOutputStream(dest).use { out ->
+        java.io.BufferedOutputStream(FileOutputStream(dest), BUFFER_SIZE).use { out ->
             while (total < expected) {
                 val count = input.read(buffer, 0, minOf(buffer.size.toLong(), expected - total).toInt())
                 if (count < 0) break
@@ -186,7 +193,7 @@ object UploadStreamer {
         val parts = mutableListOf<Part>()
         val buffer = ByteArray(BUFFER_SIZE)
         var carry = ByteArray(0)
-        var output: FileOutputStream? = null
+        var output: java.io.OutputStream? = null
         var currentName: String? = null
         var currentTemp: File? = null
         var written = 0L
@@ -252,7 +259,7 @@ object UploadStreamer {
                     }
                     currentTemp = temp
                     currentName = name
-                    output = FileOutputStream(temp)
+                    output = java.io.BufferedOutputStream(FileOutputStream(temp), BUFFER_SIZE)
                     written = 0L
                 }
                 searchFrom = bodyStart
@@ -307,8 +314,10 @@ object UploadStreamer {
         return -1
     }
 
-    private fun tooLarge(maxBytes: Long): UploadResult =
-        fail(413, "File is larger than the ${maxBytes / (1024 * 1024)} MB upload limit.")
+    private fun tooLarge(maxBytes: Long): UploadResult {
+        val limitStr = if (maxBytes >= 1024L * 1024 * 1024) "${maxBytes / (1024L * 1024 * 1024)} GB" else "${maxBytes / (1024 * 1024)} MB"
+        return fail(413, "File is larger than the $limitStr upload limit.")
+    }
 
     private fun fail(status: Int, message: String): UploadResult =
         UploadResult(status, mapOf("ok" to false, "error" to message))

@@ -668,16 +668,31 @@
             active--;
             try {
               var res = JSON.parse(xhr.responseText);
-              item.status = (res && res.ok) ? "done" : "error";
-              item.error = (res && res.results && res.results[0] && res.results[0].error) || ((res && res.error) || "upload failed");
+              item.status = (xhr.status >= 200 && xhr.status < 300 && res && res.ok) ? "done" : "error";
+              item.error = (res && res.results && res.results[0] && res.results[0].error) || ((res && res.error) || (xhr.status >= 400 ? "HTTP " + xhr.status : "upload failed"));
               if (item.status === "done") { toast(baseName(item.file.name) + " uploaded.", "ok"); }
               else { toast(item.file.name + ": " + item.error, "err"); }
-            } catch (err) { item.status = "error"; item.error = "bad response"; toast(item.file.name + ": upload failed", "err"); }
+            } catch (err) {
+              item.status = "error";
+              item.error = xhr.status >= 400 ? "HTTP " + xhr.status : "bad response";
+              toast(item.file.name + ": " + item.error, "err");
+            }
             renderManager(); pump();
           };
           xhr.onerror = function () {
-            active--; item.status = "error"; item.error = "network error";
-            toast(item.file.name + ": network error", "err"); renderManager(); pump();
+            active--; item.status = "error";
+            var errMsg = "network error";
+            if (xhr.status) {
+              try {
+                var r = JSON.parse(xhr.responseText);
+                if (r && r.error) errMsg = r.error;
+              } catch (_) {
+                errMsg = "HTTP " + xhr.status;
+              }
+            }
+            item.error = errMsg;
+            toast(item.file.name + ": " + errMsg, "err");
+            renderManager(); pump();
           };
           xhr.onabort = function () { active--; if (item.status !== "cancelled") item.status = "error"; renderManager(); pump(); };
           xhr.open("POST", url);
