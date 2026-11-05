@@ -190,6 +190,35 @@ class SentinelDiagnoserTest {
             .remedies.any { it.action == "clear-lockouts" && it.risk == Risk.SAFE })
     }
 
+    @Test
+    fun `the most severe fault and the most severe threat lead their lists`() {
+        // Regression: rank() returns 0 for CRITICAL, so sorting descending put
+        // the LEAST severe item first and the console led with trivia.
+        val probes = replacing(
+            probe("listener.alive", false, Severity.CRITICAL),
+            probe("memory.pressure", false, Severity.MEDIUM, mapOf("usedPercent" to 95)),
+            probe("battery.optimization", false, Severity.MEDIUM),
+            probe("auth.threats", false, Severity.HIGH, mapOf(
+                "recentFailures" to 9,
+                "lockedOutIps" to listOf("192.168.1.66"),
+                "topFailureSource" to "192.168.1.66",
+                "activeSessions" to 0))
+        )
+        val dx = SentinelDiagnoser.diagnose(probes, ctx)
+        assertEquals(Severity.CRITICAL, dx.first().severity)
+        assertEquals("listener.died", dx.first().id)
+
+        val severityOrder = listOf(Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM,
+            Severity.LOW, Severity.INFO, Severity.OK)
+        val ranks = dx.map { severityOrder.indexOf(it.severity) }
+        assertTrue("severity must never get worse further down the list: ${dx.map { it.severity }}",
+            ranks.zipWithNext().all { (a, b) -> a <= b })
+
+        val threats = SentinelDiagnoser.securityPosture(probes).threats
+        assertTrue("worst threat must lead: ${threats.map { it.severity }}",
+            threats.first().severity == Severity.HIGH)
+    }
+
     // ----------------------------------------------------------- gating
 
     @Test

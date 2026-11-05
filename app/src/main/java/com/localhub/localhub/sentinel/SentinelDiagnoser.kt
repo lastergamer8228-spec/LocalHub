@@ -77,9 +77,13 @@ object SentinelDiagnoser {
         ruleDatabaseBroken(probes)?.let(out::add)
         ruleTlsUnavailable(probes)?.let(out::add)
 
+        // rank() returns 0 for CRITICAL, so ascending puts the worst first.
+        // Sorting this descending (the natural first instinct) silently inverts
+        // the whole list and the console ends up leading with the least
+        // important fault - which is exactly what the ordering test caught.
         return out
             .filter { it.confidence >= CONFIDENCE_FLOOR }
-            .sortedWith(compareByDescending<Diagnosis> { rank(it.severity) }.thenByDescending { it.confidence })
+            .sortedWith(compareBy<Diagnosis> { rank(it.severity) }.thenByDescending { it.confidence })
     }
 
     // ---------------------------------------------------------------- rules
@@ -597,7 +601,8 @@ object SentinelDiagnoser {
             score = score,
             grade = grade,
             findings = findings,
-            threats = threats.sortedByDescending { rank(it.severity) }
+            // Same ordering rule as diagnoses: rank 0 (CRITICAL) leads.
+            threats = threats.sortedBy { rank(it.severity) }
         )
     }
 
