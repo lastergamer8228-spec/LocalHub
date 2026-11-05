@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/theme-pro.css" />
   <link rel="stylesheet" href="/animations.css" />
+  <link rel="stylesheet" href="/motion.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#0c1015" />
   <link rel="icon" type="image/png" href="/icon-192.png" />
@@ -379,6 +380,19 @@
         <div id="ctrl-status" class="hint" style="margin-top:8px"></div>
       </section>
 
+      <!-- LAN reachability self-test. Answers the single most common support
+           question: "the server says it is running, so why can't my PC open it?" -->
+      <section class="card admin-only" id="netdiag-card">
+        <h2>Can't connect from another device?
+          <span class="spacer"></span>
+          <button class="btn btn-ghost" id="btn-netdiag" type="button">Run LAN check</button>
+        </h2>
+        <div id="netdiag-body" class="hint" style="text-transform:none;letter-spacing:0">
+          Press <b>Run LAN check</b>. It connects to the phone's own LAN address and tells you
+          whether the problem is the server, the network, or the other device.
+        </div>
+      </section>
+
       <div class="lh-cols">
         <section class="card admin-only">
           <h2>Transfer monitor</h2>
@@ -500,7 +514,15 @@
         var p = document.getElementById('pane-' + t);
         var b = document.getElementById('tab-btn-' + t);
         var active = (t === name);
-        if (p) p.classList.toggle('active', active);
+        if (p) {
+          p.classList.toggle('active', active);
+          if (active && window.LH && LH.Motion) {
+            LH.Motion.tabIn(p);
+            // Stagger now, while the pane is visible - a CSS class applied to a
+            // hidden pane would have finished animating before anyone saw it.
+            LH.Motion.stagger(p);
+          }
+        }
         if (b) {
           b.classList.toggle('active', active);
           b.setAttribute('aria-selected', active ? 'true' : 'false');
@@ -518,6 +540,7 @@
     }
   </script>
 
+  <script src="/motion.js"></script>
   <script src="/nav.js"></script>
   <script src="/animations.js"></script>
   <script src="/visuals.js"></script>

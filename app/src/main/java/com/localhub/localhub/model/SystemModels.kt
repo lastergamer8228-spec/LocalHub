@@ -46,13 +46,27 @@ data class BatteryInfo(
 )
 
 /** Network telemetry. */
+/** One IPv4 address found on an up, non-loopback interface. */
+data class NetAddress(
+    val iface: String = "",
+    val ip: String = "",
+    val prefix: Int = 0,
+    val preferred: Boolean = false
+)
+
 data class NetworkInfo(
     val ipAddress: String,
     val ssid: String,
     val bssid: String,
     val linkSpeedMbps: Int,
     val type: String,
-    val isConnected: Boolean
+    val isConnected: Boolean,
+    /** Dotted subnet mask derived from the preferred address' prefix length. */
+    val subnetMask: String = "",
+    /** Default gateway as reported by DHCP (Wi-Fi only). */
+    val gateway: String = "",
+    /** Every IPv4 the device currently holds, so a wrong pick can be spotted. */
+    val addresses: List<NetAddress> = emptyList()
 )
 
 /** Static device information. */

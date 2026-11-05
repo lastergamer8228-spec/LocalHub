@@ -122,6 +122,61 @@ class SessionManager {
         return (maxAttempts - q.size).coerceAtLeast(0)
     }
 
+    // ---- Introspection (Sentinel) ----
+    //
+    // Read-only views over the same state. Sentinel is allowed to *see*
+    // authentication pressure so it can reason about it, but it must never
+    // reach into these maps directly - a mis-read would be a security bug.
+
+    data class SessionSnapshot(
+        val active: Int,
+        val expired: Int,
+        val distinctIps: List<String>,
+        val lockedOutIps: List<String>,
+        val failedAttempts: Int,
+        val topFailureSource: String
+    )
+
+    /** Consistent view of sessions and authentication pressure. */
+    fun snapshot(now: Long = System.currentTimeMillis()): SessionSnapshot {
+        val live = sessions.values.filter { it.expiresAt > now }
+        var failures = 0
+        var top = ""
+        var topCount = 0
+        for ((ip, q) in loginAttempts) {
+            val n = q.size
+            failures += n
+            if (n > topCount) { topCount = n; top = ip }
+        }
+        // A locked-out address has no in-window attempts left (they are cleared
+        // on lockout), so fall back to it - otherwise the attacker disappears.
+        if (top.isBlank()) top = lockedOutIps(now).firstOrNull() ?: ""
+        return SessionSnapshot(
+            active = live.size,
+            expired = sessions.size - live.size,
+            distinctIps = live.map { it.ip }.distinct().sorted(),
+            lockedOutIps = lockedOutIps(now),
+            failedAttempts = failures,
+            topFailureSource = top
+        )
+    }
+
+    fun lockedOutIps(now: Long = System.currentTimeMillis()): List<String> =
+        lockouts.filter { (_, unlock) -> unlock > now }.keys.sorted()
+
+    /** Drops sessions that already expired but were never released. */
+    fun pruneExpired(now: Long = System.currentTimeMillis()): Int {
+        val before = sessions.size
+        sessions.entries.removeIf { (_, s) -> s.expiresAt <= now }
+        return before - sessions.size
+    }
+
+    /** Clears every lockout and failed-attempt counter. Sentinel use only. */
+    fun clearAllLockouts() {
+        lockouts.clear()
+        loginAttempts.clear()
+    }
+
     // ---- Password hashing ----
 
     /**

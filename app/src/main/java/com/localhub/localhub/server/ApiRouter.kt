@@ -42,7 +42,9 @@ class ApiRouter(
     private val context: android.content.Context? = null,
     private val listenerPort: () -> Int = { 8080 },
     private val protocol: () -> String = { "http" },
-    private val healthSummary: () -> String = { "" }
+    private val healthSummary: () -> String = { "" },
+    private val sentinelEngine: () -> com.localhub.localhub.sentinel.SentinelEngine? = { null },
+    private val sentinelRemediator: () -> com.localhub.localhub.sentinel.SentinelRemediator? = { null }
 ) {
 
     private fun contextOfRouter(): android.content.Context =
@@ -431,6 +433,12 @@ class ApiRouter(
         "system" -> json(systemInfoProvider.lastSnapshot.value ?: systemInfoProvider.collectSnapshot())
         "device" -> json( systemInfoProvider.lastSnapshot.value?.device ?: systemInfoProvider.collectSnapshot().device)
         "network" -> json( systemInfoProvider.lastSnapshot.value?.network ?: systemInfoProvider.collectSnapshot().network)
+        // LAN reachability self-test: proves whether the listener is reachable
+        // on the LAN interface, not just on loopback. Used by "Why can't my PC
+        // connect?" in the dashboard's System tab.
+        "network/diag" -> json(systemInfoProvider.probeLanReachable(listenerPort()))
+        // Administrative fault system: probes, root causes, security posture.
+        "sentinel/report" -> json(sentinelReport())
         "storage" -> json(systemInfoProvider.lastSnapshot.value?.storage ?: systemInfoProvider.collectSnapshot().storage)
         "battery" -> json(systemInfoProvider.lastSnapshot.value?.battery ?: systemInfoProvider.collectSnapshot().battery)
         "cpu" -> json(systemInfoProvider.lastSnapshot.value?.cpu?: systemInfoProvider.collectSnapshot().cpu)
@@ -681,6 +689,7 @@ class ApiRouter(
             "server/restart" -> { serverCommand("restart"); json(mapOf("ok" to true, "message" to "restarting")) }
             "server/stop" -> { serverCommand("stop"); json(mapOf("ok" to true, "message" to "stopping")) }
             "server/start" -> { serverCommand("start"); json(mapOf("ok" to true, "message" to "starting")) }
+            "sentinel/act" -> handleSentinelAct(p)
             "server/clear-cache" -> json(fileOps.clearCache())
             "server/clear-logs" -> {
                 runBlocking { logRepository.clear() }
@@ -1094,6 +1103,39 @@ class ApiRouter(
             "uptimeMs" to ServerClock.currentUptimeMs(),
             "restartCount" to ServerClock.restartCount
         )
+    }
+
+    /**
+     * Full Sentinel report.
+     *
+     * `expectedRunning` is true because this request arrived over HTTP: the
+     * fact that we are answering at all is direct evidence the listener was
+     * serving a moment ago, which is exactly the fact the port and listener
+     * probes need. It is the one thing we never have to guess.
+     */
+    private fun sentinelReport(): Any {
+        val engine = sentinelEngine()
+            ?: return mapOf("ok" to false, "error" to "Sentinel is not available in this build")
+        val ctx = com.localhub.localhub.sentinel.SentinelModels.SentinelContext(
+            expectedRunning = true,
+            port = listenerPort(),
+            protocol = protocol()
+        )
+        val report = runBlocking { engine.run(ctx, autoRemediate = true) }
+        return mapOf("ok" to true, "report" to report)
+    }
+
+    /** Runs one remediation. Risk is looked up server-side, never trusted from the request. */
+    private fun handleSentinelAct(p: Map<String, String>): Response {
+        val rem = sentinelRemediator()
+            ?: return json(mapOf("ok" to false, "error" to "Sentinel is not available in this build"))
+        val action = p["action"]
+            ?: return json(mapOf("ok" to false, "error" to "No action given"))
+        val approved = p["approved"] == "true"
+        val args = p.filterKeys { it != "action" && it != "approved" }
+        val (ok, message) = runBlocking { rem.execute(action, args, approved) }
+        logger.warn("AUDIT", "Sentinel action '$action' (approved=$approved): $message")
+        return json(mapOf("ok" to ok, "message" to message, "action" to action))
     }
 
     private fun json(obj: Any): Response =

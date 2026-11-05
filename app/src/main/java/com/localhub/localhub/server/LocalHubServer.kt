@@ -56,7 +56,9 @@ class LocalHubServer(
     private val controlServer: (String) -> Unit,
     private val reportStatus: (ServerStatus) -> Unit,
     private val port: Int,
-    private val healthSummary: () -> String = { "" }
+    private val healthSummary: () -> String = { "" },
+    private val sentinelEngine: () -> com.localhub.localhub.sentinel.SentinelEngine? = { null },
+    private val sentinelRemediator: () -> com.localhub.localhub.sentinel.SentinelRemediator? = { null }
 ) : NanoWSD(port) {
 
     private val hub = WebSocketHub()
@@ -78,7 +80,9 @@ class LocalHubServer(
         ttsEngine = ttsEngine,
         context = context,
         listenerPort = { listeningPort },
-        protocol = { activeProtocol }
+        protocol = { activeProtocol },
+        sentinelEngine = sentinelEngine,
+        sentinelRemediator = sentinelRemediator
     )
 
     @Volatile private var activeProtocol = "http"

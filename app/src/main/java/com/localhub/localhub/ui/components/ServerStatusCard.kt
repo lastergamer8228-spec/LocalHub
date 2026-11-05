@@ -3,6 +3,7 @@ package com.localhub.localhub.ui.components
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -25,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -35,6 +37,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.localhub.localhub.model.ServerStatus
+import com.localhub.localhub.ui.motion.LocalHubMotion
+import com.localhub.localhub.ui.motion.PowerRings
+import com.localhub.localhub.ui.motion.rememberPowerBurst
 import com.localhub.localhub.ui.theme.LocalLocalHubColors
 
 @Composable
@@ -48,6 +53,17 @@ fun ServerStatusCard(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val haptics = LocalHapticFeedback.current
+
+    // Task-level motion: the server coming up is the one event on this screen
+    // that deserves its own animation. Rings travel outward from the status dot
+    // exactly once per start, so "it started" is visible rather than inferred
+    // from a colour change. Suppressed entirely under reduced motion.
+    val powerBurst = rememberPowerBurst(status.running)
+    val dotScale by animateFloatAsState(
+        targetValue = if (status.running) 1f else 0.86f,
+        animationSpec = tween(LocalHubMotion.BASE, easing = LocalHubMotion.Spring),
+        label = "dotScale"
+    )
 
     val pulseAlpha = if (status.running) {
         val infiniteTransition = rememberInfiniteTransition(label = "pulseTransition")
@@ -101,9 +117,15 @@ fun ServerStatusCard(
                                     .background(colors.success.copy(alpha = pulseAlpha * 0.3f))
                             )
                         }
+                        PowerRings(
+                            progress = powerBurst,
+                            color = colors.success,
+                            modifier = Modifier.size(28.dp)
+                        )
                         Box(
                             modifier = Modifier
                                 .size(14.dp)
+                                .scale(dotScale)
                                 .clip(CircleShape)
                                 .background(if (status.running) colors.success else colors.danger)
                         )

@@ -437,6 +437,7 @@
 
   // ---- server status banner + uptime ----
   var serverStartedAt = 0;
+  var lastRunning = null;   // null = not yet known, so the first paint is calm
 
   function renderStatus(st) {
     if (!st) return;
@@ -451,6 +452,17 @@
     var dot = $("online-dot");
     if (dot) dot.className = "dot " + (on ? "on" : "off");
     setText("online-text", on ? "Online" : "Offline");
+
+    // The server changing state is the most important thing that can happen on
+    // this page, so it gets its own movement: rings leave the dot when it comes
+    // up, and the card dims inward when it goes down. Skipped on the very first
+    // render, which is a paint, not an event.
+    if (window.LH && LH.Motion && lastRunning !== null && on !== lastRunning) {
+      if (on) LH.Motion.serverStart($("status-banner"), dot);
+      else LH.Motion.serverStop($("status-banner"), dot);
+    }
+    lastRunning = on;
+
     updateUptime();
   }
 
@@ -511,6 +523,60 @@
         kv("Uptime", fmtDuration(serverStartedAt ? Date.now() - serverStartedAt : 0)) +
         kv("Restart count", (st && st.restartCount != null ? st.restartCount : 0));
     }
+  }
+
+  // ---- LAN reachability self-test -------------------------------------
+  // "Server says running but my PC can't open it" is the #1 support question.
+  // This probes the phone's own LAN addresses so the answer comes from the
+  // device instead of guesswork.
+  var OKC = "#4ade80", BADC = "var(--danger)";
+
+  function renderNetDiag(d) {
+    var body = $("netdiag-body");
+    if (!body) return;
+    if (!d) {
+      body.innerHTML = '<span style="color:' + BADC + '">LAN check failed — this tool needs an administrator session.</span>';
+      return;
+    }
+    var rows = (d.addresses || []).map(function (a) {
+      var verdict = a.reachable
+        ? '<span style="color:' + OKC + '">✓ reachable</span>'
+        : '<span style="color:' + BADC + '">✗ no answer</span>';
+      return '<div class="kv"><span>' + escapeHtml(a.iface) + " · " + escapeHtml(a.ip) +
+        (a.preferred ? " <b>(in use)</b>" : "") + "</span><b class=\"mono\">" +
+        escapeHtml(a.url) + "</b> " + verdict + "</div>";
+    }).join("");
+    function flag(ok) {
+      return ok
+        ? '<span style="color:' + OKC + '">✓ listening</span>'
+        : '<span style="color:' + BADC + '">✗ not reachable</span>';
+    }
+    body.innerHTML =
+      '<div class="kv"><span>Network type</span><b>' + escapeHtml(String(d.networkType || "—")) + "</b></div>" +
+      '<div class="kv"><span>Port</span><b class="mono">' + escapeHtml(String(d.port || "—")) + "</b></div>" +
+      '<div class="kv"><span>Subnet mask</span><b class="mono">' + escapeHtml(d.subnetMask || "—") + "</b></div>" +
+      '<div class="kv"><span>Gateway (router)</span><b class="mono">' + escapeHtml(d.gateway || "—") + "</b></div>" +
+      '<div class="kv"><span>Loopback 127.0.0.1</span><b>' + flag(d.loopbackOk) + "</b></div>" +
+      '<div class="kv"><span>LAN interface</span><b>' + flag(d.lanOk) + "</b></div>" +
+      '<div style="height:8px"></div>' + rows +
+      '<div class="hint" style="margin-top:10px;text-transform:none;letter-spacing:0">' +
+      escapeHtml(d.hint || "") + "</div>";
+  }
+
+  function runNetDiag() {
+    var btn = $("btn-netdiag");
+    if (btn) { btn.disabled = true; btn.textContent = "Checking…"; }
+    getJson("/api/network/diag").then(function (d) {
+      renderNetDiag(d);
+      if (btn) { btn.disabled = false; btn.textContent = "Run LAN check"; }
+    });
+  }
+
+  function wireNetDiag() {
+    var btn = $("btn-netdiag");
+    if (btn) btn.onclick = runNetDiag;
+    // Run once on load so the diagnosis is already there when the tab opens.
+    if (currentRole === "admin") runNetDiag();
   }
 
   // ---- connected devices (UA -> browser / OS) ----
@@ -735,6 +801,12 @@
             // Server may be down (e.g. stopped) — guide the user.
             if (cmd === "stop") status.textContent = "Stopped. Restart from the LocalHub Android app.";
             else status.textContent = "Server unreachable — it may still be restarting.";
+            if (window.LH && LH.Motion) {
+              // Shake the card that owns the failed action, not a variable that
+              // was never in scope here.
+              LH.Motion.error($("server-control-card") || btn.closest(".card") || btn);
+              LH.Motion.toast(status.textContent, "bad");
+            }
           });
       });
     });
@@ -794,7 +866,14 @@
       alert("HTTP " + url + "\n\n" + txt.slice(0, 1200));
     }).catch(function (e) { alert("Request failed: " + e.message); });
   }
-  function toast(msg) {
+  function toast(msg, kind) {
+    // Prefer the motion system's toast: same message, but it animates in, is
+    // colour-coded by outcome, and is announced to screen readers. The inline
+    // version stays as a fallback for pages that did not load motion.js.
+    if (window.LH && LH.Motion && LH.Motion.toast) {
+      LH.Motion.toast(msg, kind || "info");
+      return;
+    }
     var t = document.createElement("div");
     t.style.cssText = "position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0f1a2e;border:1px solid var(--accent);color:var(--text);border-radius:8px;padding:10px 16px;font-size:13px;z-index:999;";
     t.textContent = msg;
@@ -822,6 +901,8 @@
     if (currentRole === "admin") {
       getJson("/api/logs").then(function (r) { if (r && r.logs) renderLogs(r.logs); });
     }
+    // Wire the button once; the first LAN check runs right away for admins.
+    wireNetDiag();
     getJson("/api/status").then(function (st) { renderConnect(st); renderStatus(st); updateDetail(null, st); });
   }
 

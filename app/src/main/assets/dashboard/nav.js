@@ -15,7 +15,8 @@
     { href: "/ai/", label: "Assistant", icon: "◈", match: ["/ai", "/ai/"] },
     { href: "/player", label: "Player", icon: "▶", match: ["/player"] },
     { href: "/core", label: "Core", icon: "◉", match: ["/core"], cls: "admin-only" },
-    { href: "/selfheal.html", label: "Health", icon: "✚", match: ["/selfheal.html"], cls: "admin-only" }
+    { href: "/selfheal.html", label: "Health", icon: "✚", match: ["/selfheal.html"], cls: "admin-only" },
+    { href: "/sentinel.html", label: "Sentinel", icon: "🛡", match: ["/sentinel.html", "/sentinel"], cls: "admin-only" }
   ];
 
   function currentPath() {

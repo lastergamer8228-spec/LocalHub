@@ -15,6 +15,7 @@ import com.localhub.localhub.model.BatteryInfo
 import com.localhub.localhub.model.CpuInfo
 import com.localhub.localhub.model.DeviceInfo
 import com.localhub.localhub.model.MemoryInfo
+import com.localhub.localhub.model.NetAddress
 import com.localhub.localhub.model.NetworkInfo
 import com.localhub.localhub.model.StorageInfo
 import com.localhub.localhub.model.SystemInfo
@@ -27,6 +28,7 @@ import java.io.FileReader
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.util.Collections
+import java.util.Locale
 
 /**
  * Collects real-time device/system telemetry. The most recent snapshot is exposed
@@ -170,7 +172,6 @@ class SystemInfoProvider(private val context: Context) {
     }
 
     private fun getNetworkInfo(): NetworkInfo {
-        val ip = getLocalIpAddress()
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         var type = "NONE"
         var isConnected = false
@@ -205,35 +206,177 @@ class SystemInfoProvider(private val context: Context) {
                 linkSpeed = info?.linkSpeed ?: 0
             }
         }
-        return NetworkInfo(ip, ssid, bssid, linkSpeed, type, isConnected)
+        val addrs = interfaceAddresses()
+        val ip = preferredIpv4(type, addrs)
+        val gateway = if (type == "WIFI") wifiGateway() else ""
+        val prefix = addrs.firstOrNull { it.ip == ip }?.prefix ?: 24
+        return NetworkInfo(
+            ipAddress = ip,
+            ssid = ssid,
+            bssid = bssid,
+            linkSpeedMbps = linkSpeed,
+            type = type,
+            isConnected = isConnected,
+            subnetMask = maskFromPrefix(prefix),
+            gateway = gateway,
+            addresses = addrs.map { it.copy(preferred = it.ip == ip) }
+        )
     }
 
-    private fun getLocalIpAddress(): String = runCatching {
-        val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
-        val sorted = interfaces.sortedByDescending { intf ->
-            val name = intf.name.lowercase()
-            when {
-                name.startsWith("wlan") -> 100
-                name.startsWith("eth") -> 90
-                name.startsWith("ap") || name.startsWith("softap") -> 80
-                name.startsWith("rndis") || name.startsWith("usb") -> 70
-                name.startsWith("rmnet") -> 10
-                name.startsWith("dummy") -> 0
-                else -> 20
-            }
-        }
-        for (intf in sorted) {
+    // ---------------------------------------------------------------------
+    // LAN reachability
+    //
+    // A server can report "running" and still be unreachable from the LAN: the
+    // listener thread may have died, the device may be on mobile data, or the
+    // access point may isolate clients. These helpers let the app prove which
+    // of those it is instead of leaving the user guessing.
+    // ---------------------------------------------------------------------
+
+    /** Every IPv4 currently bound to an up, non-loopback interface. */
+    private fun interfaceAddresses(): List<NetAddress> = runCatching {
+        val out = mutableListOf<NetAddress>()
+        for (intf in Collections.list(NetworkInterface.getNetworkInterfaces())) {
             if (!intf.isUp || intf.isLoopback) continue
-            val addresses = Collections.list(intf.inetAddresses)
-            for (addr in addresses) {
-                if (!addr.isLoopbackAddress && addr is Inet4Address) {
+            for (ia in intf.interfaceAddresses) {
+                val addr = ia.address
+                if (addr is Inet4Address && !addr.isLoopbackAddress) {
                     val host = addr.hostAddress ?: continue
-                    if (!host.contains(":") && host != "127.0.0.1") return host
+                    out.add(NetAddress(intf.name, host, ia.networkPrefixLength.toInt(), false))
                 }
             }
         }
-        "127.0.0.1"
+        out
+    }.getOrDefault(emptyList())
+
+    /** Best guess by interface name, used when WifiManager has no answer. */
+    private fun scoreInterface(name: String): Int {
+        val n = name.lowercase()
+        return when {
+            n.startsWith("wlan") -> 100
+            n.startsWith("eth") -> 90
+            n.startsWith("ap") || n.startsWith("softap") -> 80
+            n.startsWith("rndis") || n.startsWith("usb") -> 70
+            n.startsWith("rmnet") -> 10
+            n.startsWith("dummy") -> 0
+            else -> 20
+        }
+    }
+
+    private fun preferredIpv4(type: String, addrs: List<NetAddress>): String {
+        // On Wi-Fi, WifiManager is authoritative: NetworkInterface can hand back
+        // a stale or secondary address on some devices.
+        if (type == "WIFI") wifiIpv4()?.let { return it }
+        return addrs.sortedByDescending { scoreInterface(it.iface) }
+            .firstOrNull()?.ip ?: "127.0.0.1"
+    }
+
+    private fun getLocalIpAddress(): String = runCatching {
+        preferredIpv4(currentNetworkType(), interfaceAddresses())
     }.getOrDefault("127.0.0.1")
+
+    private fun currentNetworkType(): String {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return "NONE"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return "NONE"
+            return when {
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WIFI"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "MOBILE"
+                else -> "NONE"
+            }
+        }
+        @Suppress("DEPRECATION")
+        return cm.activeNetworkInfo?.typeName?.uppercase() ?: "NONE"
+    }
+
+    /** IPv4 of the active Wi-Fi interface, straight from WifiManager. */
+    private fun wifiIpv4(): String? = runCatching {
+        val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        @Suppress("DEPRECATION")
+        val raw = wifi.connectionInfo?.ipAddress ?: 0
+        if (raw == 0) null else intToIpv4(raw)
+    }.getOrNull()
+
+    /** Default gateway reported by DHCP (Wi-Fi only). */
+    private fun wifiGateway(): String = runCatching {
+        val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        @Suppress("DEPRECATION")
+        val raw = wifi.dhcpInfo?.gateway ?: 0
+        if (raw == 0) "" else intToIpv4(raw)
+    }.getOrDefault("")
+
+    /** WifiManager hands back IPv4 as a little-endian int. */
+    private fun intToIpv4(raw: Int): String = String.format(
+        Locale.US, "%d.%d.%d.%d",
+        raw and 0xff, (raw shr 8) and 0xff, (raw shr 16) and 0xff, (raw shr 24) and 0xff
+    )
+
+    private fun maskFromPrefix(prefix: Int): String {
+        if (prefix !in 0..32) return ""
+        val mask = if (prefix == 0) 0 else (-1 shl (32 - prefix))
+        return String.format(
+            Locale.US, "%d.%d.%d.%d",
+            (mask ushr 24) and 0xff, (mask ushr 16) and 0xff,
+            (mask ushr 8) and 0xff, mask and 0xff
+        )
+    }
+
+    /**
+     * Opens a real TCP connection to [ip]:[port] from the device itself.
+     * This is what distinguishes "server is listening on the LAN interface"
+     * from "server only answers on loopback", which look identical to a user
+     * who only ever opens the app's own browser button.
+     */
+    fun probeLanReachable(port: Int): Map<String, Any> {
+        val addrs = interfaceAddresses()
+        val type = currentNetworkType()
+        val preferredIp = preferredIpv4(type, addrs)
+
+        fun canConnect(ip: String): Boolean = runCatching {
+            java.net.Socket().use { s ->
+                s.connect(java.net.InetSocketAddress(java.net.InetAddress.getByName(ip), port), 700)
+                true
+            }
+        }.getOrDefault(false)
+
+        val loopbackOk = canConnect("127.0.0.1")
+        val results = addrs.map { a ->
+            mapOf(
+                "iface" to a.iface,
+                "ip" to a.ip,
+                "prefix" to a.prefix,
+                "preferred" to (a.ip == preferredIp),
+                "url" to "http://${a.ip}:$port",
+                "reachable" to canConnect(a.ip)
+            )
+        }
+        val lanOk = results.any { it["reachable"] == true }
+
+        val hint = when {
+            !loopbackOk ->
+                "The server is not accepting connections at all (port $port). Restart it from the Android app; if that fails, change the port."
+            loopbackOk && !lanOk ->
+                "The server answers on loopback (127.0.0.1) only — the LAN bind failed. Toggle Wi-Fi off and on, then restart the server."
+            lanOk && type == "MOBILE" ->
+                "The device is on mobile data. Carrier NAT makes the address unreachable from other devices — put the phone on Wi-Fi (or switch on its hotspot)."
+            lanOk ->
+                "The server answers on the LAN interface, so the app is working. If another device still cannot connect, the router is blocking device-to-device traffic (AP/client isolation), or the two devices are on different subnets."
+            else ->
+                "No usable network address was found. Connect the phone to Wi-Fi and restart the server."
+        }
+
+        return mapOf(
+            "port" to port,
+            "networkType" to type,
+            "subnetMask" to maskFromPrefix(addrs.firstOrNull { it.ip == preferredIp }?.prefix ?: 24),
+            "gateway" to if (type == "WIFI") wifiGateway() else "",
+            "loopbackOk" to loopbackOk,
+            "lanOk" to lanOk,
+            "addresses" to results,
+            "hint" to hint
+        )
+    }
 
     private fun getDeviceInfo(): DeviceInfo = DeviceInfo(
         model = Build.MODEL ?: "Unknown",

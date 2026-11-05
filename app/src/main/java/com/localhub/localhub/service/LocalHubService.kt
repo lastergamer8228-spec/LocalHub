@@ -36,11 +36,17 @@ import kotlinx.coroutines.withContext
  */
 class LocalHubService : Service() {
 
+    private companion object {
+        /** Stats tick is 2s, so this runs a Sentinel pass every ~30s. */
+        const val SENTINEL_EVERY_TICKS = 15
+    }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val commandMutex = kotlinx.coroutines.sync.Mutex()
     private var collectJob: Job? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var nsdHelper: NsdHelper? = null
+    private var sentinelTick = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -162,6 +168,32 @@ class LocalHubService : Service() {
                 }
                 while (true) {
                     delay(Constants.STATS_INTERVAL_MS)
+
+                    // Watchdog: NanoHTTPD's accept loop can exit (network change,
+                    // socket closed by the system) while the UI still says
+                    // "Running". Detect that and bring the listener back instead
+                    // of leaving the user with a server that answers nothing.
+                    if (container.isServerRunning.value && !container.server.isAlive) {
+                        container.logger.error("Service", "Listener thread died while marked running - restarting")
+                        runCatching { container.server.stopServer() }
+                        val back = container.startManagedServer()
+                        container.isServerRunning.value = back
+                        if (!back) {
+                            failServer(container.server.lastError ?: "Server stopped responding and could not restart")
+                            return@launch
+                        }
+                        container.serverError.value = null
+                        advertise(port)
+                    }
+
+                    // Sentinel pass. The watchdog above only notices a listener
+                    // that vanished; Sentinel is what explains *why* and repairs
+                    // the faults that are safe to repair without asking.
+                    sentinelTick++
+                    if (sentinelTick % SENTINEL_EVERY_TICKS == 0) {
+                        runSentinelPass(container)
+                    }
+
                     val snap: SystemInfo = container.systemInfoProvider.collectSnapshot()
                     container.server.broadcastStats(snap)
                     container.server.pruneClients()
@@ -189,6 +221,40 @@ class LocalHubService : Service() {
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LocalHub::server").apply {
             setReferenceCounted(false)
             acquire()
+        }
+    }
+
+    /**
+     * One Sentinel pass: measure, explain, repair what is safe, then re-measure
+     * to prove the repair worked. Everything it does is logged, and anything
+     * that needs a decision is only reported - the service never approves a
+     * CONFIRM-class action on the user's behalf.
+     */
+    private suspend fun runSentinelPass(container: com.localhub.localhub.core.AppContainer) {
+        val ctx = com.localhub.localhub.sentinel.SentinelModels.SentinelContext(
+            expectedRunning = container.isServerRunning.value,
+            port = container.preferencesManager.portFlow.first(),
+            protocol = container.serverStatus.value.protocol
+        )
+        val report = runCatching { container.sentinel.run(ctx, autoRemediate = true) }
+            .onFailure { container.logger.error("Sentinel", "Pass failed: ${it.message}") }
+            .getOrNull() ?: return
+
+        for (action in report.autoApplied) {
+            if (action.ok && action.verified) {
+                container.logger.info("Sentinel", "Repaired '${action.remedyId}': ${action.message}")
+            } else if (action.ok) {
+                container.logger.warn("Sentinel", "Ran '${action.remedyId}' but the fault is still there: ${action.message}")
+            }
+        }
+        if (!report.healthy) {
+            val first = report.diagnoses.firstOrNull()
+            container.logger.warn(
+                "Sentinel",
+                "Unhealthy - " + (first?.let { "${it.title} (${it.severity})" }
+                    ?: "security ${report.security.grade}/${report.security.score}") +
+                    ", ${report.pending.size} action(s) waiting for approval"
+            )
         }
     }
 

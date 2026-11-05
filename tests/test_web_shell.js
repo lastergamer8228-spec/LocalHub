@@ -96,7 +96,8 @@ it('nav.js renders a bar with brand, links, status and sign out', () => {
   assert.strictEqual(nav.id, 'lh-nav');
   const nodes = flatten(nav);
   const links = nodes.filter((n) => n.attrs['data-nav']);
-  assert.strictEqual(links.length, 6, 'expected 6 nav links, got ' + links.length);
+  // Dashboard, Files, Assistant, Player, Core, Health, Sentinel.
+  assert.strictEqual(links.length, 7, 'expected 7 nav links, got ' + links.length);
   const labels = nodes.map((n) => n.textContent).filter(Boolean);
   assert.ok(labels.includes('LocalHub'), 'brand missing');
   assert.ok(labels.includes('Dashboard') && labels.includes('Files'), 'core links missing');

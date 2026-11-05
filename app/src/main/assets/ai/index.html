@@ -293,6 +293,13 @@
   <script src="/ai/features_routines.js"></script>
   <script src="/ai/chat.js"></script>
   <script src="/ai/assistant.js"></script>
+  <!-- NLU core: concept lexicon -> frame parser -> planner -> verified execution.
+       Loaded after assistant.js so it can sit in front of it without deleting
+       anything: whatever this engine declines still reaches the older path. -->
+  <script src="/ai/nlu/lexicon.js"></script>
+  <script src="/ai/nlu/understand.js"></script>
+  <script src="/ai/nlu/plans.js"></script>
+  <script src="/ai/nlu/engine.js"></script>
   <script src="/ai/system_integration.js"></script>
   <script src="/ai/assistant_runtime.js"></script>
   <script src="/ai/brain.js"></script>

@@ -1,0 +1,240 @@
+/* motion.css - task-level motion for the LocalHub dashboard.
+ *
+ * The old UI moved in two ways: something appeared, or something did not.
+ * Motion here is tied to *meaning*, not decoration - a server starting, an
+ * upload finishing and an error are three different movements, so the state of
+ * the system is legible before a single word is read.
+ *
+ * Every animation is opt-in via a class or a data-attribute, and every one of
+ * them is disabled under prefers-reduced-motion: motion sickness is not a
+ * feature. Nothing here animates layout properties that force reflow - only
+ * transform and opacity, so a phone stays smooth.
+ */
+
+:root {
+  --mt-fast: 160ms;
+  --mt-base: 260ms;
+  --mt-slow: 420ms;
+  --mt-slower: 720ms;
+  --mt-ease: cubic-bezier(.22, .61, .36, 1);
+  --mt-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --mt-ease-in: cubic-bezier(.55, 0, .55, .2);
+  --mt-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --mt-ok: #4ade80;
+  --mt-warn: #fbbf24;
+  --mt-bad: #f87171;
+  --mt-accent: #38bdf8;
+}
+
+/* ----------------------------------------------------------------- shared */
+
+@keyframes mt-fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes mt-rise {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) }
+  to   { opacity: 1; transform: none }
+}
+@keyframes mt-pop {
+  0%   { transform: scale(.92); opacity: 0 }
+  60%  { transform: scale(1.02); opacity: 1 }
+  100% { transform: scale(1); opacity: 1 }
+}
+
+.mt-enter { animation: mt-rise var(--mt-base) var(--mt-ease-out) both; }
+
+/* Children arrive one after another instead of all at once. */
+.mt-stagger > * { animation: mt-rise var(--mt-base) var(--mt-ease-out) both; }
+.mt-stagger > *:nth-child(1) { animation-delay: 0ms }
+.mt-stagger > *:nth-child(2) { animation-delay: 40ms }
+.mt-stagger > *:nth-child(3) { animation-delay: 80ms }
+.mt-stagger > *:nth-child(4) { animation-delay: 120ms }
+.mt-stagger > *:nth-child(5) { animation-delay: 160ms }
+.mt-stagger > *:nth-child(6) { animation-delay: 200ms }
+.mt-stagger > *:nth-child(n+7) { animation-delay: 240ms }
+
+/* ------------------------------------------------------------ server power */
+
+/* Rings travel outward from the status dot: energy leaving the phone. */
+@keyframes mt-power-ring {
+  0%   { transform: scale(.6); opacity: .85 }
+  70%  { opacity: .12 }
+  100% { transform: scale(2.4); opacity: 0 }
+}
+@keyframes mt-power-glow {
+  0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, .55) }
+  70%  { box-shadow: 0 0 0 14px rgba(74, 222, 128, 0) }
+  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0) }
+}
+@keyframes mt-sweep {
+  0%   { transform: translate3d(-110%, 0, 0) }
+  100% { transform: translate3d(210%, 0, 0) }
+}
+
+.mt-power {
+  position: relative;
+  overflow: hidden;
+}
+.mt-power::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, rgba(74, 222, 128, .22) 50%, transparent 80%);
+  transform: translate3d(-110%, 0, 0);
+  animation: mt-sweep var(--mt-slower) var(--mt-ease-out) both;
+}
+.mt-power-ring {
+  position: relative;
+  animation: mt-power-glow var(--mt-slower) var(--mt-ease-out) both;
+}
+.mt-power-ring::before,
+.mt-power-ring::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--mt-ok);
+  animation: mt-power-ring var(--mt-slower) var(--mt-ease-out) both;
+}
+.mt-power-ring::after { animation-delay: 180ms }
+
+/* Server stopping: the same motion run backwards and desaturated. */
+@keyframes mt-power-down {
+  0%   { transform: scale(1); opacity: 1 }
+  100% { transform: scale(.82); opacity: .35 }
+}
+.mt-power-down { animation: mt-power-down var(--mt-base) var(--mt-ease-in) both; }
+
+/* -------------------------------------------------------------- transfers */
+
+@keyframes mt-progress-indeterminate {
+  0%   { transform: translate3d(-100%, 0, 0) }
+  100% { transform: translate3d(300%, 0, 0) }
+}
+.mt-bar {
+  position: relative;
+  overflow: hidden;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .18);
+}
+.mt-bar > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 34%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--mt-accent), var(--mt-ok));
+  animation: mt-progress-indeterminate 1.15s linear infinite;
+}
+.mt-bar[data-value] > i {
+  width: 0;
+  animation: none;
+  transition: width var(--mt-base) var(--mt-ease-out);
+}
+
+/* A completed transfer: the bar fills and then the row settles. */
+@keyframes mt-settle {
+  0%   { transform: scale(1) }
+  45%  { transform: scale(1.015) }
+  100% { transform: scale(1) }
+}
+.mt-settle { animation: mt-settle var(--mt-base) var(--mt-ease-out) both; }
+
+/* ----------------------------------------------------------------- states */
+
+@keyframes mt-shake {
+  10%, 90% { transform: translate3d(-2px, 0, 0) }
+  20%, 80% { transform: translate3d(4px, 0, 0) }
+  30%, 50%, 70% { transform: translate3d(-7px, 0, 0) }
+  40%, 60% { transform: translate3d(7px, 0, 0) }
+}
+.mt-error {
+  animation: mt-shake 480ms var(--mt-ease) both;
+  border-color: var(--mt-bad) !important;
+}
+
+@keyframes mt-flash-ok {
+  0%   { box-shadow: inset 0 0 0 0 rgba(74, 222, 128, 0) }
+  35%  { box-shadow: inset 0 0 0 2px rgba(74, 222, 128, .8) }
+  100% { box-shadow: inset 0 0 0 0 rgba(74, 222, 128, 0) }
+}
+.mt-success { animation: mt-flash-ok var(--mt-slow) var(--mt-ease-out) both; }
+
+/* A value that changed - telemetry ticking, a counter moving. */
+@keyframes mt-tick {
+  0%   { transform: translate3d(0, -6px, 0); opacity: 0 }
+  100% { transform: none; opacity: 1 }
+}
+.mt-tick { animation: mt-tick var(--mt-fast) var(--mt-ease-out) both; }
+
+/* ------------------------------------------------------------------ toasts */
+
+@keyframes mt-toast-in {
+  from { opacity: 0; transform: translate3d(0, -14px, 0) scale(.97) }
+  to   { opacity: 1; transform: none }
+}
+@keyframes mt-toast-out {
+  from { opacity: 1; transform: none }
+  to   { opacity: 0; transform: translate3d(0, -10px, 0) scale(.98) }
+}
+.mt-toast {
+  animation: mt-toast-in var(--mt-base) var(--mt-spring) both;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 15px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, .96);
+  border: 1px solid rgba(148, 163, 184, .22);
+  color: #e2e8f0;
+  font-size: 13px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
+  max-width: min(92vw, 460px);
+}
+.mt-toast[data-kind="ok"]   { border-left: 3px solid var(--mt-ok) }
+.mt-toast[data-kind="warn"] { border-left: 3px solid var(--mt-warn) }
+.mt-toast[data-kind="bad"]  { border-left: 3px solid var(--mt-bad) }
+.mt-toast.is-leaving { animation: mt-toast-out var(--mt-fast) var(--mt-ease-in) both; }
+
+#mt-toast-host {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------- tab switching */
+
+@keyframes mt-tab-in {
+  from { opacity: 0; transform: translate3d(0, 8px, 0) }
+  to   { opacity: 1; transform: none }
+}
+.mt-tab-in { animation: mt-tab-in var(--mt-base) var(--mt-ease-out) both; }
+
+@keyframes mt-press { 50% { transform: scale(.96) } }
+.mt-press:active { animation: mt-press 140ms var(--mt-ease) }
+
+/* --------------------------------------------------------- reduced motion */
+/* Keep the feedback, drop the movement: opacity only, and briefly. */
+@media (prefers-reduced-motion: reduce) {
+  .mt-enter, .mt-stagger > *, .mt-tab-in, .mt-toast, .mt-toast.is-leaving {
+    animation: mt-fade-in 120ms linear both !important;
+    animation-delay: 0ms !important;
+  }
+  .mt-power::after,
+  .mt-power-ring::before,
+  .mt-power-ring::after,
+  .mt-error, .mt-success, .mt-settle, .mt-tick, .mt-power-down {
+    animation: none !important;
+  }
+  .mt-bar > i { animation: none !important; width: 100% !important }
+  .mt-press:active { animation: none !important }
+  *, *::before, *::after {
+    transition-duration: 80ms !important;
+    scroll-behavior: auto !important;
+  }
+}

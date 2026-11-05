@@ -146,8 +146,65 @@ class AppContainer(context: Context) {
     val serverError = MutableStateFlow<String?>(null)
 
     /** Crash/health records, owned by the application and shared with the UI. */
-    private val healthStore: com.localhub.localhub.system.CrashReportStore by lazy {
+    val healthStore: com.localhub.localhub.system.CrashReportStore by lazy {
         (appContext as com.localhub.localhub.LocalHubApplication).healthStore
+    }
+
+    // ---------------------------------------------------------------- Sentinel
+    //
+    // Built lazily: it needs `server`, which is rebuilt whenever the port
+    // changes, so every reference goes through a provider rather than a value.
+
+    private val sentinelControl = object : com.localhub.localhub.sentinel.SentinelRemediator.Control {
+        override suspend fun restartListener(): Boolean = withContext(Dispatchers.IO) {
+            if (!isServerRunning.value) return@withContext false
+            server.stopServer()
+            val ok = server.startServer()
+            isServerRunning.value = ok
+            serverError.value = if (ok) null else server.lastError
+            ok
+        }
+
+        override suspend fun restartService(): Boolean = withContext(Dispatchers.IO) {
+            if (!isServerRunning.value) return@withContext false
+            restartServer(currentPort())
+            isServerRunning.value
+        }
+
+        override suspend fun changePort(port: Int): Boolean = withContext(Dispatchers.IO) {
+            preferencesManager.setPort(port)
+            if (isServerRunning.value) restartServer(port)
+            isServerRunning.value
+        }
+    }
+
+    // Split from the engine so the server can be given the remediator without
+    // touching the engine (which would recurse back into `server`).
+    val sentinelRemediator: com.localhub.localhub.sentinel.SentinelRemediator by lazy {
+        com.localhub.localhub.sentinel.SentinelRemediator(
+            sessionManager = sessionManager,
+            clientTracker = clientTracker,
+            preferencesManager = preferencesManager,
+            crashStoreProvider = { healthStore },
+            databaseProvider = { database },
+            control = sentinelControl,
+            logger = logger
+        )
+    }
+
+    val sentinel: com.localhub.localhub.sentinel.SentinelEngine by lazy {
+        val probes = com.localhub.localhub.sentinel.SentinelProbes(
+            context = appContext,
+            serverProvider = { server },
+            preferencesManager = preferencesManager,
+            sessionManager = sessionManager,
+            clientTracker = clientTracker,
+            systemInfoProvider = systemInfoProvider,
+            crashStoreProvider = { healthStore },
+            databaseProvider = { database },
+            logger = logger
+        )
+        com.localhub.localhub.sentinel.SentinelEngine(probes, sentinelRemediator, logger)
     }
 
     var server: LocalHubServer = buildServer(Constants.DEFAULT_PORT)
@@ -174,6 +231,10 @@ class AppContainer(context: Context) {
         controlServer = { command -> controlServer(command) },
         reportStatus = { _serverStatus.value = it },
         port = port,
+        // Suppliers, not values: `server` is initialised before `sentinel`, so a
+        // direct reference here would read an uninitialised field.
+        sentinelEngine = { sentinel },
+        sentinelRemediator = { sentinelRemediator },
         healthSummary = {
             runCatching { healthStore.describe(healthStore.read(), System.currentTimeMillis()) }
                 .getOrDefault("Health information is unavailable.")
