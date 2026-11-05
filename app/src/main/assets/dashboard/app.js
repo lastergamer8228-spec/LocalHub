@@ -25,7 +25,15 @@
 
   function setText(id, text) {
     var el = $(id);
-    if (el) el.textContent = text;
+    if (!el) return;
+    var next = String(text);
+    if (el.textContent === next) return;
+    var hadContent = el.textContent !== "" && el.textContent !== "\u2014";
+    el.textContent = next;
+    // A number that changes every few seconds is easy to miss, or to mistake
+    // for a glitch. A short rise draws the eye to it without being noisy.
+    // Skipped on the first paint so the page does not shimmer on load.
+    if (hadContent && window.LH && LH.Motion) LH.Motion.tick(el);
   }
 
   function pct(v) {

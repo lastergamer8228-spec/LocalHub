@@ -1,0 +1,502 @@
+/* design.css - LocalHub visual redesign.
+ *
+ * Loaded AFTER theme-pro.css, so it is the final word on how the dashboard
+ * looks. The previous theme was a flat, dense console: correct, but with no
+ * depth, no hierarchy you could feel, and no feedback when you touched
+ * anything. Everything here is about those three things.
+ *
+ * What changed, in the order you notice it:
+ *   1. depth      - layered shadows and a hairline top highlight, so cards sit
+ *                   above the page instead of being cut out of it
+ *   2. hierarchy  - one button system, one card header, one spacing rhythm
+ *   3. feedback   - hover lift, press, value tick, staggered entrance
+ *
+ * This file is presentation only. It changes no ids, no data-attributes and no
+ * behaviour, so the existing scripts and their tests are untouched.
+ */
+
+:root {
+  /* spacing rhythm - everything is a multiple of this */
+  --ds-1: 4px;
+  --ds-2: 8px;
+  --ds-3: 12px;
+  --ds-4: 16px;
+  --ds-5: 24px;
+  --ds-6: 32px;
+
+  --ds-radius: 12px;
+  --ds-radius-sm: 8px;
+
+  /* elevation: three levels, used consistently */
+  --ds-shadow-1: 0 1px 2px rgba(0, 0, 0, .35);
+  --ds-shadow-2: 0 6px 18px -6px rgba(0, 0, 0, .55);
+  --ds-shadow-3: 0 18px 40px -16px rgba(0, 0, 0, .75);
+
+  /* a hairline highlight along the top edge of a raised surface */
+  --ds-sheen: inset 0 1px 0 rgba(255, 255, 255, .045);
+
+  --ds-ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+/* ------------------------------------------------------------------ page */
+
+body.lh-page,
+body {
+  background:
+    radial-gradient(900px 480px at 78% -12%, rgba(76, 154, 255, .09), transparent 60%),
+    radial-gradient(700px 420px at 8% 4%, rgba(52, 211, 153, .06), transparent 62%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+main {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: var(--ds-5) var(--ds-5) var(--ds-6);
+}
+
+@media (max-width: 720px) {
+  main { padding: var(--ds-4) var(--ds-3) var(--ds-6); }
+}
+
+/* ------------------------------------------------------------- page head */
+
+.lh-page-head {
+  align-items: center;
+  gap: var(--ds-3);
+  margin-bottom: var(--ds-4);
+  padding-bottom: var(--ds-4);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.lh-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
+.lh-page-sub {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Actions belong in a group with its own surface, not floating in space. */
+.lh-page-actions {
+  gap: var(--ds-2);
+  padding: var(--ds-1);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: var(--ds-shadow-1);
+}
+
+.lh-page-actions > .btn,
+.lh-page-actions > a.btn {
+  border-radius: 999px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.lh-page-actions > .btn:hover,
+.lh-page-actions > a.btn:hover {
+  background: var(--surface-3);
+  border-color: var(--border);
+}
+
+/* ------------------------------------------------------------------ tabs */
+
+.lh-tab-nav {
+  display: flex;
+  gap: var(--ds-1);
+  padding: var(--ds-1);
+  margin-bottom: var(--ds-5);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: var(--ds-shadow-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.lh-tab-nav::-webkit-scrollbar { display: none; }
+
+.lh-tab {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-2);
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms var(--ds-ease), background 180ms var(--ds-ease),
+              transform 180ms var(--ds-ease);
+}
+
+.lh-tab:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.lh-tab:active { transform: scale(.97); }
+
+.lh-tab.active {
+  color: #fff;
+  background: linear-gradient(180deg, var(--accent), var(--accent-dim));
+  border-color: transparent;
+  box-shadow: 0 4px 14px -4px rgba(76, 154, 255, .6);
+}
+
+.lh-tab-ico { font-size: 13px; }
+
+/* ----------------------------------------------------------------- cards */
+
+.card,
+.panel,
+.reader-viewer-card {
+  position: relative;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--ds-radius);
+  padding: var(--ds-4);
+  box-shadow: var(--ds-shadow-2), var(--ds-sheen);
+  transition: transform 220ms var(--ds-ease), box-shadow 220ms var(--ds-ease),
+              border-color 220ms var(--ds-ease);
+}
+
+.card:hover,
+.panel:hover,
+.reader-viewer-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ds-shadow-3), var(--ds-sheen);
+  border-color: rgba(76, 154, 255, .28);
+}
+
+/* Card header: title on the left, actions pinned right, always aligned. */
+.card > h2:first-child,
+.card > .card-head:first-child {
+  align-items: center;
+  gap: var(--ds-3);
+  margin: calc(var(--ds-4) * -1) calc(var(--ds-4) * -1) var(--ds-4);
+  padding: 11px var(--ds-4);
+  border-bottom: 1px solid var(--border-soft);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .022), transparent);
+  border-radius: var(--ds-radius) var(--ds-radius) 0 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Any button sitting in a card header becomes a header action. */
+.card > h2:first-child > .btn,
+.card > h2:first-child > button,
+.card > .card-head:first-child > .btn,
+.card > .card-head:first-child > button {
+  padding: 5px 10px;
+  font-size: 11.5px;
+  border-radius: var(--ds-radius-sm);
+}
+
+.card > h2:first-child > .btn + .btn,
+.card > h2:first-child > button + button { margin-left: var(--ds-2); }
+
+/* Section headers outside cards keep the same rhythm. */
+.section-header,
+.lh-section-header {
+  margin: var(--ds-5) 0 var(--ds-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+/* Spacing between stacked cards */
+.lh-tab-pane > .card,
+.lh-tab-pane > section,
+.lh-tab-pane > .lh-cols { margin-bottom: var(--ds-4); }
+
+.lh-cols { gap: var(--ds-4); }
+
+/* --------------------------------------------------------------- buttons */
+
+.btn,
+button.chip,
+.chip.ctl,
+.linkbtn,
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: var(--ds-radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 110ms var(--ds-ease), background 180ms var(--ds-ease),
+              border-color 180ms var(--ds-ease), box-shadow 180ms var(--ds-ease),
+              color 180ms var(--ds-ease);
+}
+
+.btn:hover,
+a.btn:hover {
+  background: var(--surface-3);
+  border-color: rgba(76, 154, 255, .4);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.btn:active,
+a.btn:active {
+  transform: translateY(0) scale(.97);
+  box-shadow: var(--ds-shadow-1);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--accent), var(--accent-dim));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 14px -5px rgba(76, 154, 255, .65);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, var(--accent2), var(--accent));
+  color: #fff;
+  box-shadow: 0 8px 20px -6px rgba(76, 154, 255, .8);
+}
+
+.btn-danger,
+.btn.danger {
+  background: rgba(248, 113, 113, .12);
+  border-color: rgba(248, 113, 113, .35);
+  color: #fca5a5;
+}
+
+.btn-danger:hover,
+.btn.danger:hover {
+  background: rgba(248, 113, 113, .22);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.btn-ghost,
+.btn.ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+.btn-ghost:hover,
+.btn.ghost:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* Small size, used all over the console - make it consistent. */
+.btn-micro {
+  padding: 4px 9px;
+  font-size: 11.5px;
+  gap: 5px;
+  border-radius: var(--ds-radius-sm);
+}
+
+/* Keyboard users must always see where they are. */
+.btn:focus-visible,
+.lh-tab:focus-visible,
+.chip:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------- chips */
+
+.chip,
+.ai-prompt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 120ms var(--ds-ease), background 180ms var(--ds-ease),
+              border-color 180ms var(--ds-ease), color 180ms var(--ds-ease);
+}
+
+.chip:hover,
+.ai-prompt-chip:hover {
+  background: var(--surface-3);
+  border-color: rgba(76, 154, 255, .38);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.chip:active,
+.ai-prompt-chip:active { transform: scale(.96); }
+
+.chip.active,
+.lf-cat.active {
+  background: linear-gradient(180deg, var(--accent), var(--accent-dim));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 3px 10px -3px rgba(76, 154, 255, .6);
+}
+
+/* ---------------------------------------------------------------- inputs */
+
+.input,
+input[type="text"],
+input[type="search"],
+input:not([type]),
+textarea,
+select {
+  padding: 8px 11px;
+  border-radius: var(--ds-radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: inherit;
+  transition: border-color 180ms var(--ds-ease), box-shadow 180ms var(--ds-ease);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(76, 154, 255, .16);
+}
+
+/* --------------------------------------------------------- status banner */
+
+.status-banner,
+.lh-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--ds-3);
+  padding: var(--ds-4);
+  border-radius: var(--ds-radius);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border);
+  box-shadow: var(--ds-shadow-2), var(--ds-sheen);
+}
+
+.sb-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: var(--ds-3);
+  border-radius: var(--ds-radius-sm);
+  background: rgba(255, 255, 255, .022);
+  border: 1px solid var(--border-soft);
+  transition: background 200ms var(--ds-ease), border-color 200ms var(--ds-ease);
+}
+
+.sb-item:hover {
+  background: rgba(76, 154, 255, .06);
+  border-color: rgba(76, 154, 255, .25);
+}
+
+.sb-item > span {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.sb-item > b {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ----------------------------------------------------------------- lists */
+
+.list > *,
+.drow,
+.lh-row-in {
+  border-radius: var(--ds-radius-sm);
+  transition: background 160ms var(--ds-ease), transform 160ms var(--ds-ease);
+}
+
+.list > *:hover,
+.drow:hover {
+  background: rgba(76, 154, 255, .07);
+  transform: translateX(2px);
+}
+
+/* --------------------------------------------------------------- utility */
+
+/* Buttons scattered in a row become a proper toolbar. */
+.row,
+.ctrl-row,
+.reader-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-2);
+  flex-wrap: wrap;
+}
+
+.ctrl-row {
+  padding: var(--ds-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--ds-radius-sm);
+}
+
+.spacer { margin-left: auto; }
+
+/* Vertical rhythm. These replace ~20 different inline margin-top values that
+   were sprinkled through the markup - the reason cards and rows looked like
+   they had been dropped at random rather than placed. */
+.ds-stack { margin-top: var(--ds-3); }
+.ds-stack-sm { margin-top: var(--ds-2); }
+.ds-stack-lg { margin-top: var(--ds-4); }
+
+/* ------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .panel,
+  .btn,
+  .chip,
+  .lh-tab,
+  .list > *,
+  .drow {
+    transition-duration: 80ms !important;
+  }
+  .card:hover,
+  .btn:hover,
+  .chip:hover,
+  .list > *:hover,
+  .drow:hover {
+    transform: none !important;
+  }
+}

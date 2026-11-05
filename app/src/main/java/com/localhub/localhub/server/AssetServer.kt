@@ -70,6 +70,7 @@ class AssetServer(private val context: Context) {
         uri == "/brain" -> "dashboard/brain.html"
         uri == "/brain.js" -> "dashboard/brain.js"
         uri == "/tts" -> "dashboard/tts.html"
+        uri == "/design.css" -> "dashboard/design.css"
         uri == "/motion.css" -> "dashboard/motion.css"
         uri == "/motion.js" -> "dashboard/motion.js"
         uri == "/animations.css" -> "animations.css"

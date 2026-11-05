@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/theme-pro.css" />
   <link rel="stylesheet" href="/animations.css" />
   <link rel="stylesheet" href="/motion.css" />
+  <link rel="stylesheet" href="/design.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#0c1015" />
   <link rel="icon" type="image/png" href="/icon-192.png" />
@@ -80,7 +81,7 @@
       <!-- 1. Movies & Video Cinema Shelf -->
       <section class="card" id="shelf-section-videos">
         <h2>🎬 Movies &amp; Video Cinema <span class="spacer"></span><a class="hint" href="/player">Full Screen Player ➔</a></h2>
-        <div class="media-grid" id="movies-shelf" style="margin-top:10px">
+        <div class="media-grid ds-stack" id="movies-shelf">
           <div class="loading"><div class="spinner"></div>Scanning video library&hellip;</div>
         </div>
       </section>
@@ -89,7 +90,7 @@
       <section class="card" id="shelf-section-audio">
         <h2>🎵 Music &amp; Audio Lounge <span class="spacer"></span><span class="hint">Background audio playback</span></h2>
         <!-- Docked audio player card -->
-        <div class="audio-dock" style="margin-top:10px">
+        <div class="audio-dock ds-stack">
           <div class="audio-dock-head">
             <div class="audio-dock-art">🎧</div>
             <div class="audio-dock-meta">
@@ -108,7 +109,7 @@
           <audio id="docked-audio-tag" preload="metadata" style="display:none"></audio>
         </div>
         <!-- Playlist list -->
-        <div class="audio-playlist-box" id="audio-playlist" style="margin-top:10px">
+        <div class="audio-playlist-box ds-stack" id="audio-playlist">
           <div class="loading"><div class="spinner"></div>Loading music playlist&hellip;</div>
         </div>
       </section>
@@ -116,7 +117,7 @@
       <!-- 3. Photo Memories Gallery -->
       <section class="card" id="shelf-section-photos">
         <h2>📸 Photo Memories Gallery <span class="spacer"></span><button class="btn btn-micro ghost" id="btn-slideshow-toggle" type="button">▶ Start Slideshow</button></h2>
-        <div class="photos-grid" id="photos-grid" style="margin-top:10px">
+        <div class="photos-grid ds-stack" id="photos-grid">
           <div class="loading"><div class="spinner"></div>Loading photo memories&hellip;</div>
         </div>
       </section>
@@ -127,14 +128,14 @@
       <!-- Universal Shared Clipboard -->
       <section class="card">
         <h2>📋 Universal Shared Clipboard <span class="spacer"></span><span class="hint">Instant cross-device copy/paste on LAN</span></h2>
-        <div class="clip-live-box" style="margin-top:10px">
+        <div class="clip-live-box ds-stack">
           <div class="clip-live-content" id="clip-live-text">Reading clipboard…</div>
           <div class="clip-live-footer">
             <span class="clip-live-meta" id="clip-live-meta">Live sync active</span>
             <button class="btn btn-primary btn-micro" id="clip-copy-btn" type="button">📋 Copy to My Device</button>
           </div>
         </div>
-        <div class="row" style="margin-top:10px;gap:8px">
+        <div class="row ds-stack">
           <input class="input" id="clip-input" placeholder="Paste link, OTP, code snippet or text to drop to all devices…" style="flex:1" />
           <button class="btn btn-primary" id="clip-send-btn" type="button">⚡ Drop to All</button>
         </div>
@@ -146,7 +147,7 @@
         <!-- Zero-Data LAN Chat Room -->
         <section class="card" style="display:flex;flex-direction:column">
           <h2>💬 LAN Live Chat <span class="spacer"></span><span class="hint">Zero internet · Local Wi-Fi chat</span></h2>
-          <div class="chat-container" style="margin-top:8px">
+          <div class="chat-container ds-stack-sm">
             <div class="chat-header">
               <span>Chatting as: <b id="chat-my-nick" style="color:var(--accent)">Guest</b></span>
               <input id="chat-nickname-input" placeholder="Change nickname" style="width:120px;height:24px;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:0 6px;color:var(--text)" />
@@ -191,7 +192,7 @@
               <button class="btn btn-primary btn-micro" id="wall-submit-note" type="button">Post Notice</button>
             </div>
           </div>
-          <div class="wall-notes-grid" id="wall-notes-grid" style="margin-top:8px">
+          <div class="wall-notes-grid ds-stack-sm" id="wall-notes-grid">
             <div class="loading"><div class="spinner"></div>Loading notices&hellip;</div>
           </div>
         </section>
@@ -204,7 +205,7 @@
         <!-- Document Library List -->
         <section class="card" style="flex:1;max-width:320px">
           <h2>📚 Documents &amp; Books <span class="spacer"></span><a class="hint" href="/files">Browse Files ➔</a></h2>
-          <div class="list" id="reader-doc-list" style="margin-top:8px;max-height:480px;overflow-y:auto">
+          <div class="list ds-stack-sm" id="reader-doc-list" style="max-height:480px;overflow-y:auto">
             <div class="loading"><div class="spinner"></div>Scanning documents&hellip;</div>
           </div>
         </section>
@@ -233,10 +234,10 @@
       </div>
 
       <!-- Shared Scratchpad -->
-      <section class="card" style="margin-top:12px">
+      <section class="card ds-stack">
         <h2>📝 Shared Scratchpad &amp; Code Notes <span class="spacer"></span><span class="hint" id="scratchpad-meta">Synced on server</span></h2>
         <textarea class="scratchpad-area" id="scratchpad-textarea" placeholder="Write quick notes, draft messages, or paste code snippets here. Saved directly on LocalHub server!"></textarea>
-        <div class="row" style="margin-top:8px">
+        <div class="row ds-stack-sm">
           <button class="btn btn-primary" id="scratchpad-save" type="button">💾 Save to Server</button>
         </div>
       </section>
@@ -260,14 +261,14 @@
               <span class="vital-label">💾 Device Storage</span>
               <span class="vital-sub" id="storage-summary">Reading storage…</span>
             </div>
-            <div class="bar" style="margin-top:6px;height:7px"><div class="bar-fill" id="storage-bar" style="width:0%"></div></div>
+            <div class="bar ds-stack-sm" style="height:7px"><div class="bar-fill" id="storage-bar" style="width:0%"></div></div>
           </div>
           <div class="vital-item" style="max-width:180px">
             <div class="vital-head">
               <span class="vital-label">🔋 Battery</span>
               <span class="vital-sub" id="battery-summary">—</span>
             </div>
-            <div class="bar" style="margin-top:6px;height:7px"><div class="bar-fill" id="battery-bar" style="width:0%;background:var(--success)"></div></div>
+            <div class="bar ds-stack-sm" style="height:7px"><div class="bar-fill" id="battery-bar" style="width:0%;background:var(--success)"></div></div>
           </div>
         </div>
       </section>
@@ -278,7 +279,7 @@
         <div id="connect-body">
           <div class="loading"><div class="spinner"></div>Loading&hellip;</div>
         </div>
-        <div class="row" style="margin-top:10px;gap:14px;flex-wrap:wrap">
+        <div class="row ds-stack" style="flex-wrap:wrap">
           <span class="hint">Address <b id="sb-ip" style="font-family:var(--mono);color:var(--text-dim)">—</b></span>
           <span class="hint">Port <b id="sb-port" style="font-family:var(--mono);color:var(--text-dim)">—</b></span>
           <span class="hint">Restarts <b id="sb-restarts" style="font-family:var(--mono);color:var(--text-dim)">—</b></span>
@@ -298,7 +299,7 @@
         </div>
         <div class="quickdrop-progress" id="quickdrop-progress" style="display:none">
           <div class="row"><span id="quickdrop-status">Sending file…</span><span class="spacer"></span><span id="quickdrop-pct">0%</span></div>
-          <div class="bar" style="margin-top:5px;height:6px"><div class="bar-fill" id="quickdrop-bar" style="width:0%"></div></div>
+          <div class="bar ds-stack-sm" style="height:6px"><div class="bar-fill" id="quickdrop-bar" style="width:0%"></div></div>
         </div>
       </section>
 
@@ -357,14 +358,14 @@
       <!-- Remote Phone Control (Torch, Vibrate/Find, Volume, Screen Mirror) -->
       <section class="card admin-only" id="remote-control-card">
         <h2>📱 Phone Remote Actions <span class="spacer"></span><span class="hint">Direct hardware commands</span></h2>
-        <div class="ctrl-row" style="margin-top:4px">
+        <div class="ctrl-row ds-stack-sm">
           <button class="btn" id="btn-torch" type="button">🔦 Flashlight: Off</button>
           <button class="btn" id="btn-vibrate" type="button">📳 Vibrate Phone (Find)</button>
           <button class="btn" id="btn-volume-up" type="button">🔊 Volume +</button>
           <button class="btn" id="btn-volume-down" type="button">🔉 Volume -</button>
           <button class="btn" id="btn-mirror" type="button">🖥️ Screen Mirror</button>
         </div>
-        <div id="remote-action-status" class="hint" style="margin-top:8px"></div>
+        <div id="remote-action-status" class="hint ds-stack-sm"></div>
       </section>
 
       <section class="card admin-only" id="server-control-card">
@@ -377,7 +378,7 @@
           <button class="btn btn-ghost" data-cmd="restore">Restore config</button>
           <button class="btn btn-ghost" data-cmd="clear-cache">Clear cache</button>
         </div>
-        <div id="ctrl-status" class="hint" style="margin-top:8px"></div>
+        <div id="ctrl-status" class="hint ds-stack-sm"></div>
       </section>
 
       <!-- LAN reachability self-test. Answers the single most common support
@@ -420,7 +421,7 @@
           <div class="core-stage" style="position:relative;width:100%;height:min(52vh,380px);min-height:280px;border-radius:6px;overflow:hidden;background:var(--bg-2)">
             <canvas data-core id="core-embed" style="width:100%;height:100%;display:block"></canvas>
           </div>
-          <div class="hint" style="margin-top:8px">
+          <div class="hint ds-stack-sm">
             <span class="dot on" id="core-dot"></span>
             <span id="core-info">loading…</span> — connected clients orbit · CPU / RAM / storage arcs · drag to rotate
           </div>
@@ -430,7 +431,7 @@
       <section class="card admin-only">
         <h2>Connected devices <span class="spacer"></span><span class="hint" style="text-transform:none;letter-spacing:0">Blocking and restrictions are enforced server-side.</span></h2>
         <div id="devices" class="list">No devices connected.</div>
-        <div id="device-policy" style="margin-top:12px"></div>
+        <div id="device-policy" class="ds-stack"></div>
       </section>
 
       <div class="lh-cols">
@@ -460,7 +461,7 @@
             <button class="chip" id="download-logs">Download</button>
             <button class="chip btn-danger" id="clear-logs">Clear</button>
           </div>
-          <div id="logs" class="logs" style="margin-top:10px"></div>
+          <div id="logs" class="logs ds-stack"></div>
         </div>
       </details>
 
@@ -530,6 +531,17 @@
       });
       try { sessionStorage.setItem('lh_active_tab', name); } catch (e) {}
     }
+    // Entrance: the cards of the active pane arrive one after another. This is
+    // the first thing anyone sees, so it is where the redesign has to be
+    // obvious - a page that assembles reads as designed, not as rendered.
+    function lhEnterActive() {
+      if (!window.LH || !LH.Motion) return;
+      var active = document.querySelector('.lh-tab-pane.active');
+      if (!active) return;
+      LH.Motion.tabIn(active);
+      LH.Motion.stagger(active);
+    }
+
     var savedTab = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('lh_active_tab'));
     if (location.hash === '#system' || savedTab === 'system') {
       lhSetTab('system');
@@ -542,6 +554,7 @@
 
   <script src="/motion.js"></script>
   <script src="/nav.js"></script>
+  <script>document.addEventListener('DOMContentLoaded', function () { lhEnterActive(); });</script>
   <script src="/animations.js"></script>
   <script src="/visuals.js"></script>
   <script src="/core.js"></script>
