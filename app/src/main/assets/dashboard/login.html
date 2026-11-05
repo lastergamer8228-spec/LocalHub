@@ -7,178 +7,86 @@
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/theme-pro.css" />
   <link rel="stylesheet" href="/animations.css" />
+  <link rel="stylesheet" href="/tokens.css" />
+  <link rel="stylesheet" href="/components.css" />
   <style>
+    /* The login card was glassmorphic while the dashboard was an opaque
+       console, so the very first thing a user saw did not look like the
+       product they landed in. It now uses the same tonal surface. */
     .login-wrap {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-      background: radial-gradient(circle at 50% 20%, rgba(76, 154, 255, 0.08), transparent 60%),
-                  radial-gradient(circle at 80% 80%, rgba(52, 211, 153, 0.05), transparent 50%),
-                  var(--bg);
+      padding: var(--sp-4);
     }
-    .login-card {
-      width: 100%;
-      max-width: 400px;
-      background: rgba(19, 26, 35, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 28px 24px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.1);
-    }
-    .login-logo {
-      text-align: center;
-      margin-bottom: 22px;
-    }
+
+    .login-card { width: 100%; max-width: 400px; }
+
+    .login-logo { text-align: center; margin-bottom: var(--sp-5); }
+
     .login-logo .brand-mark {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent), #38bdf8);
-      color: #06121f;
-      display: inline-grid;
+      width: var(--sp-8);
+      height: var(--sp-8);
+      margin: 0 auto var(--sp-3);
+      border-radius: var(--r-md);
+      background: var(--accent);
+      color: var(--on-accent);
+      display: grid;
       place-items: center;
-      font-size: 22px;
-      font-weight: 800;
-      box-shadow: 0 8px 24px rgba(76, 154, 255, 0.3);
-      margin-bottom: 12px;
+      font-size: var(--fs-2xl);
+      font-weight: var(--fw-bold);
     }
     .login-logo h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text);
+      font-size: var(--fs-3xl);
+      font-weight: var(--fw-bold);
+      letter-spacing: -.02em;
     }
     .login-logo p {
-      margin: 6px 0 0;
+      margin: var(--sp-1) 0 0;
       color: var(--muted);
-      font-size: 13px;
+      font-size: var(--fs-xs);
       font-family: var(--mono);
+      overflow-wrap: anywhere;
     }
-    .login-form {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      margin-top: 8px;
-    }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .form-group label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-    }
-    .login-form input[type="text"],
-    .login-form input[type="password"] {
-      width: 100%;
-      height: 40px;
-      background: var(--bg-2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: var(--radius-sm);
-      padding: 0 12px;
-      font-size: 13.5px;
-      transition: all 0.15s ease;
-    }
-    .login-form input:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(76, 154, 255, 0.15);
-      background: var(--surface);
-    }
+
+    .login-form { display: flex; flex-direction: column; gap: var(--sp-4); }
+
     .remember-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 12.5px;
-      color: var(--muted);
+      gap: var(--sp-2);
+      margin: 0;
+      font-size: var(--fs-xs);
+      color: var(--text-2);
       cursor: pointer;
-      user-select: none;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: var(--fw-normal);
     }
-    .remember-row input {
-      width: 15px;
-      height: 15px;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-    .login-btn {
-      height: 42px;
-      background: linear-gradient(135deg, var(--accent), #38bdf8);
-      color: #06121f;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 6px;
-      transition: all 0.15s ease;
-      box-shadow: 0 4px 16px rgba(76, 154, 255, 0.25);
-    }
-    .login-btn:hover {
-      filter: brightness(1.1);
-      transform: translateY(-1px);
-    }
-    .login-btn:active {
-      transform: scale(0.99);
-    }
-    .login-btn:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      transform: none;
-    }
+    .remember-row input { width: 16px; height: 16px; accent-color: var(--accent); }
+
     .login-error {
+      font-size: var(--fs-xs);
       color: var(--danger);
-      font-size: 12.5px;
-      min-height: 18px;
-      text-align: center;
-      font-weight: 500;
+      min-height: var(--lh-xs);
     }
+    .login-error:empty { display: none; }
+
     .login-info {
-      text-align: center;
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border-soft);
-      font-size: 11.5px;
+      margin-top: var(--sp-5);
+      padding-top: var(--sp-4);
+      border-top: 1px solid var(--border);
+      font-size: var(--fs-xs);
       color: var(--muted);
-      line-height: 1.5;
+      text-align: center;
+      line-height: var(--lh-sm);
     }
-    .login-info b {
-      color: var(--text);
-    }
+
     @media (max-width: 480px) {
-      .login-wrap {
-        padding: 14px;
-        min-height: 100dvh;
-        min-height: 100vh;
-      }
-      .login-card {
-        padding: 22px 16px;
-        border-radius: 12px;
-      }
-      .login-logo {
-        margin-bottom: 18px;
-      }
-      .login-logo h1 {
-        font-size: 22px;
-      }
-      .login-form input[type="text"],
-      .login-form input[type="password"] {
-        height: 44px;
-        font-size: 16px;
-      }
-      .login-btn {
-        height: 46px;
-        font-size: 15px;
-      }
+      .login-wrap { padding: var(--sp-3); min-height: 100dvh; }
+      .login-card { padding: var(--sp-5) var(--sp-4); }
+      .login-logo h1 { font-size: var(--fs-2xl); }
     }
   </style>
 </head>
@@ -203,7 +111,7 @@
           <input type="checkbox" id="remember" />
           <span>Remember on this browser</span>
         </label>
-        <div class="login-error" id="login-error"></div>
+        <div class="login-error" id="login-error" role="alert" aria-live="assertive"></div>
         <button type="submit" class="login-btn lh-btn lh-ripple" id="login-btn">Sign In to LocalHub</button>
       </form>
       <div class="login-info">
@@ -236,15 +144,15 @@
         var password = document.getElementById("password").value;
         var remember = document.getElementById("remember").checked;
         var btn = document.getElementById("login-btn");
-        btn.disabled = true;
-        btn.textContent = "Signing in…";
+        if (window.LH && LH.UI) LH.UI.setLoading(btn, true); else btn.disabled = true;
         fetch(apiBase + "/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: username, password: password, remember: remember })
         }).then(function (r) { return r.json(); }).then(function (res) {
           if (res && res.ok) {
-            if (window.LH_ANIM && window.LH_ANIM.success) window.LH_ANIM.success(btn);
+            if (window.LH && LH.Motion) LH.Motion.success(btn);
+            else if (window.LH_ANIM && window.LH_ANIM.success) window.LH_ANIM.success(btn);
             try { sessionStorage.setItem("lhtoken", res.token); } catch (e) {}
             try {
               if (remember) localStorage.setItem("lhtoken", res.token);
@@ -255,16 +163,16 @@
             var err = document.getElementById("login-error");
             err.textContent = (res && res.error) || "Login failed.";
             if (res && res.attemptsLeft != null) err.textContent += " (" + res.attemptsLeft + " attempts left)";
-            btn.disabled = false;
-            btn.textContent = "Login";
-            if (window.LH_ANIM && window.LH_ANIM.error) window.LH_ANIM.error(btn);
+            if (window.LH && LH.UI) LH.UI.setLoading(btn, false); else { btn.disabled = false; btn.textContent = "Sign In to LocalHub"; }
+            if (window.LH && LH.Motion) LH.Motion.error(btn);
+            else if (window.LH_ANIM && window.LH_ANIM.error) window.LH_ANIM.error(btn);
           }
         }).catch(function () {
           var err = document.getElementById("login-error");
           err.textContent = "Cannot reach server.";
-          btn.disabled = false;
-          btn.textContent = "Login";
-          if (window.LH_ANIM && window.LH_ANIM.error) window.LH_ANIM.error(btn);
+          if (window.LH && LH.UI) LH.UI.setLoading(btn, false); else { btn.disabled = false; btn.textContent = "Sign In to LocalHub"; }
+          if (window.LH && LH.Motion) LH.Motion.error(btn);
+          else if (window.LH_ANIM && window.LH_ANIM.error) window.LH_ANIM.error(btn);
         });
       });
     })();

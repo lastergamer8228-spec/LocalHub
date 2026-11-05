@@ -1,0 +1,174 @@
+/* ============================================================================
+   LocalHub Design System — TOKENS
+   ----------------------------------------------------------------------------
+   The single source of truth. Components in components.css consume these and
+   nothing else; no component file may contain a raw hex, a raw px for rhythm,
+   or a raw duration.
+
+   Neutral ramp follows the Radix 12-step model, because it assigns exactly one
+   job to each step and thereby removes every judgement call about "how dark
+   should this border be".
+
+   Elevation is TONAL (Material 3): surfaces get lighter as they rise. Shadows
+   are reserved for level 3, the only surface that genuinely floats.
+   ========================================================================== */
+
+:root {
+  /* ---- neutral ramp: cool grey, 12 steps -------------------------------- */
+  --n-1:  #0a0d12;   /* app background */
+  --n-2:  #0f131a;   /* subtle background / card */
+  --n-3:  #141922;   /* UI element background, resting */
+  --n-4:  #1a2029;   /* UI element background, hover */
+  --n-5:  #202732;   /* UI element background, active / selected */
+  --n-6:  #28303c;   /* subtle border (non-interactive) */
+  --n-7:  #333c4a;   /* border, interactive */
+  --n-8:  #414c5c;   /* strong border + focus ring */
+  --n-9:  #4d5a6c;   /* solid background, highest chroma */
+  --n-10: #5c6b7f;   /* solid background, hover */
+  --n-11: #8493a6;   /* low-contrast text */
+  --n-12: #e8eef6;   /* high-contrast text */
+}
+
+:root {
+  /* ---- semantic surfaces & text ----------------------------------------- */
+  --bg:            var(--n-1);
+  --surface:       var(--n-2);   /* level 1 — cards, panels */
+  --surface-2:     var(--n-3);   /* level 2 — inputs, raised elements */
+  --surface-3:     var(--n-4);   /* hover */
+  --surface-4:     var(--n-5);   /* active / selected */
+  --surface-solid: var(--n-9);
+  --surface-solid-hover: var(--n-10);
+
+  --border:        var(--n-6);
+  --border-strong: var(--n-7);
+  --ring:          var(--n-8);
+
+  /* a 1px highlight along the top edge; substitutes for a shadow on dark */
+  --sheen: inset 0 1px 0 rgba(255, 255, 255, .045);
+
+  --text:   var(--n-12);
+  --text-2: var(--n-11);
+  --muted:  var(--n-11);
+  --disabled: #55606e;
+
+  /* ---- accent: brand teal, desaturated ~15% for dark so it stops vibrating */
+  --accent:        #2ec4a0;
+  --accent-hover:  #35d4ad;
+  --accent-soft:   rgba(46, 196, 160, .12);
+  --accent-border: rgba(46, 196, 160, .34);
+  --accent-text:   #7fe6c8;   /* teal as text on dark — readable */
+  --on-accent:     #04140f;   /* text ON a solid teal surface */
+
+  /* ---- semantic colours (each: strong + soft) ---------------------------- */
+  --success:       #3ddc97;  --success-soft: rgba(61, 220, 151, .12);
+  --warning:       #f5b448;  --warning-soft: rgba(245, 180, 72, .12);
+  --danger:        #ff6b6b;  --danger-soft:  rgba(255, 107, 107, .12);
+  --info:          #58a6ff;  --info-soft:    rgba(88, 166, 255, .12);
+
+  /* ---- metric colours (charts / telemetry only) -------------------------- */
+  --metric-cpu:     #2ec4a0;
+  --metric-memory:  #8b93ff;
+  --metric-storage: #f5b448;
+  --metric-battery: #3ddc97;
+  --metric-network: #58a6ff;
+
+  /* ---- typography -------------------------------------------------------- */
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo,
+          Consolas, "Liberation Mono", monospace;
+
+  /* major-second scale (1.125) from a 13px base, rounded */
+  --fs-2xs: 10.5px;   --lh-2xs: 16px;
+  --fs-xs:  12px;     --lh-xs:  16px;
+  --fs-sm:  13px;     --lh-sm:  20px;
+  --fs-md:  15px;     --lh-md:  24px;
+  --fs-lg:  17px;     --lh-lg:  24px;
+  --fs-xl:  19px;     --lh-xl:  24px;
+  --fs-2xl: 21px;     --lh-2xl: 28px;
+  --fs-3xl: 24px;     --lh-3xl: 32px;
+  --fs-4xl: 31px;     --lh-4xl: 40px;
+
+  --fw-normal: 400;
+  --fw-medium: 550;
+  --fw-semi:   650;
+  --fw-bold:   750;
+
+  /* label treatment — uppercase, for section labels ONLY, never body copy */
+  --label-tracking: .08em;
+
+  /* ---- spacing: 8pt grid, 4pt sub-grid ---------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-8: 48px;
+  --sp-10: 64px;
+
+  /* ---- radius ----------------------------------------------------------- */
+  --r-xs:   5px;
+  --r-sm:   7px;
+  --r-md:  10px;
+  --r-lg:  14px;
+  --r-xl:  18px;
+  --r-full: 999px;
+
+  /* ---- elevation: 4 tonal levels + one real shadow ---------------------- */
+  --elev-0: var(--n-1);   /* canvas */
+  --elev-1: var(--n-2);   /* card, panel */
+  --elev-2: var(--n-3);   /* raised: input, dropdown, popover */
+  --elev-3: var(--n-4);   /* modal — the only level with a shadow */
+  --shadow-3: 0 24px 56px -16px rgba(0, 0, 0, .7), 0 4px 12px rgba(0, 0, 0, .45);
+  --shadow-2: 0 8px 20px -8px rgba(0, 0, 0, .55);
+
+  /* ---- motion ----------------------------------------------------------- */
+  --d-instant: 80ms;
+  --d-fast:    160ms;
+  --d-base:    240ms;
+  --d-medium:  360ms;
+  --d-slow:    520ms;
+  --d-glacial: 800ms;
+
+  --e-enter: cubic-bezier(.16, 1, .3, 1);    /* decelerate — entrances */
+  --e-exit:  cubic-bezier(.4, 0, 1, 1);      /* accelerate — exits */
+  --e-move:  cubic-bezier(.4, 0, .2, 1);     /* standard — moving between states */
+  --e-linear: linear;                        /* spinners & progress ONLY */
+
+  --stagger: 50ms;
+
+  /* ---- layout ----------------------------------------------------------- */
+  --page-max: 1360px;
+  --nav-h: 52px;
+  --tap: 44px;
+
+  /* component heights, on the 8pt grid */
+  --h-sm: 32px;
+  --h-md: 40px;
+  --h-lg: 48px;
+  --h-input: 40px;
+
+  /* icon sizes */
+  --i-sm: 16px;
+  --i-md: 20px;
+  --i-lg: 24px;
+}
+
+/* --------------------------------------------------------------------------
+   Page title uses fluid type; everything else stays on the fixed scale.
+   -------------------------------------------------------------------------- */
+.lh-page-title {
+  font-size: clamp(19px, 1.1vw + 15px, 26px);
+}
+
+/* Tabular numerals everywhere a value changes, so digits do not jitter. */
+.mono,
+.sb-item > b,
+td.num,
+th.num,
+code,
+pre {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}

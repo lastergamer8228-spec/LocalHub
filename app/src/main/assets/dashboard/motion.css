@@ -178,34 +178,12 @@
 }
 .mt-toast {
   animation: mt-toast-in var(--mt-base) var(--mt-spring) both;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 15px;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, .96);
-  border: 1px solid rgba(148, 163, 184, .22);
-  color: #e2e8f0;
-  font-size: 13px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
-  max-width: min(92vw, 460px);
 }
 .mt-toast[data-kind="ok"]   { border-left: 3px solid var(--mt-ok) }
 .mt-toast[data-kind="warn"] { border-left: 3px solid var(--mt-warn) }
 .mt-toast[data-kind="bad"]  { border-left: 3px solid var(--mt-bad) }
 .mt-toast.is-leaving { animation: mt-toast-out var(--mt-fast) var(--mt-ease-in) both; }
 
-#mt-toast-host {
-  position: fixed;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  pointer-events: none;
-}
 
 /* ----------------------------------------------------------- tab switching */
 
