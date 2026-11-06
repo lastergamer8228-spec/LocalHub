@@ -172,3 +172,21 @@ pre {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
 }
+
+/* --------------------------------------------------------------------------
+   Legacy aliases
+   --------------------------------------------------------------------------
+   These names predate this file and are still referenced by markup that has
+   not been migrated. They are declared here so every var() in the project
+   resolves to a real token instead of falling back to nothing. New code must
+   use the canonical names above; these exist only so nothing renders broken
+   while the migration finishes.
+   -------------------------------------------------------------------------- */
+:root {
+  --accent-cyan:   var(--info);          /* was a second accent; now the info role */
+  --accent-purple: var(--metric-memory);
+  --bar-h:         6px;
+  --bg2:           var(--surface-2);
+  --fill:          var(--accent);
+  --shadow:        var(--shadow-3);
+}

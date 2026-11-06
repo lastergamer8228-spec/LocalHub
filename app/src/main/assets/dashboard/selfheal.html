@@ -11,49 +11,49 @@
   <link rel="stylesheet" href="/tokens.css" />
   <link rel="stylesheet" href="/components.css" />
   <style>
-    body { background:#0b1017; color:#e2e8f0; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:0; min-height:100vh; }
+    body { background:var(--bg); color:var(--text); font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:0; min-height:100vh; }
     .wrap { max-width: 1040px; margin: 0 auto; padding: 24px 20px 48px; }
     .header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px; flex-wrap:wrap; gap:12px; }
-    h1 { font-size: 22px; margin: 0 0 6px; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:10px; }
-    .sub { color:#94a3b8; font-size: 13px; line-height: 1.5; }
+    h1 { font-size: 22px; margin: 0 0 6px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:10px; }
+    .sub { color:var(--muted); font-size: 13px; line-height: 1.5; }
     .card { background:rgba(20,28,40,0.75); backdrop-filter:blur(16px); border:1px solid rgba(148,163,184,0.14); border-radius:12px; padding:18px; margin:14px 0; box-shadow:0 8px 30px rgba(0,0,0,0.3); transition:border-color .2s; }
     .card:hover { border-color:rgba(56,189,248,0.25); }
-    .card h2 { font-size: 13px; margin:0 0 12px; color:#38bdf8; text-transform: uppercase; letter-spacing:.08em; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+    .card h2 { font-size: 13px; margin:0 0 12px; color:var(--info); text-transform: uppercase; letter-spacing:.08em; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
     .kv { display:grid; grid-template-columns:180px 1fr; gap:8px 16px; font-size:13px; align-items:center; }
-    .kv b { color:#94a3b8; font-weight:600; font-size:12.5px; }
+    .kv b { color:var(--muted); font-weight:600; font-size:12.5px; }
     .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     @media(max-width:768px){ .grid{ grid-template-columns:1fr; } .kv{ grid-template-columns:1fr; gap:4px; } }
     .incident { border:1px solid rgba(148,163,184,0.18); border-left:4px solid #e0a53d; border-radius:8px; padding:12px 14px; margin:10px 0; background:rgba(15,23,42,0.6); }
-    .incident.critical { border-left-color:#ef4444; }
-    .incident.high { border-left-color:#f97316; }
-    .incident.resolved { border-left-color:#22c55e; }
+    .incident.critical { border-left-color:var(--danger); }
+    .incident.high { border-left-color:var(--warning); }
+    .incident.resolved { border-left-color:var(--success); }
     .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:0.02em; }
-    .b-green{background:rgba(34,197,94,0.18);color:#4ade80; border:1px solid rgba(34,197,94,0.3);}
-    .b-red{background:rgba(239,68,68,0.18);color:#f87171; border:1px solid rgba(239,68,68,0.3);}
+    .b-green{background:rgba(34,197,94,0.18);color:var(--success); border:1px solid rgba(34,197,94,0.3);}
+    .b-red{background:rgba(239,68,68,0.18);color:var(--danger); border:1px solid rgba(239,68,68,0.3);}
     .b-yellow{background:rgba(234,179,8,0.18);color:#facc15; border:1px solid rgba(234,179,8,0.3);}
-    .b-grey{background:rgba(148,163,184,0.18);color:#cbd5e1; border:1px solid rgba(148,163,184,0.3);}
-    .b-blue{background:rgba(56,189,248,0.18);color:#38bdf8; border:1px solid rgba(56,189,248,0.3);}
-    button { background:rgba(30,41,59,0.85); color:#f1f5f9; border:1px solid rgba(148,163,184,0.22); padding:8px 14px; border-radius:8px; cursor:pointer; margin:4px 6px 4px 0; font-size:12.5px; font-weight:500; transition:all .18s ease; display:inline-flex; align-items:center; gap:6px; }
-    button:hover { background:rgba(51,65,85,0.95); border-color:#38bdf8; color:#fff; transform:translateY(-1px); }
+    .b-grey{background:rgba(148,163,184,0.18);color:var(--text); border:1px solid rgba(148,163,184,0.3);}
+    .b-blue{background:rgba(56,189,248,0.18);color:var(--info); border:1px solid rgba(56,189,248,0.3);}
+    button { background:rgba(30,41,59,0.85); color:var(--text); border:1px solid rgba(148,163,184,0.22); padding:8px 14px; border-radius:8px; cursor:pointer; margin:4px 6px 4px 0; font-size:12.5px; font-weight:500; transition:all .18s ease; display:inline-flex; align-items:center; gap:6px; }
+    button:hover { background:rgba(51,65,85,0.95); border-color:var(--info); color:var(--text); transform:translateY(-1px); }
     button:active { transform:translateY(0); }
     button.danger { border-color:rgba(239,68,68,0.4); color:#fca5a5; }
-    button.danger:hover { background:rgba(239,68,68,0.2); border-color:#ef4444; }
-    button.primary { background:rgba(2,132,199,0.35); border-color:rgba(56,189,248,0.5); color:#e0f2fe; }
+    button.danger:hover { background:rgba(239,68,68,0.2); border-color:var(--danger); }
+    button.primary { background:rgba(2,132,199,0.35); border-color:rgba(56,189,248,0.5); color:var(--text); }
     button.primary:hover { background:rgba(2,132,199,0.6); }
-    pre { background:#070b12; border:1px solid rgba(148,163,184,0.16); border-radius:8px; padding:12px; font-size:11.5px; font-family:"JetBrains Mono", Consolas, monospace; overflow:auto; max-height:280px; color:#94a3b8; line-height:1.5; }
+    pre { background:var(--bg); border:1px solid rgba(148,163,184,0.16); border-radius:8px; padding:12px; font-size:11.5px; font-family:"JetBrains Mono", Consolas, monospace; overflow:auto; max-height:280px; color:var(--muted); line-height:1.5; }
     .steps .st { font-size:12px; padding:3px 0; }
-    .steps .st b { color:#38bdf8; }
-    .hide{display:none !important;}
+    .steps .st b { color:var(--info); }
+    .hide{display:none;}
     
     /* Gate Screen Styling for Non-Admins */
     .gate-hero { text-align:center; padding:36px 20px; }
     .gate-icon { font-size:48px; margin-bottom:12px; filter:drop-shadow(0 0 20px rgba(56,189,248,0.4)); }
-    .gate-title { font-size:20px; font-weight:700; color:#f8fafc; margin-bottom:8px; }
-    .gate-desc { font-size:14px; color:#94a3b8; max-width:560px; margin:0 auto 24px; line-height:1.6; }
+    .gate-title { font-size:20px; font-weight:700; color:var(--text); margin-bottom:8px; }
+    .gate-desc { font-size:14px; color:var(--muted); max-width:560px; margin:0 auto 24px; line-height:1.6; }
     .vitals-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin:20px 0; text-align:left; }
     .vital-box { background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.12); border-radius:10px; padding:14px; }
-    .vital-title { font-size:11px; text-transform:uppercase; color:#64748b; font-weight:700; letter-spacing:.05em; margin-bottom:4px; }
-    .vital-val { font-size:14px; font-weight:600; color:#34d399; display:flex; align-items:center; gap:6px; }
+    .vital-title { font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:700; letter-spacing:.05em; margin-bottom:4px; }
+    .vital-val { font-size:14px; font-weight:600; color:var(--success); display:flex; align-items:center; gap:6px; }
   </style>
 </head>
 <body class="lh-page">
@@ -67,7 +67,7 @@
         <div class="sub">Continuous health verification, runtime diagnosis, and automatic rollback engine</div>
       </div>
       <div>
-        <a href="/" class="btn" style="text-decoration:none; font-size:12.5px; padding:7px 14px; border-radius:8px; border:1px solid rgba(148,163,184,0.2); background:rgba(30,41,59,0.6); color:#cbd5e1;">↩ Dashboard</a>
+        <a href="/" class="btn" style="text-decoration:none; font-size:12.5px; padding:7px 14px; border-radius:8px; border:1px solid rgba(148,163,184,0.2); background:rgba(30,41,59,0.6); color:var(--text);">↩ Dashboard</a>
       </div>
     </div>
 
@@ -83,26 +83,26 @@
         <div class="vitals-grid">
           <div class="vital-box">
             <div class="vital-title">Web &amp; Asset Server</div>
-            <div class="vital-val"><span class="badge b-green">● Online</span> <span style="font-size:12px;color:#94a3b8">Port 8080</span></div>
+            <div class="vital-val"><span class="badge b-green">● Online</span> <span style="font-size:12px;color:var(--muted)">Port 8080</span></div>
           </div>
           <div class="vital-box">
             <div class="vital-title">WebSocket Mesh</div>
-            <div class="vital-val"><span class="badge b-green">● Connected</span> <span style="font-size:12px;color:#94a3b8">Active</span></div>
+            <div class="vital-val"><span class="badge b-green">● Connected</span> <span style="font-size:12px;color:var(--muted)">Active</span></div>
           </div>
           <div class="vital-box">
             <div class="vital-title">File System Bridge</div>
-            <div class="vital-val"><span class="badge b-green">● Verified</span> <span style="font-size:12px;color:#94a3b8">Storage Emulated</span></div>
+            <div class="vital-val"><span class="badge b-green">● Verified</span> <span style="font-size:12px;color:var(--muted)">Storage Emulated</span></div>
           </div>
           <div class="vital-box">
             <div class="vital-title">AI Assistant Engine</div>
-            <div class="vital-val"><span class="badge b-blue">● Ready</span> <span style="font-size:12px;color:#94a3b8">v2.4 Cognitive</span></div>
+            <div class="vital-val"><span class="badge b-blue">● Ready</span> <span style="font-size:12px;color:var(--muted)">v2.4 Cognitive</span></div>
           </div>
         </div>
 
         <div style="margin-top:20px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap">
           <a href="/" class="btn btn-primary" style="text-decoration:none; font-size:13px; padding:9px 18px; border-radius:8px;">Open Dashboard</a>
-          <a href="/files" class="btn" style="text-decoration:none; font-size:13px; padding:9px 18px; border-radius:8px; border:1px solid rgba(148,163,184,0.2); color:#cbd5e1; background:rgba(30,41,59,0.6);">Browse Files</a>
-          <a href="/login.html" class="btn" style="text-decoration:none; font-size:13px; padding:9px 18px; border-radius:8px; border:1px solid rgba(56,189,248,0.3); color:#38bdf8; background:rgba(15,23,42,0.8);">🔑 Switch to Admin</a>
+          <a href="/files" class="btn" style="text-decoration:none; font-size:13px; padding:9px 18px; border-radius:8px; border:1px solid rgba(148,163,184,0.2); color:var(--text); background:rgba(30,41,59,0.6);">Browse Files</a>
+          <a href="/login.html" class="btn" style="text-decoration:none; font-size:13px; padding:9px 18px; border-radius:8px; border:1px solid rgba(56,189,248,0.3); color:var(--info); background:rgba(15,23,42,0.8);">🔑 Switch to Admin</a>
         </div>
       </div>
     </div>
@@ -112,11 +112,11 @@
       <div class="grid">
         <div class="card" id="healthCard">
           <h2><span>System Health (Guardian)</span> <span class="badge b-green" id="guardian-badge">● Monitoring</span></h2>
-          <div id="health" style="line-height:1.6; font-size:13px; color:#cbd5e1;">Scanning system health…</div>
+          <div id="health" style="line-height:1.6; font-size:13px; color:var(--text);">Scanning system health…</div>
         </div>
         <div class="card">
           <h2><span>Self-Heal Diagnostic Matrix</span> <span class="badge b-blue">Automated</span></h2>
-          <div id="engine" style="line-height:1.6; font-size:13px; color:#cbd5e1;">Booting diagnostic routines…</div>
+          <div id="engine" style="line-height:1.6; font-size:13px; color:var(--text);">Booting diagnostic routines…</div>
         </div>
       </div>
 
@@ -144,7 +144,7 @@
           <b>Device Details</b> <span id="deviceInfo">—</span>
           <b>Runtime Verification</b> <span id="runtimeInfo">—</span>
         </div>
-        <pre id="deviceLog" class="hide" style="margin-top:12px"></pre>
+        <pre id="deviceLog" class="hide" class="ds-stack"></pre>
       </div>
 
       <div class="card">

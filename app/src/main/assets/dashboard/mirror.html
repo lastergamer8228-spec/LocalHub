@@ -8,30 +8,30 @@
   <link rel="stylesheet" href="/tokens.css" />
   <link rel="stylesheet" href="/components.css" />
   <style>
-    body { background:#04070e; color:#e5eaf2; font-family: -apple-system,Segoe UI,Roboto,sans-serif; margin:0; min-height:100vh; }
+    body { background:var(--bg); color:var(--text); font-family: -apple-system,Segoe UI,Roboto,sans-serif; margin:0; min-height:100vh; }
     .wrap { max-width: 900px; margin: 0 auto; padding: 16px; }
-    h1 { font-size: 18px; color:#22d3a6; display:flex; align-items:center; gap:8px; }
+    h1 { font-size: 18px; color:var(--accent); display:flex; align-items:center; gap:8px; }
     .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
-    button { background:#1b2740; border:1px solid #2a3550; color:#e5eaf2; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:13px; }
-    button:hover { border-color:#22d3a6; color:#22d3a6; }
-    button.primary { background:#22d3a6; color:#062a21; border:none; font-weight:700; }
-    .screen { width:100%; background:#000; border-radius:12px; overflow:hidden; border:1px solid #2a3550; min-height:300px; display:flex; align-items:center; justify-content:center; }
+    button { background:var(--surface-2); border:1px solid #2a3550; color:var(--text); border-radius:8px; padding:8px 14px; cursor:pointer; font-size:13px; }
+    button:hover { border-color:var(--accent); color:var(--accent); }
+    button.primary { background:var(--accent); color:var(--on-accent); border:none; font-weight:700; }
+    .screen { width:100%; background:var(--bg); border-radius:12px; overflow:hidden; border:1px solid #2a3550; min-height:300px; display:flex; align-items:center; justify-content:center; }
     .screen img { width:100%; display:block; }
-    .controls { margin-top:14px; background:#0a1226; border:1px solid #2a3550; border-radius:12px; padding:14px; }
-    .controls h3 { margin:0 0 10px; font-size:13px; color:#38bdf8; }
+    .controls { margin-top:14px; background:var(--surface); border:1px solid #2a3550; border-radius:12px; padding:14px; }
+    .controls h3 { margin:0 0 10px; font-size:13px; color:var(--info); }
     .row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
-    .row label { display:flex; align-items:center; gap:6px; font-size:13px; color:#8ea0bd; }
-    .row input { background:#1b2740; border:1px solid #2a3550; color:#fff; border-radius:6px; padding:6px 8px; font-size:13px; }
-    .status { font-size:12px; color:#8ea0bd; margin-top:10px; font-family:monospace; }
+    .row label { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); }
+    .row input { background:var(--surface-2); border:1px solid #2a3550; color:var(--text); border-radius:6px; padding:6px 8px; font-size:13px; }
+    .status { font-size:12px; color:var(--muted); margin-top:10px; font-family:monospace; }
     .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
-    .dot.on { background:#34d399; box-shadow:0 0 8px #34d399; }
-    .dot.off { background:#f87171; }
-    .hint { color:#5a6b85; font-size:12px; margin-top:8px; }
+    .dot.on { background:var(--success); box-shadow:0 0 8px var(--success); }
+    .dot.off { background:var(--danger); }
+    .hint { color:var(--muted); font-size:12px; margin-top:8px; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>📺 Remote Screen <span id="dot" class="dot off"></span><span id="state" style="font-size:12px;color:#8ea0bd">not mirroring</span></h1>
+    <h1>📺 Remote Screen <span id="dot" class="dot off"></span><span id="state" style="font-size:12px;color:var(--muted)">not mirroring</span></h1>
 
     <div class="toolbar">
       <button class="primary" id="start">▶ Start Mirror</button>
@@ -39,7 +39,7 @@
     </div>
 
     <div class="screen" id="screenBox">
-      <div id="placeholder" style="color:#5a6b85;font-size:14px">Start the mirror to see the phone screen here.</div>
+      <div id="placeholder" style="color:var(--muted);font-size:14px">Start the mirror to see the phone screen here.</div>
       <img id="frame" style="display:none" alt="phone screen" />
     </div>
 
@@ -59,24 +59,24 @@
         <button id="swipe-down">↓ Swipe</button>
       </div>
       <div class="row">
-        <label>Click text: <input id="click-text" placeholder="e.g. Search, Play" style="flex:1" /></label>
+        <label>Click text: <input id="click-text" placeholder="e.g. Search, Play" class="flex-1" /></label>
         <button id="click-btn" class="primary">Click</button>
         <button id="longpress-btn">Long press</button>
         <button id="focus-btn">Focus</button>
       </div>
       <div class="row">
-        <label>Click by id: <input id="click-id" placeholder="resource-id, e.g. search_btn" style="flex:1" /></label>
+        <label>Click by id: <input id="click-id" placeholder="resource-id, e.g. search_btn" class="flex-1" /></label>
         <button id="click-id-btn">Click</button>
       </div>
       <div class="row">
-        <label>Type text (focused field): <input id="type-text" placeholder="type something…" style="flex:1" /></label>
+        <label>Type text (focused field): <input id="type-text" placeholder="type something…" class="flex-1" /></label>
         <button id="type-btn" class="primary">Type</button>
       </div>
       <div class="row">
         <button id="dump-btn">📋 What's on screen</button>
         <button id="refresh-status">↻ Status</button>
       </div>
-      <pre id="dump" style="display:none;background:#0a1226;border:1px solid #2a3550;border-radius:8px;padding:10px;max-height:240px;overflow:auto;font-size:11px;color:#8ea0bd;margin-top:8px"></pre>
+      <pre id="dump" style="display:none;background:var(--surface);border:1px solid #2a3550;border-radius:8px;padding:10px;max-height:240px;overflow:auto;font-size:11px;color:var(--muted);margin-top:8px"></pre>
       <div class="status" id="status">loading…</div>
       <div class="hint">Requires "LocalHub Remote Access" enabled in Android Accessibility settings for control. Mirror requires screen-capture consent.</div>
     </div>
@@ -111,7 +111,7 @@
           statusEl.innerHTML =
             "<span class='dot " + (running?"on":"off") + "'></span> Mirror: " + (running ? "ON" : "OFF") +
             " &nbsp; <span class='dot " + (acc?"on":"off") + "'></span> Remote Access: " + (acc ? "ON" : "OFF") +
-            (r && r.error ? " &nbsp; <b style='color:#f87171'>Error: " + r.error + "</b>" : "");
+            (r && r.error ? " &nbsp; <b style='color:var(--danger)'>Error: " + r.error + "</b>" : "");
           if (running) startStream(); else stopStream();
         });
       }

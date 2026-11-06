@@ -11,11 +11,11 @@
       --bg: #04070f;
       --surface: rgba(11, 20, 36, 0.75);
       --border: rgba(56, 189, 248, 0.22);
-      --accent: #22d3a6;
-      --accent-cyan: #38bdf8;
+      --accent: var(--accent);
+      --accent-cyan: var(--info);
       --accent-purple: #a855f7;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
+      --text: var(--text);
+      --muted: var(--muted);
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background: var(--bg); overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--text); user-select: none; }
@@ -27,7 +27,7 @@
     .topbar > * { pointer-events: auto; }
     .brand-wrap { display: flex; align-items: center; gap: 12px; }
     .brand-icon { width: 38px; height: 38px; border-radius: 10px; background: rgba(34,211,166,0.15); border: 1px solid rgba(34,211,166,0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent); box-shadow: 0 0 16px rgba(34,211,166,0.25); }
-    .brand-title { font-size: 14px; font-weight: 800; letter-spacing: 2px; color: #fff; text-transform: uppercase; }
+    .brand-title { font-size: 14px; font-weight: 800; letter-spacing: 2px; color: var(--text); text-transform: uppercase; }
     .brand-title span { color: var(--accent-cyan); }
     .brand-sub { font-size: 11px; color: var(--muted); font-family: monospace; letter-spacing: 0.5px; }
 
@@ -40,7 +40,7 @@
 
     /* Top Actions */
     .top-actions { display: flex; align-items: center; gap: 8px; }
-    .btn-hud { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.3); color: #f1f5f9; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all .16s ease; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-hud { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--text); border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all .16s ease; display: inline-flex; align-items: center; gap: 6px; }
     .btn-hud:hover { border-color: var(--accent); color: var(--accent); background: rgba(34,211,166,0.12); transform: translateY(-1px); }
 
     /* Telemetry HUD Stacks (Floating left & right) */
@@ -55,7 +55,7 @@
     
     .hud-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin: 6px 0; }
     .hud-label { color: var(--muted); }
-    .hud-val { color: #fff; font-family: monospace; font-weight: 600; }
+    .hud-val { color: var(--text); font-family: monospace; font-weight: 600; }
 
     /* Metric bar */
     .hud-bar-wrap { height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin: 4px 0 10px; position: relative; }
@@ -72,25 +72,25 @@
     /* Clients list */
     .client-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; max-height: 140px; overflow-y: auto; }
     .client-item { background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(56,189,248,0.15); border-radius: 8px; padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; }
-    .client-item-ip { font-family: monospace; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .client-item-ip { font-family: monospace; color: var(--text); font-weight: 600; display: flex; align-items: center; gap: 6px; }
     .client-item-proto { font-size: 10px; color: var(--accent); padding: 1px 6px; border-radius: 4px; background: rgba(34,211,166,0.12); font-family: monospace; }
 
     /* Packet Stream Terminal */
-    .stream-feed { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10.5px; color: #94a3b8; max-height: 120px; overflow-y: hidden; line-height: 1.5; display: flex; flex-direction: column-reverse; }
+    .stream-feed { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10.5px; color: var(--muted); max-height: 120px; overflow-y: hidden; line-height: 1.5; display: flex; flex-direction: column-reverse; }
     .stream-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .stream-line .ts { color: #64748b; }
+    .stream-line .ts { color: var(--muted); }
     .stream-line .tag { color: var(--accent); }
-    .stream-line .data { color: #e2e8f0; }
+    .stream-line .data { color: var(--text); }
 
     /* Bottom Interactive Controls */
     .bottom-bar { position: fixed; bottom: 16px; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: center; gap: 12px; pointer-events: none; }
     .control-deck { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 999px; padding: 6px 18px; display: flex; align-items: center; gap: 12px; font-size: 11.5px; pointer-events: auto; box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
-    .control-deck button { background: none; border: none; color: #cbd5e1; font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: all .14s; display: inline-flex; align-items: center; gap: 5px; }
+    .control-deck button { background: none; border: none; color: var(--text); font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: all .14s; display: inline-flex; align-items: center; gap: 5px; }
     .control-deck button:hover { color: var(--accent); background: rgba(34,211,166,0.12); }
     .control-deck button.active { color: var(--accent); }
-    .hint-txt { color: #64748b; font-size: 11px; }
+    .hint-txt { color: var(--muted); font-size: 11px; }
 
-    #msg { position: fixed; left: 50%; top: 72px; transform: translateX(-50%); background: rgba(15,23,42,.95); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 20px; font-size: 13px; font-weight: 600; color: #fff; display: none; z-index: 30; box-shadow: 0 0 20px rgba(34,211,166,0.3); }
+    #msg { position: fixed; left: 50%; top: 72px; transform: translateX(-50%); background: rgba(15,23,42,.95); border: 1px solid var(--accent); border-radius: 10px; padding: 8px 20px; font-size: 13px; font-weight: 600; color: var(--text); display: none; z-index: 30; box-shadow: 0 0 20px rgba(34,211,166,0.3); }
 
     @media (max-width: 900px) {
       .hud-stack-left { width: 260px; font-size: 11px; }
@@ -191,7 +191,7 @@
         <div class="core-pill"><div class="core-pill-title">C6</div><div class="core-pill-val" id="cp-6">9%</div></div>
         <div class="core-pill"><div class="core-pill-title">C7</div><div class="core-pill-val" id="cp-7">14%</div></div>
       </div>
-      <div class="hud-row" style="margin-top:10px">
+      <div class="hud-row" class="ds-stack">
         <span class="hud-label">RAM Allocation</span>
         <span class="hud-val" id="hud-ram-txt">5.2 GB / 8.0 GB</span>
       </div>
@@ -216,7 +216,7 @@
         <span class="hud-label">Local Mesh Latency</span>
         <span class="hud-val" style="color:var(--accent)">&lt; 2 ms (LAN Direct)</span>
       </div>
-      <div class="hud-row" style="margin-top:8px">
+      <div class="hud-row" class="ds-stack-sm">
         <span class="hud-label" style="font-weight:700">Synchronized Peer Nodes:</span>
       </div>
       <div class="client-list" id="hud-clients-list">
