@@ -255,6 +255,10 @@
       .controlbar .cb-group { gap:1px; }
       .controlbar .cbtn { width:30px; min-width:30px; padding:0; }
       .controlbar .cbtn.big { width:36px; }
+      /* This one needs !important and it is the only one here that does:
+         it has to override a margin written as an inline style attribute,
+         and an inline style can only be beaten by !important, never by
+         specificity. Removing this would break the mobile control bar. */
       .controlbar .cb-group[style] { margin-left:0 !important; }
       .cb-time { font-size:10px; min-width:32px; }
       .cb-seek { gap:5px; }
@@ -293,33 +297,6 @@
     .hub-loading { grid-column: 1 / -1; padding: 36px 20px; text-align: center; color: var(--muted); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .hub-empty { grid-column: 1 / -1; padding: 40px 20px; text-align: center; color: var(--muted); font-size: 13px; background: rgba(27,39,64,.3); border-radius: 12px; border: 1px dashed var(--border); }
 
-    /* Force smooth vertical scroll on body and stage when in Hub Mode */
-    body.cinema.hub-mode {
-      height: auto !important;
-      min-height: 100vh !important;
-      min-height: 100dvh !important;
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
-      -webkit-overflow-scrolling: touch !important;
-      display: block !important;
-    }
-    body.cinema.hub-mode > .topbar {
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 50 !important;
-    }
-    body.cinema.hub-mode .stage {
-      height: auto !important;
-      min-height: calc(100vh - 72px) !important;
-      min-height: calc(100dvh - 72px) !important;
-      overflow-y: visible !important;
-      align-items: flex-start !important;
-      padding: 24px 20px 60px !important;
-    }
-    body.cinema.hub-mode .player-shell {
-      height: auto !important;
-      max-width: 1180px !important;
-    }
   </style>
   <link rel="stylesheet" href="/dashboard/player-cinema.css" />
   <link rel="stylesheet" href="/tokens.css" />

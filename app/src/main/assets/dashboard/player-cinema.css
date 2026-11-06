@@ -6,30 +6,30 @@ body.cinema {
 }
 /* When in Media Lounge / Hub mode, allow full-page vertical scrolling */
 body.cinema.hub-mode {
-  height:auto !important;
-  min-height:100vh !important;
-  min-height:100dvh !important;
-  overflow-y:auto !important;
-  overflow-x:hidden !important;
+  height:auto;
+  min-height:100vh;
+  min-height:100dvh;
+  overflow-y:auto;
+  overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
-  display:block !important;
+  display:block;
 }
 body.cinema.hub-mode > .topbar {
-  position:sticky !important;
-  top:0 !important;
-  z-index:50 !important;
+  position:sticky;
+  top:0;
+  z-index:50;
 }
 body.cinema.hub-mode .stage {
-  height:auto !important;
-  min-height:calc(100vh - 72px) !important;
-  min-height:calc(100dvh - 72px) !important;
-  overflow-y:visible !important;
-  align-items:flex-start !important;
-  padding:24px 20px 60px !important;
+  height:auto;
+  min-height:calc(100vh - 72px);
+  min-height:calc(100dvh - 72px);
+  overflow-y:visible;
+  align-items:flex-start;
+  padding:24px 20px 60px;
 }
 body.cinema.hub-mode .player-shell {
-  height:auto !important;
-  max-width:1180px !important;
+  height:auto;
+  max-width:1180px;
 }
 .cinema > .topbar {
   position:relative; flex:0 0 72px; min-height:72px; padding:0 28px;
@@ -125,6 +125,8 @@ body.cinema.hub-mode .player-shell {
   .cinema .cb-time { bottom:28px; }
   .cinema .cbtn { height:34px; }
 }
+/* Reduced motion: a genuine blanket override. !important is the only way to
+   silence animations declared anywhere else, including inline styles. */
 @media(prefers-reduced-motion:reduce) { .cinema * { animation:none !important; transition:none !important; } }
 /* Audio notifications are a compact transient chip, not a full-width banner. */
 .cinema #video-wrap > button {
