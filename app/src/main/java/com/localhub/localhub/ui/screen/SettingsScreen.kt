@@ -1,5 +1,8 @@
 package com.localhub.localhub.ui.screen
 
+import com.localhub.localhub.ui.theme.Radius
+import com.localhub.localhub.ui.theme.Space
+
 import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.compose.foundation.Image
@@ -52,7 +55,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val url = "$scheme://$ip:${if(running) status.port else port}"
     val clipboard = LocalClipboardManager.current
 
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(Modifier.fillMaxSize().padding(Space.lg), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { SectionHeader("Server control") }
         item {
             PremiumCard {

@@ -1,5 +1,8 @@
 package com.localhub.localhub.ui.navigation
 
+import com.localhub.localhub.ui.theme.Radius
+import com.localhub.localhub.ui.theme.Space
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +46,7 @@ internal fun ControllerScaffold(
                 },
                 actions = {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(Radius.md),
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
                         modifier = Modifier.padding(end = 12.dp)

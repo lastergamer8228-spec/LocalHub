@@ -1,5 +1,8 @@
 package com.localhub.localhub.ui.components
 
+import com.localhub.localhub.ui.theme.Radius
+import com.localhub.localhub.ui.theme.Space
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
@@ -53,7 +56,7 @@ fun PremiumCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(Radius.xl),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
         ),
@@ -93,7 +96,7 @@ fun PremiumButton(
         label = "btnGlow"
     )
     val elevation by animateDpAsState(if (pressed) 2.dp else 8.dp, label = "btnElev")
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(Radius.lg)
     val bg = if (enabled) accent else accent.copy(alpha = 0.4f)
     val txtColor = if (enabled) contentColor else contentColor.copy(alpha = 0.6f)
 
@@ -119,7 +122,7 @@ fun PremiumButton(
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     onClick()
                 }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = Space.lg, vertical = Space.md),
             contentAlignment = Alignment.Center
         ) {
             if (loading) {
@@ -166,7 +169,7 @@ fun PremiumSwitch(
     Box(
         modifier = modifier
             .size(width = trackWidth, height = thumbSize + 4.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(Radius.lg))
             .background(trackColor)
             .clickable(
                 interactionSource = interaction,
@@ -199,7 +202,7 @@ fun PremiumTextField(
     supportingText: String? = null,
     leadingIcon: (@Composable () -> Unit)? = null
 ) {
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(Radius.lg)
     val accent = LocalLocalHubColors.current.accentBlue
     OutlinedTextField(
         value = value,
@@ -230,13 +233,13 @@ fun SegmentSelector(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(Radius.lg)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
-            .padding(4.dp),
+            .padding(Space.xs),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         options.forEach { (key, label) ->
@@ -253,7 +256,7 @@ fun SegmentSelector(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(11.dp))
+                    .clip(RoundedCornerShape(Radius.md))
                     .background(bg)
                     .clickable { onSelect(key) }
                     .padding(vertical = 9.dp),

@@ -751,6 +751,21 @@ tbody tr:hover { background: var(--elev-2); }
 }
 .spacer { margin-left: auto; }
 
+/* Presentation utilities. Only patterns that recur often enough to earn a
+   name live here; a one-off stays inline. The test for inclusion is reuse,
+   not convenience. */
+.no-caps   { text-transform: none; letter-spacing: 0; }
+.dim       { color: var(--text-2); }
+.pad-sm    { padding: var(--sp-2) var(--sp-3); }
+.flex-col  { display: flex; flex-direction: column; }
+.flex-1    { flex: 1; }
+.flex-wrap { flex-wrap: wrap; }
+.w-full    { width: 100%; }
+.ellipsis  { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-lg    { height: 7px; }
+.scroll-y  { max-height: 480px; overflow-y: auto; }
+.mb-4      { margin-bottom: var(--sp-4); }
+
 .ds-stack    { margin-top: var(--sp-3); }
 .ds-stack-sm { margin-top: var(--sp-2); }
 .ds-stack-lg { margin-top: var(--sp-4); }

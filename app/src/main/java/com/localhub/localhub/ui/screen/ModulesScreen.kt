@@ -1,5 +1,8 @@
 package com.localhub.localhub.ui.screen
 
+import com.localhub.localhub.ui.theme.Radius
+import com.localhub.localhub.ui.theme.Space
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -72,7 +75,7 @@ internal fun ModulesContent(
             ) {
                 if (error != null) item(key = "error") {
                     Surface(color = MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.medium) {
-                        Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(Space.md)) {
                             Text(error, maxLines = 3, overflow = TextOverflow.Ellipsis)
                             TextButton(onClick = onDismissError) { Text("Dismiss") }
                         }

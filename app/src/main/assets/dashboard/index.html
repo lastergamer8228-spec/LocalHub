@@ -71,7 +71,7 @@
       </section>
 
       <!-- Media Category Filter Pills -->
-      <div class="logtoolbar lounge-filter-bar" id="lounge-filter-bar" style="margin:4px 0 2px">
+      <div class="logtoolbar lounge-filter-bar" id="lounge-filter-bar" class="ds-stack-sm">
         <button class="chip active lf-cat" data-cat="all">All Media</button>
         <button class="chip lf-cat" data-cat="videos">🎬 Movies &amp; Videos (<span id="count-videos">0</span>)</button>
         <button class="chip lf-cat" data-cat="audio">🎵 Music &amp; Audio (<span id="count-audio">0</span>)</button>
@@ -137,7 +137,7 @@
           </div>
         </div>
         <div class="row ds-stack">
-          <input class="input" id="clip-input" placeholder="Paste link, OTP, code snippet or text to drop to all devices…" style="flex:1" />
+          <input class="input" id="clip-input" placeholder="Paste link, OTP, code snippet or text to drop to all devices…" class="flex-1" />
           <button class="btn btn-primary" id="clip-send-btn" type="button">⚡ Drop to All</button>
         </div>
         <div class="clip-history-row" id="clip-history-list"></div>
@@ -146,7 +146,7 @@
       <!-- Two column: Live LAN Chat & Sticky Wall -->
       <div class="lh-cols">
         <!-- Zero-Data LAN Chat Room -->
-        <section class="card" style="display:flex;flex-direction:column">
+        <section class="card" class="flex-col">
           <h2>💬 LAN Live Chat <span class="spacer"></span><span class="hint">Zero internet · Local Wi-Fi chat</span></h2>
           <div class="chat-container ds-stack-sm">
             <div class="chat-header">
@@ -164,8 +164,8 @@
                 <span class="chat-quick-emoji">🎬</span>
                 <span class="chat-quick-emoji">📁</span>
               </div>
-              <div class="row" style="gap:6px">
-                <input class="input" id="chat-message-input" placeholder="Type a message to everyone on Wi-Fi…" style="flex:1" />
+              <div class="row" class="row">
+                <input class="input" id="chat-message-input" placeholder="Type a message to everyone on Wi-Fi…" class="flex-1" />
                 <button class="btn btn-primary" id="chat-message-send" type="button">Send</button>
               </div>
             </div>
@@ -173,13 +173,13 @@
         </section>
 
         <!-- Sticky Notice Board / Wall -->
-        <section class="card" style="display:flex;flex-direction:column">
+        <section class="card" class="flex-col">
           <h2>📌 Local Notice Board <span class="spacer"></span><button class="btn btn-micro ghost" id="btn-wall-add" type="button">+ Pin Note</button></h2>
           <!-- Inline add note form -->
           <div id="wall-add-form" style="display:none;margin:8px 0;padding:10px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border)">
             <input class="input" id="note-input-title" placeholder="Notice title (e.g. Wi-Fi info, Goa Trip)" style="width:100%;margin-bottom:6px" />
             <textarea class="input" id="note-input-content" placeholder="Note message..." style="width:100%;height:60px;margin-bottom:6px"></textarea>
-            <div class="row" style="gap:8px;align-items:center">
+            <div class="row" class="row">
               <select id="note-input-color" style="height:28px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:3px;padding:0 6px">
                 <option value="yellow">Yellow</option>
                 <option value="blue">Blue</option>
@@ -206,7 +206,7 @@
         <!-- Document Library List -->
         <section class="card" style="flex:1;max-width:320px">
           <h2>📚 Documents &amp; Books <span class="spacer"></span><a class="hint" href="/files">Browse Files ➔</a></h2>
-          <div class="list ds-stack-sm" id="reader-doc-list" style="max-height:480px;overflow-y:auto">
+          <div class="list ds-stack-sm" id="reader-doc-list" class="scroll-y">
             <div class="loading"><div class="spinner"></div>Scanning documents&hellip;</div>
           </div>
         </section>
@@ -214,8 +214,8 @@
         <!-- Document Viewer & Audiobook Pane -->
         <section class="reader-viewer-card" id="reader-viewer-pane" style="display:none">
           <div class="reader-toolbar">
-            <b id="reader-doc-title" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Document Viewer</b>
-            <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap">
+            <b id="reader-doc-title" class="ellipsis">Document Viewer</b>
+            <div class="row" class="row flex-wrap">
               <select id="reader-speed-select" class="chip" style="height:26px;padding:0 6px" title="TTS Speed">
                 <option value="0.85">0.85x</option>
                 <option value="1.0" selected>1.0x</option>
@@ -262,34 +262,34 @@
               <span class="vital-label">💾 Device Storage</span>
               <span class="vital-sub" id="storage-summary">Reading storage…</span>
             </div>
-            <div class="bar ds-stack-sm" style="height:7px"><div class="bar-fill" id="storage-bar" style="width:0%"></div></div>
+            <div class="bar ds-stack-sm" class="bar bar-lg"><div class="bar-fill" id="storage-bar" style="width:0%"></div></div>
           </div>
           <div class="vital-item" style="max-width:180px">
             <div class="vital-head">
               <span class="vital-label">🔋 Battery</span>
               <span class="vital-sub" id="battery-summary">—</span>
             </div>
-            <div class="bar ds-stack-sm" style="height:7px"><div class="bar-fill" id="battery-bar" style="width:0%;background:var(--success)"></div></div>
+            <div class="bar ds-stack-sm" class="bar bar-lg"><div class="bar-fill" id="battery-bar" style="width:0%;background:var(--success)"></div></div>
           </div>
         </div>
       </section>
 
       <!-- 3. Connect: the primary job of this page -->
       <section class="card" id="connect-card">
-        <h2>Connect <span class="spacer"></span><span class="hint" id="sb-name" style="text-transform:none;letter-spacing:0"></span></h2>
+        <h2>Connect <span class="spacer"></span><span class="hint" id="sb-name" class="no-caps"></span></h2>
         <div id="connect-body">
           <div class="loading"><div class="spinner"></div>Loading&hellip;</div>
         </div>
         <div class="row ds-stack" style="flex-wrap:wrap">
-          <span class="hint">Address <b id="sb-ip" style="font-family:var(--mono);color:var(--text-dim)">—</b></span>
-          <span class="hint">Port <b id="sb-port" style="font-family:var(--mono);color:var(--text-dim)">—</b></span>
-          <span class="hint">Restarts <b id="sb-restarts" style="font-family:var(--mono);color:var(--text-dim)">—</b></span>
+          <span class="hint">Address <b id="sb-ip" class="mono dim">—</b></span>
+          <span class="hint">Port <b id="sb-port" class="mono dim">—</b></span>
+          <span class="hint">Restarts <b id="sb-restarts" class="mono dim">—</b></span>
         </div>
       </section>
 
       <!-- 4. Quick Drop: Wireless Send to Phone -->
       <section class="card lh-drop-card" id="quickdrop-card">
-        <h2>⚡ Quick Drop <span class="spacer"></span><span class="hint" style="text-transform:none;letter-spacing:0">Send files wirelessly to phone</span></h2>
+        <h2>⚡ Quick Drop <span class="spacer"></span><span class="hint" class="no-caps">Send files wirelessly to phone</span></h2>
         <div class="quickdrop-zone" id="quickdrop-zone">
           <div class="quickdrop-icon">📤</div>
           <div class="quickdrop-text">
@@ -300,35 +300,35 @@
         </div>
         <div class="quickdrop-progress" id="quickdrop-progress" style="display:none">
           <div class="row"><span id="quickdrop-status">Sending file…</span><span class="spacer"></span><span id="quickdrop-pct">0%</span></div>
-          <div class="bar ds-stack-sm" style="height:6px"><div class="bar-fill" id="quickdrop-bar" style="width:0%"></div></div>
+          <div class="bar ds-stack-sm" class="bar"><div class="bar-fill" id="quickdrop-bar" style="width:0%"></div></div>
         </div>
       </section>
 
       <!-- Mobile-First Launchpad Grid for Easy 1-Tap navigation -->
       <div class="lh-launchpad">
         <a class="lh-launch-tile" href="/files">
-          <div class="tile-icon" style="background:rgba(76,154,255,0.15);color:#4c9aff">📁</div>
+          <div class="tile-icon" style="background:var(--info-soft);color:var(--info)">📁</div>
           <div class="tile-content">
             <div class="tile-title">File Manager</div>
             <div class="tile-desc">Upload, download &amp; manage storage</div>
           </div>
         </a>
         <a class="lh-launch-tile" href="/player">
-          <div class="tile-icon" style="background:rgba(52,211,153,0.15);color:#34d399">▶</div>
+          <div class="tile-icon" style="background:var(--success-soft);color:var(--success)">▶</div>
           <div class="tile-content">
             <div class="tile-title">Media Cinema</div>
             <div class="tile-desc">Stream movies, videos &amp; audio</div>
           </div>
         </a>
         <a class="lh-launch-tile" href="/ai/">
-          <div class="tile-icon" style="background:rgba(129,140,248,0.15);color:#818cf8">🧠</div>
+          <div class="tile-icon" style="background:rgba(139,147,255,.15);color:var(--metric-memory)">🧠</div>
           <div class="tile-content">
             <div class="tile-title">AI Assistant</div>
             <div class="tile-desc">Chat &amp; smart server control</div>
           </div>
         </a>
         <button class="lh-launch-tile" type="button" onclick="lhSetTab('system')">
-          <div class="tile-icon" style="background:rgba(240,180,41,0.15);color:#f0b429">⚙</div>
+          <div class="tile-icon" style="background:var(--warning-soft);color:var(--warning)">⚙</div>
           <div class="tile-content">
             <div class="tile-title">System &amp; Admin</div>
             <div class="tile-desc">Hardware telemetry &amp; diagnostics</div>
@@ -345,12 +345,12 @@
       <!-- User Media & Folders -->
       <section class="card user-only">
         <h2>Continue watching</h2>
-        <div id="user-media" class="list"><div class="hint" style="padding:8px 10px">Recently played media appears here.</div></div>
+        <div id="user-media" class="list"><div class="hint" class="pad-sm">Recently played media appears here.</div></div>
       </section>
 
       <section class="card user-only">
         <h2>Your folders</h2>
-        <div id="user-files" class="list"><div class="hint" style="padding:8px 10px">Folders you use most appear here.</div></div>
+        <div id="user-files" class="list"><div class="hint" class="pad-sm">Folders you use most appear here.</div></div>
       </section>
     </div>
 
@@ -389,7 +389,7 @@
           <span class="spacer"></span>
           <button class="btn btn-ghost" id="btn-netdiag" type="button">Run LAN check</button>
         </h2>
-        <div id="netdiag-body" class="hint" style="text-transform:none;letter-spacing:0">
+        <div id="netdiag-body" class="hint" class="no-caps">
           Press <b>Run LAN check</b>. It connects to the phone's own LAN address and tells you
           whether the problem is the server, the network, or the other device.
         </div>
@@ -420,7 +420,7 @@
         <summary>System Core — live visualisation</summary>
         <div class="card-body">
           <div class="core-stage" style="position:relative;width:100%;height:min(52vh,380px);min-height:280px;border-radius:6px;overflow:hidden;background:var(--bg-2)">
-            <canvas data-core id="core-embed" style="width:100%;height:100%;display:block"></canvas>
+            <canvas data-core id="core-embed" class="w-full" style="height:100%;display:block"></canvas>
           </div>
           <div class="hint ds-stack-sm">
             <span class="dot on" id="core-dot"></span>
@@ -430,7 +430,7 @@
       </details>
 
       <section class="card admin-only">
-        <h2>Connected devices <span class="spacer"></span><span class="hint" style="text-transform:none;letter-spacing:0">Blocking and restrictions are enforced server-side.</span></h2>
+        <h2>Connected devices <span class="spacer"></span><span class="hint" class="no-caps">Blocking and restrictions are enforced server-side.</span></h2>
         <div id="devices" class="list">No devices connected.</div>
         <div id="device-policy" class="ds-stack"></div>
       </section>

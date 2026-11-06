@@ -1,5 +1,8 @@
 package com.localhub.localhub.ui.components
 
+import com.localhub.localhub.ui.theme.Radius
+import com.localhub.localhub.ui.theme.Space
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -51,14 +54,14 @@ fun StatCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(Radius.xl),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
         ),
         border = BorderStroke(1.dp, accent.copy(alpha = 0.22f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Space.lg)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -72,7 +75,7 @@ fun StatCard(
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(Radius.md))
                                 .background(accent.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
@@ -93,7 +96,7 @@ fun StatCard(
                 }
                 if (progress != null) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(Radius.sm),
                         color = accent.copy(alpha = 0.12f)
                     ) {
                         Text(
@@ -128,7 +131,7 @@ fun StatCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(7.dp)
-                        .clip(RoundedCornerShape(4.dp)),
+                        .clip(RoundedCornerShape(Radius.xs)),
                     color = accent,
                     trackColor = accent.copy(alpha = 0.18f),
                     strokeCap = StrokeCap.Round

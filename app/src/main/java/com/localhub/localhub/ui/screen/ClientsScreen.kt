@@ -1,5 +1,8 @@
 package com.localhub.localhub.ui.screen
 
+import com.localhub.localhub.ui.theme.Radius
+import com.localhub.localhub.ui.theme.Space
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -55,7 +58,7 @@ internal fun ClientsContent(
 
     Column(modifier = Modifier.fillMaxSize().testTag("clients-screen")) {
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().padding(horizontal = Space.lg, vertical = Space.md),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
@@ -72,7 +75,7 @@ internal fun ClientsContent(
         HorizontalDivider()
         if (feedback != null) {
             Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = Space.lg, vertical = Space.sm)) {
                     Text(feedback, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, maxLines = 3)
                     TextButton(onClick = onDismissFeedback) { Text("OK") }
                 }

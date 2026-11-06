@@ -1,5 +1,8 @@
 package com.localhub.localhub.ui.screen
 
+import com.localhub.localhub.ui.theme.Radius
+import com.localhub.localhub.ui.theme.Space
+
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
@@ -61,7 +64,7 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(), onManageServer:
     ) {
         item(key = "hero-header", contentType = "hero") {
             Surface(
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(Radius.xl),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
                 modifier = Modifier.fillMaxWidth()
@@ -85,7 +88,7 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(), onManageServer:
                         )
                     }
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(Radius.md),
                         color = if (status.running) colors.success.copy(alpha = 0.15f)
                                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
                     ) {

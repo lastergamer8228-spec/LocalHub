@@ -1,5 +1,8 @@
 package com.localhub.localhub.ui.components
 
+import com.localhub.localhub.ui.theme.Radius
+import com.localhub.localhub.ui.theme.Space
+
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.core.LinearEasing
@@ -80,7 +83,7 @@ fun ServerStatusCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(Radius.xl),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
         ),
@@ -142,7 +145,7 @@ fun ServerStatusCard(
 
                 if (status.running) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(Radius.sm),
                         color = colors.accent.copy(alpha = 0.12f),
                         border = BorderStroke(1.dp, colors.accent.copy(alpha = 0.3f))
                     ) {
@@ -152,7 +155,7 @@ fun ServerStatusCard(
                             fontWeight = FontWeight.Bold,
                             color = colors.accent,
                             letterSpacing = 0.5.sp,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = Space.sm, vertical = Space.xs)
                         )
                     }
                 }
@@ -162,7 +165,7 @@ fun ServerStatusCard(
                 val url = "${status.protocol}://${status.host}:${status.port}"
                 val hostUrl = "${status.protocol}://localhub.local:${status.port}"
                 Surface(
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(Radius.lg),
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
                     modifier = Modifier.fillMaxWidth()
@@ -233,7 +236,7 @@ fun ServerStatusCard(
                         }
 
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(Radius.sm),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -283,7 +286,7 @@ fun ServerStatusCard(
                 if (status.running) {
                     Button(
                         onClick = onOpenDashboard,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(Radius.md),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = colors.accent,
                             contentColor = MaterialTheme.colorScheme.onPrimary
@@ -302,7 +305,7 @@ fun ServerStatusCard(
                 if (onManageServer != null) {
                     OutlinedButton(
                         onClick = onManageServer,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(Radius.md),
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(

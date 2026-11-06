@@ -26,6 +26,15 @@ object AnimTokens {
     /** Springy / emphatic micro-interactions. */
     const val SPRING_MS = 520
 
+    /** Reserved for a state change worth noticing (the server coming up). */
+    const val EMPHASIS_MS = 720
+
+    /** Steady breathing pulse while a service is online. */
+    const val PULSE_MS = 1400
+
+    /** Delay between staggered children, in milliseconds. */
+    const val STAGGER_STEP_MS = 40
+
     /** Standard (Material 3) easing — cubic-bezier(0.4, 0, 0.2, 1). */
     val StandardEasing: Easing = bezierEasing(0.4f, 0.0f, 0.2f, 1.0f)
 
@@ -34,6 +43,9 @@ object AnimTokens {
 
     /** Gentle overshoot — for micro-interactions, cubic-bezier(0.34, 1.56, 0.64, 1). */
     val SpringEasing: Easing = bezierEasing(0.34f, 1.56f, 0.64f, 1.0f)
+
+    /** Acceleration — for exits, cubic-bezier(0.4, 0, 1, 1). */
+    val EaseInEasing: Easing = bezierEasing(0.4f, 0f, 1f, 1f)
 
     /**
      * Builds an [Easing] from a cubic-bezier definition using the same
