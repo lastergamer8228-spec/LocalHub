@@ -1,4 +1,13 @@
 package com.localhub.localhub.ui.screen
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.offset
+import com.localhub.localhub.ui.theme.AnimTokens
+import androidx.compose.ui.draw.alpha
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
 
 import com.localhub.localhub.ui.theme.Radius
 import com.localhub.localhub.ui.theme.Space
@@ -57,10 +66,30 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(), onManageServer:
     val context = LocalContext.current
     val colors = LocalLocalHubColors.current
 
+    // Screen entry. The redesign changed surfaces and spacing, both of which
+    // are almost invisible in a static screenshot — this is the part the user
+    // actually sees when the dashboard opens.
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    val enterOffset = animateDpAsState(
+        targetValue = if (entered) 0.dp else Space.xl,
+        animationSpec = tween(AnimTokens.SLOW_MS, easing = AnimTokens.EmphasizedDecel),
+        label = "screenEnterOffset"
+    ).value
+    val enterAlpha = animateFloatAsState(
+        targetValue = if (entered) 1f else 0f,
+        animationSpec = tween(AnimTokens.SLOW_MS),
+        label = "screenEnterAlpha"
+    ).value
+
     LazyColumn(
-        modifier = Modifier.fillMaxSize().testTag("home-screen"),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("home-screen")
+            .offset(y = enterOffset)
+            .alpha(enterAlpha),
+        contentPadding = PaddingValues(horizontal = Space.lg, vertical = Space.md),
+        verticalArrangement = Arrangement.spacedBy(Space.md)
     ) {
         item(key = "hero-header", contentType = "hero") {
             Surface(
