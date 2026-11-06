@@ -190,3 +190,17 @@ pre {
   --fill:          var(--accent);
   --shadow:        var(--shadow-3);
 }
+
+/* --------------------------------------------------------------------------
+   Reader surfaces
+   --------------------------------------------------------------------------
+   Deliberately light. A reading surface is nearer paper than UI: the reader
+   shows long-form text, and light-on-dark at paragraph length is tiring. These
+   are not part of the elevation ramp and must not be used elsewhere.
+   -------------------------------------------------------------------------- */
+:root {
+  --reader-sepia-bg:   #fcf6e5;
+  --reader-sepia-text: #382717;
+  --reader-light-bg:   #ffffff;
+  --reader-light-text: #111827;
+}
