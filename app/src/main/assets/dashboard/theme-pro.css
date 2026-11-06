@@ -13,41 +13,20 @@
    ========================================================================= */
 
 :root {
-  /* surfaces */
-  --bg: #0c1015;
-  --bg-2: #0f141b;
-  --surface: #131a23;
-  --surface-2: #172029;
-  --surface-3: #1b242f;
-  --border: #1f2b3a;
-  --border-soft: #182330;
-
-  /* text */
-  --text: #e6edf3;
-  --text-dim: #b7c3d1;
-  --muted: #8494a6;
-  --muted-2: #6b7a8b;
-
-  /* semantics — restrained on purpose, no neon */
-  --accent: #4c9aff;
-  --accent-dim: #2b5f9e;
-  --accent2: #7aa2ff;
-  --success: #34d399;
-  --warning: #f0b429;
-  --danger: #f87171;
-  --memory: #818cf8;
-  --storage: #f0b429;
-
-  /* geometry */
-  --radius: 6px;
-  --radius-sm: 4px;
-  --gap: 12px;
-  --nav-h: 48px;
-
-  /* type */
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* This block used to declare 25 variables, 17 of which are now owned by
+     tokens.css — which loads later, so they were dead. What is left are the
+     names this file uses that the shared system does not, each mapped onto the
+     neutral ramp so there is one palette, not two. */
+  --bg-2:        var(--n-2);
+  --border-soft: var(--n-6);
+  --text-dim:    var(--n-12);
+  --muted-2:     var(--n-11);
+  --accent-dim:  var(--accent);
+  --radius:      var(--r-sm);
+  --radius-sm:   var(--r-xs);
+  --gap:         var(--sp-3);
 }
+
 
 /* ---------- base ---------------------------------------------------------- */
 
@@ -108,7 +87,7 @@ h2 { font-size: 13px; }
   width: 20px; height: 20px;
   border-radius: var(--radius-sm);
   background: var(--accent);
-  color: #06121f;
+  color: var(--on-accent);
   display: grid; place-items: center;
   font-size: 12px; font-weight: 800;
 }
@@ -342,7 +321,7 @@ button.chip:hover,
 .linkbtn:hover,
 .hbtn:hover {
   background: var(--surface-3);
-  border-color: #2a3a4d;
+  border-color: var(--border-strong);
   color: var(--text);
 }
 .btn:active, button.chip:active { transform: none; }
@@ -350,13 +329,13 @@ button.chip:hover,
 .btn-primary, .primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #06121f;
+  color: var(--on-accent);
   font-weight: 600;
 }
-.btn-primary:hover, .primary:hover { background: #62a9ff; border-color: #62a9ff; color: #06121f; }
+.btn-primary:hover, .primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent); }
 
-.btn-danger { background: transparent; border-color: #5a2b2b; color: var(--danger); }
-.btn-danger:hover { background: #3a1d1d; border-color: var(--danger); color: #ffb4b4; }
+.btn-danger { background: transparent; border-color: rgba(255,107,107,.22); color: var(--danger); }
+.btn-danger:hover { background: var(--danger-soft); border-color: var(--danger); color: var(--danger-text); }
 
 .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
 .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
@@ -430,7 +409,7 @@ input::placeholder { color: var(--muted-2); }
 
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--muted-2); box-shadow: none !important; }
 .dot.on { background: var(--success); }
-.dot.off { background: #4b5563; }
+.dot.off { background: var(--n-9); }
 .dot.warn { background: var(--warning); }
 .dot.err { background: var(--danger); }
 
@@ -457,8 +436,8 @@ input::placeholder { color: var(--muted-2); }
 /* scrollbars */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: #24313f; border-radius: 5px; border: 2px solid var(--bg); }
-::-webkit-scrollbar-thumb:hover { background: #2f4053; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 5px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* the old theme's oversized paddings */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
@@ -584,7 +563,7 @@ input::placeholder { color: var(--muted-2); }
 }
 .lh-launch-tile:hover {
   background: var(--surface-2);
-  border-color: #2b3d54;
+  border-color: var(--border-strong);
   transform: translateY(-1px);
 }
 .lh-launch-tile:active {
@@ -634,7 +613,7 @@ input::placeholder { color: var(--muted-2); }
 }
 .connect-qr {
   flex-shrink: 0;
-  background: #ffffff;
+  background: var(--qr-bg);
   padding: 6px;
   border-radius: 6px;
   display: flex;
@@ -703,7 +682,7 @@ body.cinema {
 
 /* Quick Drop Wireless Sharing Zone */
 .lh-drop-card {
-  border: 1px dashed #28394e;
+  border: 1px dashed var(--border-strong);
   background: rgba(19, 26, 35, 0.7);
   transition: all 0.2s ease;
 }
@@ -819,7 +798,7 @@ body.cinema {
 }
 .lh-toast.toast-success {
   border-color: var(--success);
-  color: #a7f3d0;
+  color: var(--success-text);
 }
 
 /* Micro buttons */
@@ -887,7 +866,7 @@ body.cinema {
 .media-poster-box {
   position: relative;
   height: 110px;
-  background: linear-gradient(135deg, #101721, #182330);
+  background: linear-gradient(135deg, var(--surface-2), var(--n-6));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -915,7 +894,7 @@ body.cinema {
   height: 40px;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--qr-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -983,7 +962,7 @@ body.cinema {
   width: 44px;
   height: 44px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, #1e3a5f, #0f2744);
+  background: linear-gradient(135deg, var(--surface-3), var(--surface-2));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1032,7 +1011,7 @@ body.cinema {
   width: 38px;
   height: 38px;
   background: var(--accent);
-  color: #fff;
+  color: var(--qr-bg);
   border: none;
   font-size: 16px;
 }
@@ -1149,7 +1128,7 @@ body.cinema {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #fff;
+  color: var(--qr-bg);
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -1211,7 +1190,7 @@ body.cinema {
   border-radius: 50%;
   background: rgba(25, 34, 46, 0.8);
   border: 1px solid var(--border);
-  color: #fff;
+  color: var(--qr-bg);
   font-size: 18px;
   display: flex;
   align-items: center;
@@ -1233,7 +1212,7 @@ body.cinema {
   border-radius: 50%;
   background: rgba(25, 34, 46, 0.8);
   border: 1px solid var(--border);
-  color: #fff;
+  color: var(--qr-bg);
   font-size: 16px;
   cursor: pointer;
 }
@@ -1249,7 +1228,7 @@ body.cinema {
 .clip-live-content {
   font-family: var(--mono);
   font-size: 13.5px;
-  color: #7dd3fc;
+  color: var(--info-text);
   word-break: break-all;
   white-space: pre-wrap;
   max-height: 180px;
@@ -1336,7 +1315,7 @@ body.cinema {
   padding: 6px 10px;
 }
 .chat-msg-row.msg-mine .msg-bubble {
-  background: #12283e;
+  background: var(--surface-3);
   border-left-color: var(--success);
 }
 .msg-header {
@@ -1398,18 +1377,18 @@ body.cinema {
   flex-direction: column;
   min-height: 120px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  color: #1a202c;
+  color: var(--note-text);
   position: relative;
   transition: transform 0.15s ease;
 }
 .sticky-note:hover {
   transform: translateY(-2px);
 }
-.note-yellow { background: #fef08a; }
-.note-blue { background: #bae6fd; }
-.note-green { background: #bbf7d0; }
-.note-pink { background: #fbcfe8; }
-.note-purple { background: #ddd6fe; }
+.note-yellow { background: var(--note-yellow); }
+.note-blue { background: var(--note-blue); }
+.note-green { background: var(--note-green); }
+.note-pink { background: var(--note-pink); }
+.note-purple { background: var(--note-purple); }
 .note-head {
   display: flex;
   justify-content: space-between;
@@ -1425,7 +1404,7 @@ body.cinema {
   cursor: pointer;
   padding: 0 4px;
 }
-.note-del-btn:hover { color: #dc2626; }
+.note-del-btn:hover { color: var(--danger); }
 .note-content {
   flex: 1;
   font-size: 12px;
@@ -1525,8 +1504,8 @@ body.cinema {
 
 /* Quick AI Assistant Widget */
 .ai-quick-card {
-  background: linear-gradient(135deg, #111a25, #17212e);
-  border: 1px solid #23354b;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface-3));
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   padding: 14px;
 }
@@ -1671,7 +1650,7 @@ body.cinema {
   width: 32px;
   height: 32px;
   background: var(--accent);
-  color: #fff;
+  color: var(--qr-bg);
   border: none;
   font-size: 13px;
 }

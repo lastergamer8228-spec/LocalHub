@@ -184,6 +184,7 @@ pre {
    -------------------------------------------------------------------------- */
 :root {
   --accent-cyan:   var(--info);          /* was a second accent; now the info role */
+  --accent2:       var(--info);
   --accent-purple: var(--metric-memory);
   --bar-h:         6px;
   --bg2:           var(--surface-2);
@@ -203,4 +204,36 @@ pre {
   --reader-sepia-text: #382717;
   --reader-light-bg:   #ffffff;
   --reader-light-text: #111827;
+}
+
+/* --------------------------------------------------------------------------
+   Readable tints
+   --------------------------------------------------------------------------
+   The semantic colours above are tuned for fills and borders. As *text* on a
+   near-black surface they are too saturated to read comfortably at body size,
+   so each gets a lighter companion for labels, badges and inline messages.
+   -------------------------------------------------------------------------- */
+:root {
+  --danger-text:  #ffb4b4;
+  --success-text: #a7f3d0;
+  --info-text:    #7dd3fc;
+  --warning-text: #ffd08a;
+
+  /* A QR code must stay high-contrast regardless of theme: it is scanned by a
+     camera, not read by a person. Never theme these. */
+  --qr-bg: #ffffff;
+  --qr-fg: #000000;
+
+  /* Scrollbars are chrome, not content — dimmer than any border. */
+  --scrollbar-thumb:       var(--n-7);
+  --scrollbar-thumb-hover: var(--n-8);
+
+  /* Sticky notes on the notice board. These are user-chosen content colours,
+     not UI states, so they sit outside the elevation ramp. */
+  --note-yellow: #fef08a;
+  --note-blue:   #bae6fd;
+  --note-green:  #bbf7d0;
+  --note-pink:   #fbcfe8;
+  --note-purple: #ddd6fe;
+  --note-text:   #1a202c;
 }

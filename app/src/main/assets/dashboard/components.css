@@ -18,6 +18,30 @@
    BASE
    ========================================================================== */
 
+/* Skip link: invisible until focused, then pinned top-left. Keyboard and
+   screen-reader users should not have to tab through the whole navigation on
+   every page to reach the content. */
+.skip-link {
+  position: fixed;
+  top: var(--sp-2);
+  left: var(--sp-2);
+  z-index: 10000;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semi);
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform var(--d-fast) var(--e-enter);
+}
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 * { box-sizing: border-box; }
 
 html {

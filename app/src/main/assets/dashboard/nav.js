@@ -59,6 +59,9 @@
 
     var nav = el("nav", "lh-nav");
     nav.setAttribute("data-test", "top-nav");
+    // A page can carry several <nav> elements; without a name a screen reader
+    // announces all of them identically as "navigation".
+    nav.setAttribute("aria-label", "Main");
 
     var brand = el("a", "lh-nav-brand");
     brand.href = "/";
@@ -70,10 +73,14 @@
 
     var links = el("div", "lh-nav-links");
     LINKS.forEach(function (link) {
-      var a = el("a", "lh-nav-link" + (isActive(link) ? " active" : ""));
+      var active = isActive(link);
+      var a = el("a", "lh-nav-link" + (active ? " active" : ""));
       a.href = link.href;
       if (link.cls) a.className += " " + link.cls;
       a.setAttribute("data-nav", link.href);
+      // The CSS class only says "active" visually. aria-current is what tells
+      // assistive technology which page the user is actually on.
+      if (active) a.setAttribute("aria-current", "page");
       var ico = el("span", "ico", link.icon);
       var txt = el("span", null, link.label);
       a.appendChild(ico);
