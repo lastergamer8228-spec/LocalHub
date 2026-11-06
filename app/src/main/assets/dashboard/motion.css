@@ -30,7 +30,7 @@
 
 @keyframes mt-fade-in { from { opacity: 0 } to { opacity: 1 } }
 @keyframes mt-rise {
-  from { opacity: 0; transform: translate3d(0, 10px, 0) }
+  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(.985) }
   to   { opacity: 1; transform: none }
 }
 @keyframes mt-pop {
@@ -39,16 +39,16 @@
   100% { transform: scale(1); opacity: 1 }
 }
 
-.mt-enter { animation: mt-rise var(--mt-base) var(--mt-ease-out) both; }
+.mt-enter { animation: mt-rise var(--mt-slow) var(--mt-ease-out) both; }
 
 /* Children arrive one after another instead of all at once. */
-.mt-stagger > * { animation: mt-rise var(--mt-base) var(--mt-ease-out) both; }
+.mt-stagger > * { animation: mt-rise var(--mt-slow) var(--mt-ease-out) both; }
 .mt-stagger > *:nth-child(1) { animation-delay: 0ms }
-.mt-stagger > *:nth-child(2) { animation-delay: 40ms }
-.mt-stagger > *:nth-child(3) { animation-delay: 80ms }
-.mt-stagger > *:nth-child(4) { animation-delay: 120ms }
-.mt-stagger > *:nth-child(5) { animation-delay: 160ms }
-.mt-stagger > *:nth-child(6) { animation-delay: 200ms }
+.mt-stagger > *:nth-child(2) { animation-delay: 70ms }
+.mt-stagger > *:nth-child(3) { animation-delay: 140ms }
+.mt-stagger > *:nth-child(4) { animation-delay: 210ms }
+.mt-stagger > *:nth-child(5) { animation-delay: 280ms }
+.mt-stagger > *:nth-child(6) { animation-delay: 350ms }
 .mt-stagger > *:nth-child(n+7) { animation-delay: 240ms }
 
 /* ------------------------------------------------------------ server power */

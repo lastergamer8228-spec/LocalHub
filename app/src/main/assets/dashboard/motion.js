@@ -139,4 +139,40 @@
       else if (mq.addListener) mq.addListener(handler);
     }
   } catch (e) { /* older browsers simply keep the initial value */ }
+
+  // ---------------------------------------------------------------- entry ---
+  // Every page gets a staged entrance for its primary surfaces. This had been
+  // wired by hand on one page only, which is why eleven of twelve pages had no
+  // motion at all despite the library being present.
+  function playEntrance() {
+    if (Motion.reduced) return;
+    // Auto-initialisation must never be the reason a page breaks. If the host
+    // document does not offer querySelectorAll, skip the entrance and carry on.
+    if (typeof document.querySelectorAll !== 'function') return;
+    var items = document.querySelectorAll(
+      '.card, .panel, .status-banner, .lh-metrics, .reader-viewer-card'
+    );
+    var seen = 0;
+    for (var i = 0; i < items.length; i++) {
+      var el = items[i];
+      // Do not re-animate something a container already staggered.
+      if (el.parentNode && el.parentNode.classList.contains('mt-stagger')) continue;
+      el.style.animationDelay = (seen * 70) + 'ms';
+      el.classList.remove('mt-enter');
+      void el.offsetWidth;
+      el.classList.add('mt-enter');
+      if (++seen > 12) break;   // cap: a long list should not crawl in
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      Motion.refresh();
+      playEntrance();
+    });
+  } else {
+    Motion.refresh();
+    playEntrance();
+  }
+
 })(window);

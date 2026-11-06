@@ -65,6 +65,10 @@ function makeCtx(reduced) {
     body,
     getElementById(id) { return doc._byId[id] || null; },
     createElement(t) { return new El(t); },
+    // motion.js auto-plays an entrance on load; the mock must expose this or the
+    // library would be untested on the exact code path every page now runs.
+    querySelectorAll(sel) { return doc._qsa[sel] || []; },
+    _qsa: {},
     _byId: {}
   };
   const timers = [];
