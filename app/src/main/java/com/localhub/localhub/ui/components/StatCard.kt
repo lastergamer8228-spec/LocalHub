@@ -3,6 +3,7 @@ package com.localhub.localhub.ui.components
 import com.localhub.localhub.ui.theme.Radius
 import com.localhub.localhub.ui.theme.Space
 
+import com.localhub.localhub.ui.theme.LocalLocalHubColors
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -56,10 +57,10 @@ fun StatCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Radius.xl),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+            containerColor = LocalLocalHubColors.current.surface1
         ),
         border = BorderStroke(1.dp, accent.copy(alpha = 0.22f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(Space.lg)) {
             Row(

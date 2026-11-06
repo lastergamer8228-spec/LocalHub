@@ -65,7 +65,7 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(), onManageServer:
         item(key = "hero-header", contentType = "hero") {
             Surface(
                 shape = RoundedCornerShape(Radius.xl),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                color = LocalLocalHubColors.current.surface1,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
                 modifier = Modifier.fillMaxWidth()
             ) {

@@ -1,5 +1,7 @@
 package com.localhub.localhub.ui.components
 
+import com.localhub.localhub.ui.theme.LocalLocalHubColors
+
 import com.localhub.localhub.ui.theme.Radius
 import com.localhub.localhub.ui.theme.Space
 
@@ -35,7 +37,9 @@ fun ClientCard(
     Card(
         modifier = Modifier.fillMaxWidth().testTag("client-card-${client.id}"),
         shape = RoundedCornerShape(Radius.xl),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
+        colors = CardDefaults.cardColors(
+            containerColor = LocalLocalHubColors.current.surface1
+        ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {

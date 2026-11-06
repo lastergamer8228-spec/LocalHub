@@ -85,14 +85,14 @@ fun ServerStatusCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Radius.xl),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+            containerColor = LocalLocalHubColors.current.surface1
         ),
         border = BorderStroke(
             1.dp,
             if (status.running) colors.accent.copy(alpha = 0.35f)
             else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -237,7 +237,7 @@ fun ServerStatusCard(
 
                         Surface(
                             shape = RoundedCornerShape(Radius.sm),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            color = LocalLocalHubColors.current.surface2,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {

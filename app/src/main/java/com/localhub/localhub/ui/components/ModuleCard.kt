@@ -3,6 +3,7 @@ package com.localhub.localhub.ui.components
 import com.localhub.localhub.ui.theme.Radius
 import com.localhub.localhub.ui.theme.Space
 
+import com.localhub.localhub.ui.theme.LocalLocalHubColors
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -69,10 +70,10 @@ fun ModuleCard(module: ModuleInfo, onToggle: (ModuleInfo) -> Unit) {
         modifier = Modifier.fillMaxWidth().testTag("module-card-${module.id}"),
         shape = RoundedCornerShape(Radius.xl),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+            containerColor = LocalLocalHubColors.current.surface1
         ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(Space.lg).animateContentSize()) {
             // Header row: icon + info + toggle.

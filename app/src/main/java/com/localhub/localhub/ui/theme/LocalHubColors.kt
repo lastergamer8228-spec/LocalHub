@@ -19,7 +19,20 @@ data class LocalHubColors(
     val storage: Color,
     val battery: Color,
     val network: Color,
-    val surfaceGlass: Color
+
+    /** Legacy translucent surface. Retained for callers not yet migrated. */
+    val surfaceGlass: Color,
+
+    /**
+     * Tonal elevation surfaces. On a dark background a shadow is the weakest
+     * possible depth cue, so — as in Material 3 — a higher level means a
+     * lighter surface rather than a heavier shadow. These mirror --elev-0..3
+     * in assets/dashboard/tokens.css so both surfaces read identically.
+     */
+    val surface0: Color,   // canvas / app background
+    val surface1: Color,   // card, panel
+    val surface2: Color,   // raised: input, dropdown
+    val surface3: Color    // modal — the only level that also earns a shadow
 )
 
 val DarkLocalHubColors = LocalHubColors(
@@ -33,7 +46,11 @@ val DarkLocalHubColors = LocalHubColors(
     storage = Color(0xFFF59E0B),
     battery = Color(0xFF34D399),
     network = Color(0xFF38BDF8),
-    surfaceGlass = Color(0xFF16223B)
+    surfaceGlass = Color(0xFF16223B),
+    surface0 = Color(0xFF0A0D12),
+    surface1 = Color(0xFF0F131A),
+    surface2 = Color(0xFF141922),
+    surface3 = Color(0xFF1A2029)
 )
 
 val LightLocalHubColors = LocalHubColors(
@@ -47,7 +64,11 @@ val LightLocalHubColors = LocalHubColors(
     storage = Color(0xFFB45309),
     battery = Color(0xFF059669),
     network = Color(0xFF0369A1),
-    surfaceGlass = Color(0xFFE6ECF4)
+    surfaceGlass = Color(0xFFE6ECF4),
+    surface0 = Color(0xFFF7F9FC),
+    surface1 = Color(0xFFFFFFFF),
+    surface2 = Color(0xFFF0F3F8),
+    surface3 = Color(0xFFE8EDF4)
 )
 
 val LocalLocalHubColors = staticCompositionLocalOf { DarkLocalHubColors }

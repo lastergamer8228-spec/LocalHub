@@ -56,15 +56,18 @@ fun PremiumCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Radius.xl),
+        shape = RoundedCornerShape(Radius.lg),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+            // Tonal elevation: the surface itself is lighter than the canvas.
+            // A 6dp shadow on a near-black background would be invisible.
+            containerColor = LocalLocalHubColors.current.surface1
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        border = CardDefaults.outlinedCardBorder(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.padding(18.dp).animateContentSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(Space.lg).animateContentSize(),
+            verticalArrangement = Arrangement.spacedBy(Space.md),
             content = content
         )
     }
