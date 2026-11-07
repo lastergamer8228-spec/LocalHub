@@ -10,11 +10,6 @@
   <link rel="stylesheet" href="/tokens.css" />
   <link rel="stylesheet" href="/components.css" />
   <style>
-    :root {
-      --bg: #0b1220; --bg2: #111a2e; --surface: rgba(27,39,64,.55); --surface-2: rgba(27,39,64,.35);
-      --border: rgba(120,140,180,.18); --text: #e5eaf2; --muted: #8ea0bd;
-      --accent: #22d3a6; --accent2: #38bdf8; --warning: #fbbf24; --danger: #f87171; --success: #34d399;
-    }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -577,7 +572,7 @@
           s.className = "crumb-part";
           s.textContent = text;
           if (!isCurrent) s.onclick = function () { load(path); };
-          else s.style.color = "#22d3a6";
+          else s.style.color = "var(--accent)";
           return s;
         }
         function sep() { var s = document.createElement("span"); s.className = "crumb-sep"; s.textContent = "/"; return s; }

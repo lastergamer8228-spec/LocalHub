@@ -1,6 +1,8 @@
 /* Cinema refinement: presentation only; audio pipeline is unchanged. */
 body.cinema {
-  --accent:#55e2be; --muted:#a0a7b3; --border:rgba(255,255,255,.09);
+  /* Layout only. The palette used to be redefined here, but `body.cinema`
+     outranks `:root` in tokens.css, so it silently repainted the accent for
+     the whole player. The cinema look now comes from surfaces, not tokens. */
   background:#06080c; color:#f4f5f7; height:100vh; height:100dvh;
   display:flex; flex-direction:column; overflow:hidden; animation:none;
 }
