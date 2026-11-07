@@ -68,6 +68,7 @@ object SentinelDiagnoser {
         rulePortOccupied(probes, ctx)?.let(out::add)
         ruleLanBindFailed(probes, ctx)?.let(out::add)
         ruleClientSubnetMismatch(probes)?.let(out::add)
+        ruleClientIsolated(probes, ctx)?.let(out::add)
         ruleCarrierNat(probes)?.let(out::add)
         ruleStoragePermission(probes)?.let(out::add)
         ruleMemoryPressure(probes)?.let(out::add)
@@ -227,6 +228,96 @@ object SentinelDiagnoser {
                     title = "Fix the network path",
                     detail = "Put every device on the same router and SSID, turn off the router's " +
                         "\"AP/client isolation\", or use the phone's hotspot - a hotspot never isolates.",
+                    risk = Risk.MANUAL
+                )
+            )
+        )
+    }
+
+
+    /**
+     * The "server works on my hotspot but not on my home router" case.
+     *
+     * AP/client isolation is a router setting that stops wireless devices from
+     * reaching each other while still letting them all reach the internet. From
+     * the phone's point of view everything looks perfect: the server is running,
+     * it answers on its own LAN address, the router answers. Nothing in the app
+     * is broken. A laptop two metres away simply cannot open the page.
+     *
+     * The user cannot be expected to know this, so the diagnosis has to name it
+     * and say where the switch lives — it is in the router, not in LocalHub.
+     */
+    private fun ruleClientIsolated(p: List<ProbeResult>, ctx: SentinelContext): Diagnosis? {
+        val iso = p.byId("client.isolation") ?: return null
+        if (iso.ok) return null
+
+        val gateway = iso.str("gateway")
+        val peersProbed = iso.int("peersProbed")
+        val gatewayUp = iso.bool("gatewayReachable")
+
+        if (!gatewayUp) {
+            return Diagnosis(
+                id = "network.router-unreachable",
+                title = "The phone cannot reach the router",
+                severity = Severity.CRITICAL,
+                confidence = 0.9,
+                cause = "The gateway ${gateway.ifBlank { "(unknown)" }} does not answer. Until the " +
+                    "phone can reach the router, nothing else on this network can reach the phone.",
+                why = listOf(
+                    "client.isolation: gateway $gateway did not answer",
+                    "network.subnet: the phone is connected to ${p.byId("network.subnet")?.str("ssid").orEmpty()}"
+                ),
+                remedies = listOf(
+                    Remediation(
+                        id = "reconnect-wifi",
+                        title = "Reconnect to Wi-Fi",
+                        detail = "Turn Wi-Fi off and on, then confirm you are on the main network " +
+                            "and not a guest network. Guest networks are isolated by design.",
+                        risk = Risk.MANUAL
+                    )
+                )
+            )
+        }
+
+        return Diagnosis(
+            id = "network.client-isolated",
+            title = "This Wi-Fi blocks devices from talking to each other",
+            severity = Severity.HIGH,
+            confidence = 0.8,
+            cause = "The server is fine and the router answers, but none of the $peersProbed other " +
+                "addresses sampled on this subnet are reachable. That is the signature of AP or " +
+                "client isolation: a router setting that lets every device reach the internet but " +
+                "stops them reaching each other. It is the usual reason a server works on a phone " +
+                "hotspot and not on a home router — a hotspot does not isolate its clients.",
+            why = listOf(
+                "client.isolation: gateway $gateway answers — the Wi-Fi link is up",
+                "client.isolation: 0 of $peersProbed peer addresses answered",
+                "client.isolation: no device on this subnet has ever connected"
+            ),
+            remedies = listOf(
+                Remediation(
+                    id = "disable-ap-isolation",
+                    title = "Turn off AP isolation on the router",
+                    detail = "Open the router's admin page (usually 192.168.1.1 or 192.168.0.1) and " +
+                        "look under Wireless / Wi-Fi settings for "AP Isolation", "Client Isolation" " +
+                        "or "Station Isolation". Set it to Disabled and reconnect the devices. " +
+                        "The wording differs by brand — TP-Link calls it AP Isolation, D-Link and " +
+                        "Netgear often call it "Enable Wireless Isolation" or "Allow clients to " +
+                        "communicate".",
+                    risk = Risk.MANUAL
+                ),
+                Remediation(
+                    id = "check-guest-network",
+                    title = "Check nobody is on a guest network",
+                    detail = "Guest SSIDs are isolated permanently and cannot be changed. Put every " +
+                        "device on the main Wi-Fi.",
+                    risk = Risk.MANUAL
+                ),
+                Remediation(
+                    id = "use-hotspot",
+                    title = "Or use the phone's hotspot",
+                    detail = "You have already confirmed this works. A hotspot does not isolate its " +
+                        "clients, so the server is reachable immediately.",
                     risk = Risk.MANUAL
                 )
             )

@@ -72,6 +72,7 @@ class SentinelProbes(
         val serverAlive = out.last().ok && ctx.expectedRunning
         out += probeLanReachable(serverAlive, ctx)
         out += probeNetworkSubnet()
+        out += probeClientIsolation()
         out += probeStorageAccess()
         out += probeMemoryPressure()
         out += probeCrashLoop()
@@ -258,6 +259,111 @@ class SentinelProbes(
                 )
             )
         }
+
+
+    /**
+     * Actively tests whether other devices on this Wi-Fi are reachable at all.
+     *
+     * This exists because of a specific, very common failure that every other
+     * probe misses: the server is running, bound correctly, reachable from the
+     * phone itself — and still invisible to a laptop on the same router. The
+     * cause is usually AP/client isolation, a router setting that stops wireless
+     * clients from talking to each other.
+     *
+     * The probe cannot ask "can that laptop reach me?", so it asks the next best
+     * question: **is anyone else on this subnet reachable?** The gateway always
+     * answers (it is the router). If the gateway answers and nothing else does,
+     * either the room is empty or the clients are walled off from each other.
+     * Combined with the client list being empty, that is a strong signal.
+     */
+    private fun probeClientIsolation(): SentinelModels.ProbeResult =
+        measured("client.isolation", "Peer reachability could not be tested") {
+            val net = systemInfoProvider.lastSnapshot.value?.network
+                ?: systemInfoProvider.collectSnapshot().network
+            if (net.type == "MOBILE") {
+                // On a hotspot the phone IS the access point; isolation is not a thing.
+                return@measured make(
+                    "client.isolation", true, SentinelModels.Severity.OK,
+                    "Hotspot/mobile: the phone is the access point, peers connect to it directly"
+                )
+            }
+
+            val mask = net.subnetMask.ifBlank { "255.255.255.0" }
+            val gateway = net.gateway
+            val self = net.ipAddress
+            val gatewayUp = gateway.isNotBlank() && tcpReachable(gateway)
+            if (!gatewayUp) {
+                return@measured make(
+                    "client.isolation", false, SentinelModels.Severity.HIGH,
+                    "The router itself is unreachable - the Wi-Fi link is down or filtered",
+                    mapOf("gateway" to gateway, "gatewayReachable" to false)
+                )
+            }
+
+            // Probe a small, polite sample of the subnet. This is a diagnostic,
+            // not a port sweep: one port, short timeout, a handful of addresses.
+            val peers = samplePeers(self, gateway, count = 12)
+            val found = peers.filter { tcpReachable(it, timeoutMs = 250) }
+
+            val knownClients = clientTracker.clients.value
+                .map { it.ip }
+                .filter { it.isNotBlank() && it != "?" && subnetOf(it, mask) == subnetOf(self, mask) }
+                .distinct()
+
+            val suspect = found.isEmpty() && knownClients.isEmpty()
+            make(
+                "client.isolation", !suspect,
+                if (suspect) SentinelModels.Severity.MEDIUM else SentinelModels.Severity.OK,
+                when {
+                    suspect ->
+                        "No other device on this Wi-Fi is reachable - the router is likely " +
+                            "isolating clients from one another"
+                    found.isEmpty() && knownClients.isNotEmpty() ->
+                        "No peers answered, but ${knownClients.size} client(s) have connected before"
+                    else ->
+                        "${found.size} of ${peers.size} sampled peer address(es) answered - " +
+                            "clients can reach each other"
+                },
+                mapOf(
+                    "gateway" to gateway,
+                    "gatewayReachable" to true,
+                    "self" to self,
+                    "peersProbed" to peers.size,
+                    "peersReachable" to found,
+                    "peersReachableCount" to found.size,
+                    "knownClientsOnSubnet" to knownClients
+                )
+            )
+        }
+
+    /** A short TCP connect attempt. Used only to test reachability. */
+    private fun tcpReachable(host: String, port: Int = 80, timeoutMs: Int = 300): Boolean = runCatching {
+        java.net.Socket().use { s ->
+            s.connect(java.net.InetSocketAddress(host, port), timeoutMs)
+            true
+        }
+    }.getOrDefault(false)
+
+    /** A few plausible peer addresses in the same /24, excluding self and gateway. */
+    private fun samplePeers(self: String, gateway: String, count: Int): List<String> {
+        val parts = self.split(".")
+        if (parts.size != 4) return emptyList()
+        val base = parts.take(3).joinToString(".")
+        val selfLast = parts[3].toIntOrNull() ?: return emptyList()
+        val gwLast = gateway.split(".").getOrNull(3)?.toIntOrNull()
+        // Prefer addresses near this device - DHCP usually hands out a block.
+        val candidates = mutableListOf<Int>()
+        var step = 1
+        while (candidates.size < count && step < 254) {
+            for (delta in listOf(step, -step)) {
+                val v = selfLast + delta
+                if (v in 1..254 && v != selfLast && v != gwLast && v !in candidates) candidates.add(v)
+                if (candidates.size >= count) break
+            }
+            step++
+        }
+        return candidates.map { "$base.$it" }
+    }
 
     private fun probeStorageAccess(): SentinelModels.ProbeResult =
         measured("storage.access", "Storage permission could not be checked") {
