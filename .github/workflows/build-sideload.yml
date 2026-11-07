@@ -1,0 +1,83 @@
+name: Sideload build (arm64, updates an existing install)
+
+# Why this exists:
+#
+#   build-apk.yml  ->  -PaacPreview  ->  package id com.localhub.localhub.aacpreview
+#                      installs as a SECOND app called "LocalHub Preview".
+#                      It does not update an existing LocalHub.
+#
+#   ci.yml         ->  assembleDebug ->  correct package id, but ships every ABI
+#                      (arm64, armeabi-v7a, x86, x86_64) and weighs ~193 MB.
+#
+# This workflow is the one to hand to a human: correct package id, so it updates
+# an existing install, and arm64 only, so it is ~50 MB instead of ~193 MB.
+# Every Android device sold since 2019 is arm64.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sideload-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: gradle
+
+      - name: Build arm64 sideload APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug -ParmOnly=true --no-daemon --max-workers=2
+
+      - name: Verify the package id is the real one
+        run: |
+          AAPT=$ANDROID_HOME/build-tools/*/aapt2
+          APK=$(ls app/build/outputs/apk/debug/*.apk | head -1)
+          echo "apk: $APK"
+          python3 - <<'PY'
+          import re, sys, zipfile
+          apk = __import__('glob').glob('app/build/outputs/apk/debug/*.apk')[0]
+          d = zipfile.ZipFile(apk).read('AndroidManifest.xml').decode('utf-16-le', 'ignore')
+          pkgs = sorted(set(re.findall(r'com\.localhub\.localhub(?:\.[a-z]+)?', d)))
+          print("package ids:", pkgs)
+          if any(p.endswith('.aacpreview') for p in pkgs):
+              sys.exit("FAIL: this build carries the preview suffix")
+          if not any(p == 'com.localhub.localhub' for p in pkgs):
+              sys.exit("FAIL: real package id not found")
+          print("OK: updates an existing LocalHub install")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: localhub-sideload-arm64
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish as a rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: sideload-latest
+          name: LocalHub sideload (arm64, latest)
+          prerelease: true
+          body: |
+            arm64-only debug build, package id `com.localhub.localhub`.
+
+            This **updates an existing LocalHub install** — it does not create a
+            second app. (The `preview-N` releases use the `.aacpreview` package
+            id and install alongside.)
+
+            Built from commit ${{ github.sha }}.
+          files: app/build/outputs/apk/debug/*.apk

@@ -20,6 +20,16 @@ android {
             manifestPlaceholders.appLabel = 'LocalHub Preview'
             ndk { abiFilters 'arm64-v8a' }
         }
+        // arm64-only packaging for a sideload build.
+        //
+        // -ParmOnly=true produces a ~50 MB APK instead of ~193 MB, WITHOUT the
+        // .aacpreview suffix — so it still updates an existing LocalHub install.
+        // That distinction matters: the preview build is arm64-only AND carries a
+        // different package id, so it installs as a second app. Any device made
+        // since 2019 is arm64, so this is the build to hand to someone.
+        if (project.hasProperty('armOnly')) {
+            ndk { abiFilters 'arm64-v8a' }
+        }
 
     }
 
