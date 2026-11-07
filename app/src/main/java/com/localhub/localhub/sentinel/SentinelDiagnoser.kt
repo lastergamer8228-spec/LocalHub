@@ -298,12 +298,15 @@ object SentinelDiagnoser {
                 Remediation(
                     id = "disable-ap-isolation",
                     title = "Turn off AP isolation on the router",
-                    detail = "Open the router's admin page (usually 192.168.1.1 or 192.168.0.1) and " +
-                        "look under Wireless / Wi-Fi settings for "AP Isolation", "Client Isolation" " +
-                        "or "Station Isolation". Set it to Disabled and reconnect the devices. " +
-                        "The wording differs by brand — TP-Link calls it AP Isolation, D-Link and " +
-                        "Netgear often call it "Enable Wireless Isolation" or "Allow clients to " +
-                        "communicate".",
+                    // No nested double quotes in this string: an unescaped quote inside a
+                    // Kotlin literal terminates it, which is the compile error this shipped
+                    // with once already.
+                    detail = "Open the router admin page (usually 192.168.1.1 or 192.168.0.1) and " +
+                        "look under Wireless / Wi-Fi settings for AP Isolation, Client Isolation " +
+                        "or Station Isolation. Set it to Disabled and reconnect the devices. " +
+                        "The wording differs by brand: TP-Link calls it AP Isolation; D-Link and " +
+                        "Netgear often list it as Enable Wireless Isolation or as Allow clients " +
+                        "to communicate.",
                     risk = Risk.MANUAL
                 ),
                 Remediation(
